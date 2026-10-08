@@ -41,7 +41,12 @@ data/ocr_test/*/images/
 data/ocr_test/*/results/
 runtime/
 
-# Frontend build artifacts
+# Frontend project files are source, not generated output (the *.json rule above hid them)
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+# Frontend build artifacts and local settings
+.env.local
 node_modules/
 .next/
 *.tsbuildinfo
