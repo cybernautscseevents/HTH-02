@@ -1,114 +1,45 @@
 'use client'
 
-import React from 'react'
-import Link from 'next/link'
-import { Clock, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import type { TimeoutItem } from '@/types/stewardship'
+import { evaluateEpisode } from '@/lib/api'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 
-interface TimeoutCardProps {
-  item: TimeoutItem
-}
+export const TimeoutCard: React.FC<{ item: TimeoutItem }> = ({ item }) => {
+  const router = useRouter()
+  const [opening, setOpening] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const due = item.status === 'REVIEW_DUE'
+  const overdue = item.hours_elapsed > 72
 
-const SETTING_LABELS: Record<string, string> = {
-  OPD: 'Outpatient',
-  WARD: 'Ward',
-  ICU: 'ICU',
-}
-
-export const TimeoutCard: React.FC<TimeoutCardProps> = ({ item }) => {
-  const isReviewDue = item.status === 'REVIEW_DUE'
-  const started = new Date(item.started_at)
-  const formattedStart = started.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-
-  const hoursDisplay =
-    item.hours_elapsed < 72
-      ? `${item.hours_elapsed}h elapsed`
-      : `${Math.floor(item.hours_elapsed / 24)}d ${item.hours_elapsed % 24}h elapsed`
+  const openReview = async () => {
+    setOpening(true)
+    setError(null)
+    try {
+      const evaluation = await evaluateEpisode(item.episode_id)
+      router.push(`/evaluation/${evaluation.id}`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not start the review.')
+      setOpening(false)
+    }
+  }
 
   return (
-    <div
-      className={`rounded-xl border overflow-hidden transition-all ${
-        isReviewDue
-          ? 'border-amber-500/30 bg-amber-500/5'
-          : 'border-[#2d3148] bg-[#1e2235]'
-      }`}
-    >
-      <div className="px-5 py-4">
-        <div className="flex items-start gap-4">
-          {/* Icon */}
-          <div className="shrink-0 mt-0.5">
-            {isReviewDue ? (
-              <Clock className="w-5 h-5 text-amber-400" />
-            ) : (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            {/* Patient + setting */}
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-sm font-semibold text-slate-100 font-mono">
-                {item.patient_id}
-              </span>
-              <Badge variant={isReviewDue ? 'CANNOT_ASSESS' : 'OK'} size="sm">
-                {isReviewDue ? 'REVIEW DUE' : 'REVIEWED'}
-              </Badge>
-              <span className="text-xs text-slate-400">{SETTING_LABELS[item.setting] ?? item.setting}</span>
-            </div>
-
-            {/* Antibiotic */}
-            <p className="text-xs text-slate-300 mb-2">
-              <span className="text-slate-500">Antibiotics: </span>
-              {item.antibiotic_name}
-            </p>
-
-            {/* Time info */}
-            <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-              <span>
-                Started: <span className="text-slate-300">{formattedStart}</span>
-              </span>
-              <span
-                className={`font-semibold ${
-                  item.hours_elapsed > 72 ? 'text-rose-400' : 'text-amber-400'
-                }`}
-              >
-                {hoursDisplay}
-              </span>
-            </div>
-
-            {/* Overdue warning */}
-            {item.hours_elapsed > 72 && isReviewDue && (
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-300">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Review is overdue — {Math.floor((item.hours_elapsed - 48) / 24)}d beyond 48-hour window</span>
-              </div>
-            )}
-          </div>
-
-          {/* Action */}
-          <div className="shrink-0">
-            {isReviewDue ? (
-              <Link href={`/evaluation/${item.episode_id}`}>
-                <Button variant="warning" size="sm">
-                  Review now
-                </Button>
-              </Link>
-            ) : (
-              <Link href={`/evaluation/${item.episode_id}`}>
-                <Button variant="ghost" size="sm">
-                  View
-                </Button>
-              </Link>
-            )}
-          </div>
+    <article className={`rounded-[8px] border bg-white p-4 ${overdue && due ? 'border-[#D9A4A4]' : 'border-[#E2E1DC]'}`}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className={`rounded-md p-2 ${due ? 'bg-[#FFF9EB] text-[#8B5E00]' : 'bg-[#F0FBF4] text-[#1A6B3C]'}`}>{due ? <Clock className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-sm font-medium text-[#1A1A1A]">{item.patient_id}</span><Badge variant={due ? 'CANNOT_ASSESS' : 'OK'}>{due ? 'Review due' : 'Reviewed'}</Badge><span className="text-xs text-[#6B6A65]">{item.setting}</span></div>
+          <p className="mt-2 text-xs text-[#1A1A1A]"><span className="text-[#6B6A65]">Antibiotics:</span> {item.antibiotic_name}</p>
+          <div className="mt-2 flex flex-wrap gap-3 font-mono text-[10px] text-[#6B6A65]"><span>Started {new Date(item.started_at).toLocaleString('en-IN')}</span><span className={overdue ? 'text-[#8B1A1A]' : 'text-[#8B5E00]'}>{item.hours_elapsed} hours elapsed</span></div>
+          {overdue && due && <p className="mt-2 flex items-center gap-1.5 text-xs text-[#8B1A1A]"><AlertTriangle className="h-3.5 w-3.5" />Outside the recommended 48–72 hour review window.</p>}
+          {error && <p className="mt-2 text-xs text-[#8B1A1A]">{error}</p>}
         </div>
+        {due && <Button variant="warning" size="sm" isLoading={opening} onClick={openReview}>Run review</Button>}
       </div>
-    </div>
+    </article>
   )
 }

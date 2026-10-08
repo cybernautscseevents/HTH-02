@@ -23,9 +23,10 @@ export default function AuditPage() {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Audit Log</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
-            Append-only clinical audit trail — all pharmacist decisions and system events
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">Governance</p>
+          <h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">Audit log</h1>
+          <p className="mt-1 text-sm text-[#6B6A65]">
+            Append-only record of pharmacist decisions and system events.
           </p>
         </div>
         <Button
@@ -47,14 +48,11 @@ export default function AuditPage() {
         </Button>
       </div>
 
-      {/* Info box */}
-      <div className="p-4 rounded-xl border border-[#2d3148] bg-[#1e2235]">
+      <div className="rounded-[8px] border border-[#E2E1DC] bg-white p-4">
         <div className="flex items-start gap-3">
-          <ScrollText className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-slate-400 leading-relaxed">
-            This log records every pharmacist review decision (Accept, Modify, Override) and all
-            system-generated evaluation events. Entries are append-only and cannot be edited or
-            deleted, ensuring a trustworthy clinical audit trail.
+          <ScrollText className="mt-0.5 h-4 w-4 shrink-0 text-[#3730A3]" />
+          <p className="text-xs leading-relaxed text-[#6B6A65]">
+            Every approval, modification, removal, override, escalation, and evaluation is retained. Entries cannot be edited or deleted.
           </p>
         </div>
       </div>
@@ -66,9 +64,7 @@ export default function AuditPage() {
       ) : (
         <>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">
-              {entries.length} entries total
-            </span>
+            <span className="text-xs text-[#6B6A65]">{entries.length} entries total</span>
           </div>
           <AuditTable entries={entries} />
         </>

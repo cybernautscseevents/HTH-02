@@ -15,6 +15,7 @@ import type {
   EvaluationReport,
   SyndromeInfo,
   OCRResult,
+  ParsePrescriptionResult,
   Review,
   TimeoutItem,
 } from '@/types/stewardship'
@@ -29,8 +30,8 @@ import {
 
 // ─── Configuration ─────────────────────────────────────────────────────────────
 
-/** Mock data is used unless NEXT_PUBLIC_USE_MOCK=false (see frontend/.env.example). */
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== 'false'
+/** Real API is the default; set NEXT_PUBLIC_USE_MOCK=true for the offline visual demo. */
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true'
 
 /** Base URL of the stewardship API (ignored when USE_MOCK = true). */
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
@@ -74,17 +75,33 @@ export async function getStats(): Promise<DashboardStats> {
 
 // ─── Upload / OCR ──────────────────────────────────────────────────────────────
 
-export async function uploadPrescription(file: File): Promise<OCRResult> {
+export async function uploadPrescription(
+  file: File,
+  engine: 'glm' | 'qwen' = 'glm'
+): Promise<OCRResult> {
   if (USE_MOCK) {
-    // Simulate OCR processing time
-    await delay(2200)
+    await delay(1200)
     return MOCK_OCR_RESULT
   }
   const form = new FormData()
   form.append('file', file)
-  const res = await fetch(`${BASE_URL}/api/ocr`, { method: 'POST', body: form })
-  if (!res.ok) throw new Error(`OCR API error ${res.status}`)
+  const res = await fetch(`${BASE_URL}/api/ocr?engine=${engine}`, { method: 'POST', body: form })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.detail ? String(body.detail) : `OCR API error ${res.status}`)
+  }
   return res.json() as Promise<OCRResult>
+}
+
+export async function parsePrescriptionText(text: string): Promise<ParsePrescriptionResult> {
+  if (USE_MOCK) {
+    await delay(350)
+    return { orders: MOCK_OCR_RESULT.drugs, warnings: [] }
+  }
+  return apiFetch<ParsePrescriptionResult>('/api/parse-prescription', {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
 }
 
 // ─── Episode ───────────────────────────────────────────────────────────────────
@@ -121,6 +138,14 @@ export async function getEpisode(episodeId: string): Promise<Episode> {
   return apiFetch<Episode>(`/api/episodes/${episodeId}`)
 }
 
+export async function getEpisodes(hasCulture = false): Promise<Episode[]> {
+  if (USE_MOCK) {
+    await delay(300)
+    return hasCulture ? [MOCK_EPISODE] : [MOCK_EPISODE]
+  }
+  return apiFetch<Episode[]>(`/api/episodes${hasCulture ? '?has_culture=true' : ''}`)
+}
+
 // ─── Evaluation ────────────────────────────────────────────────────────────────
 
 export async function evaluateEpisode(episodeId: string): Promise<EvaluationReport> {
@@ -140,6 +165,11 @@ export async function getEvaluation(evaluationId: string): Promise<EvaluationRep
     return MOCK_EVALUATION
   }
   return apiFetch<EvaluationReport>(`/api/evaluations/${evaluationId}`)
+}
+
+export async function getEvaluationReviews(evaluationId: string): Promise<Review[]> {
+  if (USE_MOCK) return []
+  return apiFetch<Review[]>(`/api/evaluations/${evaluationId}/reviews`)
 }
 
 // ─── Review ────────────────────────────────────────────────────────────────────

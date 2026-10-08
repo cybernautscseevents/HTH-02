@@ -18,18 +18,20 @@ from .episode import evaluate_episode
 from .evidence import EvidenceRetriever, Explainer, Passage, TemplateExplainer
 from .intake import EpisodeRequest, build_episode
 from .ports import RenalChecker
-from .review import apply_review
+from .review import ReviewError, apply_review
 from .rulepack import YamlRulePack
 from .schemas import (
     AuditEntry,
     Episode,
     Evaluation,
+    EvaluationStatus,
     Evidence,
     Finding,
     NormStatus,
     Outcome,
     Review,
     ReviewAction,
+    Severity,
     Trigger,
 )
 from .timeout import first_antibiotic_start, is_timeout_due
@@ -93,6 +95,25 @@ class ReviewRequest(BaseModel):
     note: str | None = None
 
 
+class RecentEvaluation(BaseModel):
+    evaluation_id: str
+    episode_id: str
+    patient_id: str
+    status: EvaluationStatus
+    evaluated_at: datetime
+    high_count: int
+    moderate_count: int
+
+
+class DashboardStats(BaseModel):
+    total_reviewed: int
+    flagged_count: int
+    pending_review_count: int
+    high_severity_count: int
+    timeout_due_count: int
+    recent_evaluations: tuple[RecentEvaluation, ...]
+
+
 class NotFoundError(KeyError):
     """Unknown episode or evaluation id."""
 
@@ -143,6 +164,9 @@ class StewardshipService:
         except KeyError:
             raise NotFoundError(f"Unknown episode {episode_id}") from None
 
+    def list_episodes(self) -> tuple[Episode, ...]:
+        return tuple(reversed(self._episodes.values()))
+
     def evaluate(
         self, episode_id: str, trigger: Trigger = Trigger.NEW_PRESCRIPTION
     ) -> EvaluationReport:
@@ -185,6 +209,59 @@ class StewardshipService:
         except KeyError:
             raise NotFoundError(f"Unknown evaluation {evaluation_id}") from None
 
+    def reviews_for_evaluation(self, evaluation_id: str) -> tuple[Review, ...]:
+        self.get_evaluation(evaluation_id)
+        return tuple(review for review in self._reviews if review.evaluation_id == evaluation_id)
+
+    def dashboard_stats(self) -> DashboardStats:
+        latest: dict[str, EvaluationReport] = {}
+        for report in self._evaluations.values():
+            latest[report.episode_id] = report
+        reports = sorted(latest.values(), key=lambda item: item.evaluated_at, reverse=True)
+        reviewed = {
+            (review.evaluation_id, review.finding_rule_id, review.order_id)
+            for review in self._reviews
+            if review.finding_rule_id is not None
+        }
+        pending = sum(
+            1
+            for report in reports
+            for finding in report.findings
+            if finding.outcome is not Outcome.PASS
+            and (report.id, finding.rule_id, finding.order_id) not in reviewed
+        )
+        recent = tuple(
+            RecentEvaluation(
+                evaluation_id=report.id,
+                episode_id=report.episode_id,
+                patient_id=self._episodes[report.episode_id].patient.id,
+                status=report.status,
+                evaluated_at=report.evaluated_at,
+                high_count=sum(
+                    finding.outcome is not Outcome.PASS and finding.severity is Severity.HIGH
+                    for finding in report.findings
+                ),
+                moderate_count=sum(
+                    finding.outcome is not Outcome.PASS
+                    and finding.severity is Severity.MODERATE
+                    for finding in report.findings
+                ),
+            )
+            for report in reports[:10]
+        )
+        return DashboardStats(
+            total_reviewed=len(reports),
+            flagged_count=sum(report.status is not EvaluationStatus.OK for report in reports),
+            pending_review_count=pending,
+            high_severity_count=sum(
+                finding.outcome is not Outcome.PASS and finding.severity is Severity.HIGH
+                for report in reports
+                for finding in report.findings
+            ),
+            timeout_due_count=len(self.timeout_due()),
+            recent_evaluations=recent,
+        )
+
     def _view(self, finding: Finding, drug, syndrome, syndrome_code) -> FindingView:
         passages: list[Passage] = []
         if self.retriever is not None and finding.outcome is not Outcome.PASS:
@@ -212,6 +289,8 @@ class StewardshipService:
     def review(self, request: ReviewRequest) -> AuditEntry:
         """Validate a pharmacist decision against its evaluation and append it to the audit log."""
         evaluation = self.get_evaluation(request.evaluation_id)
+        if request.episode_id != evaluation.episode_id:
+            raise ReviewError("Review episode_id does not match the evaluation episode.")
         review = Review(id=uuid.uuid4().hex, at=self.clock(), **request.model_dump())
         entry = apply_review(evaluation, review)  # raises ReviewError if not acceptable
         self.audit.append(entry)

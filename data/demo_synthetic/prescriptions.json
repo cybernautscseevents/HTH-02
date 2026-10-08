@@ -1,0 +1,311 @@
+{
+  "_label": "SYNTHETIC / DEMO DATA. Exact text printed on each demo prescription image. Fictional hospital, doctor and patients. Not real patient data.",
+  "_format": "rows: printed top to bottom. A row is [style, text] or [style, left column, right column]. expected_orders: the DrugOrder fields read_orders must produce from the whole page text. case_id links to cases.json (patient, syndrome and culture as entered in the form).",
+  "cases": [
+    {
+      "case_id": "SYN-DEMO-01",
+      "image": "images/SYN-DEMO-01_concordant.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 01",
+          "Patient ID: SYN-DEMO-01"
+        ],
+        [
+          "field",
+          "Age: 42 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 62 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.8 mg/dL"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Amoxicillin 1 g PO TDS x 5 days"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "amoxicillin",
+          "dose_mg": 1000.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 5
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-02",
+      "image": "images/SYN-DEMO-02_wrong_antibiotic.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 02",
+          "Patient ID: SYN-DEMO-02"
+        ],
+        [
+          "field",
+          "Age: 35 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 74 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.9 mg/dL"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Ciprofloxacin 500 mg PO BD x 5 days"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "ciprofloxacin",
+          "dose_mg": 500.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-03",
+      "image": "images/SYN-DEMO-03_dose_duration.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 03",
+          "Patient ID: SYN-DEMO-03"
+        ],
+        [
+          "field",
+          "Age: 58 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 80 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 1.0 mg/dL"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Amoxicillin 500 mg PO TDS x 10 days"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "amoxicillin",
+          "dose_mg": 500.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 10
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-04",
+      "image": "images/SYN-DEMO-04_culture_resistance.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 04",
+          "Patient ID: SYN-DEMO-04"
+        ],
+        [
+          "field",
+          "Age: 29 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 55 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Uncomplicated cystitis"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Nitrofurantoin 100 mg PO BD x 5 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.7 mg/dL"
+        ],
+        [
+          "field",
+          "Urine culture (final report): Escherichia coli"
+        ],
+        [
+          "field",
+          "Urine culture susceptibility: nitrofurantoin resistant (R)"
+        ],
+        [
+          "field",
+          "Urine culture susceptibility: cotrimoxazole susceptible (S)"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "nitrofurantoin",
+          "dose_mg": 100.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-05",
+      "image": "images/SYN-DEMO-05_missing_info.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 05",
+          "Patient ID: SYN-DEMO-05"
+        ],
+        [
+          "field",
+          "Age: 67 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: not recorded at this visit",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: not recorded"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine not available"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Amoxicillin 1 g"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "amoxicillin",
+          "dose_mg": 1000.0,
+          "freq_per_day": null,
+          "route": null,
+          "duration_days": null
+        }
+      ]
+    }
+  ],
+  "page": {
+    "header": [
+      "SYNTHETIC DEMO TEACHING HOSPITAL (FICTIONAL)",
+      "Department of General Medicine - Outpatient Prescription"
+    ],
+    "footer": [
+      "Signature: Dr. Demo Physician (fictional)",
+      "SYNTHETIC DEMO DATA - not a real patient, doctor or prescription"
+    ]
+  }
+}

@@ -93,6 +93,7 @@ class EvaluationStatus(StrEnum):
 class ReviewAction(StrEnum):
     ACCEPT = "ACCEPT"
     MODIFY = "MODIFY"
+    REMOVE = "REMOVE"
     OVERRIDE = "OVERRIDE"
     ESCALATE = "ESCALATE"
 

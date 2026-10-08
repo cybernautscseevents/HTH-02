@@ -31,11 +31,11 @@ export const CulturePanel: React.FC<CulturePanelProps> = ({ specimen, currentAnt
   return (
     <div className="space-y-4">
       {/* Specimen header */}
-      <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#141724] border border-[#2d3148]">
+      <div className="flex items-center gap-3 px-4 py-3 rounded-lg border border-[#E2E1DC] bg-[#F4F3EF]">
         <FlaskConical className="w-4 h-4 text-indigo-400" />
         <div>
-          <p className="text-sm font-semibold text-slate-100">{specimenLabel} Culture</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-sm font-semibold text-[#1A1A1A]">{specimenLabel} Culture</p>
+          <p className="text-xs text-[#6B6A65]">
             Specimen {specimen.id}
             {specimen.collected_at && (
               <> · Collected {new Date(specimen.collected_at).toLocaleDateString('en-IN')}</>
@@ -62,11 +62,11 @@ export const CulturePanel: React.FC<CulturePanelProps> = ({ specimen, currentAnt
         })
 
         return (
-          <div key={isolate.id} className="rounded-xl border border-[#2d3148] overflow-hidden">
+          <div key={isolate.id} className="rounded-xl border border-[#E2E1DC] overflow-hidden">
             {/* Organism header */}
-            <div className="px-5 py-3 bg-[#1e2235] border-b border-[#2d3148] flex items-center gap-3">
+            <div className="px-5 py-3 border-b border-[#E2E1DC] bg-white flex items-center gap-3">
               <div>
-                <p className="text-base font-semibold text-slate-100 italic">{isolate.organism}</p>
+                <p className="text-base font-semibold text-[#1A1A1A] italic">{isolate.organism}</p>
                 {isolate.probable_contaminant && (
                   <span className="text-xs text-amber-300">Probable contaminant</span>
                 )}
@@ -88,21 +88,21 @@ export const CulturePanel: React.FC<CulturePanelProps> = ({ specimen, currentAnt
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#2d3148] bg-[#141724]">
-                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-[#6B6A65] uppercase tracking-wide">
                         Antibiotic
                       </th>
-                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-[#6B6A65] uppercase tracking-wide">
                         Result
                       </th>
-                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide hidden sm:table-cell">
+                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-[#6B6A65] uppercase tracking-wide hidden sm:table-cell">
                         Interpretation
                       </th>
-                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-slate-400 uppercase tracking-wide hidden md:table-cell">
+                      <th className="text-left px-5 py-2.5 text-xs font-semibold text-[#6B6A65] uppercase tracking-wide hidden md:table-cell">
                         Status
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#2d3148]">
+                  <tbody className="divide-y divide-[#E2E1DC]">
                     {isolate.susceptibilities.map((sus) => {
                       const isCurrent = currentAntibiotics.some(
                         (ab) => ab.toLowerCase() === sus.agent.toLowerCase()
@@ -114,7 +114,7 @@ export const CulturePanel: React.FC<CulturePanelProps> = ({ specimen, currentAnt
                         >
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-slate-200 capitalize">{sus.agent}</span>
+                              <span className="text-[#1A1A1A] capitalize">{sus.agent}</span>
                               {isCurrent && (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                                   Current
@@ -128,7 +128,7 @@ export const CulturePanel: React.FC<CulturePanelProps> = ({ specimen, currentAnt
                             </Badge>
                           </td>
                           <td className="px-5 py-3 hidden sm:table-cell">
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-[#6B6A65]">
                               {SIR_LABELS[sus.result] ?? sus.result}
                             </span>
                           </td>
@@ -156,8 +156,8 @@ export const CulturePanel: React.FC<CulturePanelProps> = ({ specimen, currentAnt
             {/* Step-down suggestion */}
             {resistantToCurrentAb && (
               <div className="px-5 py-3 bg-amber-500/5 border-t border-amber-500/20">
-                <p className="text-xs text-amber-300 font-medium mb-1">⚠ Antibiotic review recommended</p>
-                <p className="text-xs text-slate-400">
+                <p className="mb-1 text-xs font-medium text-[#8B5E00]">Antibiotic review recommended</p>
+                <p className="text-xs text-[#6B6A65]">
                   The current antibiotic may not adequately cover{' '}
                   <em>{isolate.organism}</em>. Review the susceptibility report and consider
                   switching to an agent marked Susceptible (S).
@@ -172,7 +172,7 @@ export const CulturePanel: React.FC<CulturePanelProps> = ({ specimen, currentAnt
       })}
 
       {specimen.isolates.length === 0 && (
-        <div className="text-center py-6 text-slate-400 text-sm">
+        <div className="text-center py-6 text-[#6B6A65] text-sm">
           {specimen.status === 'NO_GROWTH'
             ? 'No growth after 48 hours'
             : 'Results pending...'}

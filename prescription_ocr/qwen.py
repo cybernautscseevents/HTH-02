@@ -270,14 +270,14 @@ class QwenVlEngine:
         self.dtype = f"{str(dtype).removeprefix('torch.')}+{quantization}"
 
     def transcribe(self, image: str | Path | Any) -> OcrResult:
+        if isinstance(image, (str, Path)) and not Path(image).is_file():
+            raise QwenOcrError(f"image not found: {Path(image)}")
         try:
             from PIL import Image
         except ImportError as exc:
             raise QwenOcrError("Pillow is required for image input") from exc
         if isinstance(image, (str, Path)):
             path = Path(image)
-            if not path.is_file():
-                raise QwenOcrError(f"image not found: {path}")
             try:
                 with Image.open(path) as source:
                     opened = source.copy()

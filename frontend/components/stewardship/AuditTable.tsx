@@ -3,140 +3,55 @@
 import React, { useState } from 'react'
 import type { AuditEntry } from '@/types/stewardship'
 
-interface AuditTableProps {
-  entries: AuditEntry[]
-}
+interface AuditTableProps { entries: AuditEntry[] }
 
 const ACTION_STYLES: Record<string, string> = {
-  'review.ACCEPT': 'text-emerald-400',
-  'review.MODIFY': 'text-indigo-400',
-  'review.OVERRIDE': 'text-rose-400',
-  'review.ESCALATE': 'text-amber-400',
-  'evaluation.created': 'text-sky-400',
+  'review.ACCEPT': 'text-[#1A6B3C]',
+  'review.MODIFY': 'text-[#8B5E00]',
+  'review.REMOVE': 'text-[#8B1A1A]',
+  'review.OVERRIDE': 'text-[#8B1A1A]',
+  'review.ESCALATE': 'text-[#934B13]',
+  'evaluation.created': 'text-[#3730A3]',
 }
 
-function formatAction(action: string): string {
-  const parts = action.split('.')
-  if (parts.length < 2) return action
-  const [, verb] = parts
-  const labels: Record<string, string> = {
-    ACCEPT: 'Accepted suggestion',
-    MODIFY: 'Modified plan',
-    OVERRIDE: 'Overrode with reason',
-    ESCALATE: 'Escalated',
-    created: 'Evaluation created',
-  }
-  return labels[verb] ?? verb
+const LABELS: Record<string, string> = {
+  ACCEPT: 'Approved', MODIFY: 'Modified', REMOVE: 'Removed', OVERRIDE: 'Overridden', ESCALATE: 'Escalated', created: 'Evaluation created',
 }
 
-function formatEntity(entity: string, entityId: string): string {
-  if (entity === 'finding') {
-    const parts = entityId.split(':')
-    return parts[1] ?? entityId
-  }
-  if (entity === 'evaluation') return entityId
-  return `${entity}:${entityId}`
+function formatAction(action: string) {
+  return LABELS[action.split('.')[1]] ?? action
+}
+
+function formatEntity(entry: AuditEntry) {
+  if (entry.entity === 'finding') return entry.entity_id.split(':')[1] ?? entry.entity_id
+  return entry.entity_id
 }
 
 export const AuditTable: React.FC<AuditTableProps> = ({ entries }) => {
   const [filter, setFilter] = useState('')
-
-  const filtered = entries.filter((e) => {
-    const q = filter.toLowerCase()
-    return (
-      e.actor.toLowerCase().includes(q) ||
-      e.action.toLowerCase().includes(q) ||
-      e.entity_id.toLowerCase().includes(q) ||
-      JSON.stringify(e.payload).toLowerCase().includes(q)
-    )
-  })
+  const filtered = entries.filter((entry) => JSON.stringify(entry).toLowerCase().includes(filter.toLowerCase()))
 
   return (
-    <div className="space-y-4">
-      {/* Filter */}
-      <input
-        type="text"
-        placeholder="Search by actor, action, entity..."
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
-        className="w-full bg-[#1e2235] border border-[#2d3148] rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-      />
-
-      {/* Table */}
-      <div className="rounded-xl border border-[#2d3148] overflow-hidden">
+    <div className="space-y-3">
+      <input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Search actor, decision, rule, or note" className="w-full rounded-md border border-[#C8C7C0] bg-white px-3 py-2 text-sm outline-none focus:border-[#3730A3]" />
+      <div className="overflow-hidden rounded-[8px] border border-[#E2E1DC] bg-white">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#2d3148] bg-[#141724]">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                  Timestamp
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                  Actor
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                  Decision
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide hidden md:table-cell">
-                  Finding / Entity
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide hidden lg:table-cell">
-                  Reason
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide hidden xl:table-cell">
-                  Note
-                </th>
-              </tr>
+            <thead className="border-b border-[#E2E1DC] bg-[#F4F3EF] text-left text-[10px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">
+              <tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Actor</th><th className="px-4 py-3">Decision</th><th className="hidden px-4 py-3 md:table-cell">Rule / entity</th><th className="hidden px-4 py-3 lg:table-cell">Reason</th><th className="hidden px-4 py-3 xl:table-cell">Note</th></tr>
             </thead>
-            <tbody className="divide-y divide-[#2d3148]">
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">
-                    No audit entries found.
-                  </td>
-                </tr>
-              )}
-              {filtered.map((entry, i) => {
-                const date = new Date(entry.at)
-                const timestamp = date.toLocaleString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-                const payload = entry.payload as Record<string, string>
-
+            <tbody className="divide-y divide-[#E2E1DC]">
+              {filtered.length === 0 && <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-[#6B6A65]">No matching audit entries.</td></tr>}
+              {filtered.map((entry, index) => {
+                const payload = entry.payload as Record<string, string | null>
                 return (
-                  <tr key={i} className="hover:bg-[#2d3148]/30 transition-colors">
-                    <td className="px-5 py-3 whitespace-nowrap">
-                      <span className="text-xs font-mono text-slate-300">{timestamp}</span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="text-slate-200 text-xs">{entry.actor}</span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`text-xs font-semibold ${ACTION_STYLES[entry.action] ?? 'text-slate-300'}`}
-                      >
-                        {formatAction(entry.action)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 hidden md:table-cell">
-                      <span className="text-xs font-mono text-slate-400">
-                        {formatEntity(entry.entity, entry.entity_id)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 hidden lg:table-cell">
-                      <span className="text-xs text-slate-400">
-                        {payload.reason_code
-                          ? payload.reason_code.replace(/_/g, ' ')
-                          : '—'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 hidden xl:table-cell max-w-xs">
-                      <span className="text-xs text-slate-400 line-clamp-2">{payload.note ?? '—'}</span>
-                    </td>
+                  <tr key={`${entry.at}-${index}`} className="hover:bg-[#FAFAF8]">
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-[#6B6A65]">{new Date(entry.at).toLocaleString('en-IN')}</td>
+                    <td className="px-4 py-3 text-xs text-[#1A1A1A]">{entry.actor}</td>
+                    <td className={`px-4 py-3 text-xs font-medium ${ACTION_STYLES[entry.action] ?? 'text-[#1A1A1A]'}`}>{formatAction(entry.action)}</td>
+                    <td className="hidden px-4 py-3 font-mono text-[11px] text-[#6B6A65] md:table-cell">{formatEntity(entry)}</td>
+                    <td className="hidden px-4 py-3 text-xs text-[#6B6A65] lg:table-cell">{payload.reason_code?.replace(/_/g, ' ') ?? '—'}</td>
+                    <td className="hidden max-w-xs px-4 py-3 text-xs text-[#6B6A65] xl:table-cell">{payload.note ?? '—'}</td>
                   </tr>
                 )
               })}

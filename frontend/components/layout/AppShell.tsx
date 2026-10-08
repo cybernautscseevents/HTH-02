@@ -1,52 +1,50 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { getHealth, getTimeoutDue } from '@/lib/api'
+import { getHealth, getStats } from '@/lib/api'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 
-export default function ShellLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [role, setRole] = useState<'doctor' | 'pharmacist'>('pharmacist')
-  // Shown only once the API has answered; nothing is displayed for a failed call.
+  const [pendingCount, setPendingCount] = useState(0)
   const [timeoutCount, setTimeoutCount] = useState(0)
   const [rulesetVersion, setRulesetVersion] = useState<string | null>(null)
 
   useEffect(() => {
-    getTimeoutDue()
-      .then((due) => setTimeoutCount(due.length))
-      .catch(() => setTimeoutCount(0))
+    getStats()
+      .then((stats) => {
+        setPendingCount(stats.pending_review_count)
+        setTimeoutCount(stats.timeout_due_count)
+      })
+      .catch(() => {
+        setPendingCount(0)
+        setTimeoutCount(0)
+      })
     getHealth()
-      .then((h) => setRulesetVersion(h.ruleset_version))
+      .then((health) => setRulesetVersion(health.ruleset_version))
       .catch(() => setRulesetVersion(null))
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0f1117] flex overflow-hidden">
-      {/* Sidebar */}
+    <div className="flex min-h-screen overflow-hidden bg-[#FAFAF8]">
       <Sidebar
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
         timeoutCount={timeoutCount}
+        pendingCount={pendingCount}
         rulesetVersion={rulesetVersion}
       />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
         <TopBar
           onMenuClick={() => setMobileOpen(true)}
           role={role}
           onRoleChange={setRole}
           rulesetVersion={rulesetVersion}
         />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#0f1117]">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {children}
-          </div>
+        <main className="flex-1 overflow-y-auto bg-[#FAFAF8] p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl space-y-6">{children}</div>
         </main>
       </div>
     </div>

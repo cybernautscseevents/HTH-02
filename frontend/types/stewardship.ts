@@ -41,7 +41,7 @@ export type Trigger =
 
 export type EvaluationStatus = 'OK' | 'FLAGGED' | 'INCOMPLETE'
 
-export type ReviewAction = 'ACCEPT' | 'MODIFY' | 'OVERRIDE' | 'ESCALATE'
+export type ReviewAction = 'ACCEPT' | 'MODIFY' | 'REMOVE' | 'OVERRIDE' | 'ESCALATE'
 
 export type SuggestedAction =
   | 'switch'
@@ -260,6 +260,11 @@ export interface EpisodeRequest {
   syndrome_code?: string | null
   diagnosis_text?: string | null
   prescription: string
+  confirmed_drugs?: {
+    order_id: string
+    raw_text: string
+    generic: string
+  }[]
   cultures: CultureInput[]
 }
 
@@ -291,13 +296,13 @@ export interface ExtractedDrug {
   id: string
   raw_text: string
   generic?: string | null
-  confidence: number // 0-1
   norm_status: NormStatus
   norm_candidates: string[]
   dose_mg?: number | null
   freq_per_day?: number | null
   route?: Route | null
   duration_days?: number | null
+  excluded?: boolean
 }
 
 export interface OCRResult {
@@ -306,6 +311,12 @@ export interface OCRResult {
   drugs: ExtractedDrug[]
   processing_time_ms: number
   model?: string
+  warnings?: string[]
+}
+
+export interface ParsePrescriptionResult {
+  orders: ExtractedDrug[]
+  warnings: string[]
 }
 
 // ─── Dashboard KPIs (frontend-specific) ───────────────────────────────────────

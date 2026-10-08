@@ -1,21 +1,19 @@
 'use client'
 
-import React, { useState } from 'react'
-import { CheckCircle2, Edit3, AlertOctagon, ChevronDown, Loader2, Check } from 'lucide-react'
-import type { Finding, ReviewAction, ReasonCode } from '@/types/stewardship'
+import React, { useEffect, useState } from 'react'
+import { CheckCircle2, ChevronDown, Edit3, Trash2 } from 'lucide-react'
+import type { Finding, ReasonCode, Review, ReviewAction } from '@/types/stewardship'
 import { REASON_CODES } from '@/types/stewardship'
 import { Button } from '@/components/ui/Button'
 
 interface ReviewPanelProps {
   finding: Finding
-  evaluationId: string
-  episodeId: string
   reviewer: string
+  review?: Review
   onSubmit?: (action: ReviewAction, reasonCode?: ReasonCode, note?: string) => Promise<void>
-  disabled?: boolean
 }
 
-const REASON_LABELS: Record<string, string> = {
+const reasonLabels: Record<string, string> = {
   CLINICAL_JUDGEMENT: 'Clinical judgement',
   CULTURE_PENDING: 'Culture pending',
   PATIENT_FACTOR: 'Patient-specific factor',
@@ -23,219 +21,156 @@ const REASON_LABELS: Record<string, string> = {
   TIMEOUT_DONE: '48-hour review completed',
 }
 
-type ReviewState = 'idle' | 'submitting' | 'done'
+const decisionStyles: Record<string, { label: string; box: string; text: string }> = {
+  ACCEPT: { label: 'Approved', box: 'border-[#A9CFB7] bg-[#F0FBF4]', text: 'text-[#1A6B3C]' },
+  MODIFY: { label: 'Modified', box: 'border-[#E8D5A7] bg-[#FFF9EB]', text: 'text-[#8B5E00]' },
+  REMOVE: { label: 'Removed', box: 'border-[#D9A4A4] bg-[#FDF2F2]', text: 'text-[#8B1A1A]' },
+  OVERRIDE: { label: 'Overridden', box: 'border-[#D9A4A4] bg-[#FDF2F2]', text: 'text-[#8B1A1A]' },
+  ESCALATE: { label: 'Escalated', box: 'border-[#E9BE91] bg-[#FFF5EB]', text: 'text-[#934B13]' },
+}
 
 export const ReviewPanel: React.FC<ReviewPanelProps> = ({
   finding,
-  evaluationId,
-  episodeId,
   reviewer,
+  review,
   onSubmit,
-  disabled = false,
 }) => {
-  const [selectedAction, setSelectedAction] = useState<ReviewAction | null>(null)
-  const [reasonCode, setReasonCode] = useState<ReasonCode | ''>('')
+  const [action, setAction] = useState<ReviewAction | null>(null)
+  const [reason, setReason] = useState<ReasonCode | ''>('')
   const [note, setNote] = useState('')
-  const [state, setState] = useState<ReviewState>('idle')
-  const [doneAction, setDoneAction] = useState<ReviewAction | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submittedAction, setSubmittedAction] = useState<ReviewAction | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const cannotAssess = finding.outcome === 'CANNOT_ASSESS'
+  useEffect(() => {
+    if (review) setSubmittedAction(review.action)
+  }, [review])
 
-  const handleSubmit = async () => {
-    if (!selectedAction) return
-    if (selectedAction === 'OVERRIDE' && !reasonCode) return
-
-    setState('submitting')
-    try {
-      await onSubmit?.(
-        selectedAction,
-        reasonCode || undefined,
-        note || undefined,
-      )
-      setDoneAction(selectedAction)
-      setState('done')
-    } catch {
-      setState('idle')
-    }
-  }
-
-  if (state === 'done') {
+  const decision = review?.action ?? submittedAction
+  if (decision) {
+    const style = decisionStyles[decision]
     return (
-      <div className="flex items-center gap-2 py-2">
-        <Check className="w-4 h-4 text-emerald-400" />
-        <span className="text-sm text-emerald-400 font-medium">
-          Review recorded: {doneAction}
-        </span>
-        <button
-          onClick={() => {
-            setState('idle')
-            setSelectedAction(null)
-            setReasonCode('')
-            setNote('')
-          }}
-          className="ml-2 text-xs text-slate-400 hover:text-slate-200 underline transition-colors"
-        >
-          Undo
-        </button>
+      <div className={`rounded-md border px-4 py-3 ${style.box}`}>
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className={`h-4 w-4 ${style.text}`} />
+          <span className={`text-sm font-medium ${style.text}`}>{style.label}</span>
+          <span className="ml-auto text-[10px] text-[#6B6A65]">{review?.reviewer ?? reviewer}</span>
+        </div>
+        {(review?.reason_code || review?.note) && (
+          <p className="mt-1.5 text-xs text-[#6B6A65]">
+            {review.reason_code ? reasonLabels[review.reason_code] ?? review.reason_code : ''}
+            {review.reason_code && review.note ? ' — ' : ''}
+            {review.note ?? ''}
+          </p>
+        )}
+        <p className="mt-2 text-[10px] text-[#6B6A65]">
+          Recorded in the audit log. Apply medication changes in the prescribing system.
+        </p>
       </div>
     )
   }
 
+  const needsReason = action === 'MODIFY' || action === 'REMOVE'
+  const cannotApprove = finding.outcome === 'CANNOT_ASSESS'
+
+  const submit = async () => {
+    if (!action || (needsReason && !reason)) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await onSubmit?.(action, reason || undefined, note || undefined)
+      setSubmittedAction(action)
+      setAction(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not record the review.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className="space-y-3">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-        Pharmacist Review
-      </p>
-
-      {/* Action buttons */}
+      <div>
+        <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Pharmacist decision</p>
+        <p className="mt-0.5 text-xs text-[#6B6A65]">Choose what should happen to this recommendation.</p>
+      </div>
       <div className="flex flex-wrap gap-2">
-        {/* Accept — disabled for CANNOT_ASSESS */}
         <button
-          disabled={disabled || cannotAssess}
-          onClick={() => setSelectedAction(selectedAction === 'ACCEPT' ? null : 'ACCEPT')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-            selectedAction === 'ACCEPT'
-              ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-              : 'border-[#3b4263] text-slate-300 hover:border-emerald-500/30 hover:text-emerald-300'
-          } disabled:opacity-40 disabled:cursor-not-allowed`}
-          title={cannotAssess ? 'Cannot accept a CANNOT_ASSESS finding. Provide missing input or override.' : ''}
+          disabled={cannotApprove}
+          onClick={() => setAction(action === 'ACCEPT' ? null : 'ACCEPT')}
+          className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${
+            action === 'ACCEPT' ? 'border-[#1A6B3C] bg-[#F0FBF4] text-[#1A6B3C]' : 'border-[#C8C7C0] bg-white text-[#1A1A1A]'
+          } disabled:cursor-not-allowed disabled:opacity-40`}
         >
-          <CheckCircle2 className="w-4 h-4" />
-          Accept suggestion
+          <CheckCircle2 className="h-3.5 w-3.5" /> Approve
         </button>
-
         <button
-          disabled={disabled}
-          onClick={() => setSelectedAction(selectedAction === 'MODIFY' ? null : 'MODIFY')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-            selectedAction === 'MODIFY'
-              ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
-              : 'border-[#3b4263] text-slate-300 hover:border-indigo-500/30 hover:text-indigo-300'
-          } disabled:opacity-40 disabled:cursor-not-allowed`}
+          onClick={() => setAction(action === 'MODIFY' ? null : 'MODIFY')}
+          className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${
+            action === 'MODIFY' ? 'border-[#D8B15B] bg-[#FFF9EB] text-[#8B5E00]' : 'border-[#C8C7C0] bg-white text-[#1A1A1A]'
+          }`}
         >
-          <Edit3 className="w-4 h-4" />
-          Modify plan
+          <Edit3 className="h-3.5 w-3.5" /> Modify
         </button>
-
         <button
-          disabled={disabled}
-          onClick={() => setSelectedAction(selectedAction === 'OVERRIDE' ? null : 'OVERRIDE')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-            selectedAction === 'OVERRIDE'
-              ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
-              : 'border-[#3b4263] text-slate-300 hover:border-rose-500/30 hover:text-rose-300'
-          } disabled:opacity-40 disabled:cursor-not-allowed`}
+          onClick={() => setAction(action === 'REMOVE' ? null : 'REMOVE')}
+          className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${
+            action === 'REMOVE' ? 'border-[#B95A5A] bg-[#FDF2F2] text-[#8B1A1A]' : 'border-[#C8C7C0] bg-white text-[#1A1A1A]'
+          }`}
         >
-          <AlertOctagon className="w-4 h-4" />
-          Override with reason
+          <Trash2 className="h-3.5 w-3.5" /> Remove
         </button>
       </div>
 
-      {/* Cannot assess notice */}
-      {cannotAssess && (
-        <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-          This finding cannot be accepted — missing information must be supplied (Modify) or the finding overridden with a documented reason.
+      {cannotApprove && (
+        <p className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] px-3 py-2 text-xs text-[#8B5E00]">
+          Missing information cannot be approved. Supply it, modify the plan, or remove the order with a reason.
         </p>
       )}
 
-      {/* Override/Modify expanded form */}
-      {(selectedAction === 'OVERRIDE' || selectedAction === 'MODIFY') && (
-        <div className="space-y-3 pt-2">
-          {/* Reason code (required for OVERRIDE) */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Reason code {selectedAction === 'OVERRIDE' && <span className="text-rose-400">*</span>}
+      {action && (
+        <div className="space-y-3 border-t border-[#E2E1DC] pt-3">
+          {needsReason && (
+            <label className="block text-xs text-[#6B6A65]">
+              Reason <span className="text-[#8B1A1A]">*</span>
+              <span className="relative mt-1.5 block">
+                <select
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value as ReasonCode)}
+                  className="w-full appearance-none rounded-md border border-[#C8C7C0] bg-white px-3 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#3730A3]"
+                >
+                  <option value="">Select reason...</option>
+                  {REASON_CODES.filter((code) => code !== 'TIMEOUT_DONE').map((code) => (
+                    <option key={code} value={code}>{reasonLabels[code]}</option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B6A65]" />
+              </span>
             </label>
-            <div className="relative">
-              <select
-                value={reasonCode}
-                onChange={(e) => setReasonCode(e.target.value as ReasonCode)}
-                className="w-full appearance-none bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-              >
-                <option value="">Select reason...</option>
-                {REASON_CODES.filter((r) => r !== 'TIMEOUT_DONE').map((code) => (
-                  <option key={code} value={code}>
-                    {REASON_LABELS[code]}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
-
-          {/* Free-text note */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Justification / note
-            </label>
+          )}
+          <label className="block text-xs text-[#6B6A65]">
+            Clinical note {action === 'ACCEPT' && <span className="text-[#8B8982]">(optional)</span>}
             <textarea
               value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Document your clinical reasoning..."
-              rows={3}
-              className="w-full bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+              onChange={(event) => setNote(event.target.value)}
+              rows={2}
+              className="mt-1.5 w-full resize-y rounded-md border border-[#C8C7C0] bg-white px-3 py-2 text-sm text-[#1A1A1A] outline-none focus:border-[#3730A3]"
+              placeholder="Document the decision for the audit trail"
             />
-          </div>
-        </div>
-      )}
-
-      {/* Note for ACCEPT */}
-      {selectedAction === 'ACCEPT' && (
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">
-            Optional note
           </label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Add context for the audit log..."
-            rows={2}
-            className="w-full bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
-          />
-        </div>
-      )}
-
-      {/* Submit */}
-      {selectedAction && (
-        <div className="flex items-center gap-3 pt-1">
-          <Button
-            variant={
-              selectedAction === 'ACCEPT'
-                ? 'success'
-                : selectedAction === 'OVERRIDE'
-                ? 'danger'
-                : 'primary'
-            }
-            size="sm"
-            isLoading={state === 'submitting'}
-            disabled={selectedAction === 'OVERRIDE' && !reasonCode}
-            onClick={handleSubmit}
-          >
-            {state === 'submitting' ? (
-              'Submitting...'
-            ) : selectedAction === 'ACCEPT' ? (
-              'Confirm acceptance'
-            ) : selectedAction === 'MODIFY' ? (
-              'Record modification'
-            ) : (
-              'Submit override'
-            )}
-          </Button>
-          <button
-            onClick={() => {
-              setSelectedAction(null)
-              setReasonCode('')
-              setNote('')
-            }}
-            className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            Cancel
-          </button>
-          {reviewer && (
-            <span className="text-[11px] text-slate-500 ml-auto">
-              as {reviewer}
-            </span>
-          )}
+          {error && <p className="text-xs text-[#8B1A1A]">{error}</p>}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={action === 'ACCEPT' ? 'success' : action === 'MODIFY' ? 'warning' : 'danger'}
+              isLoading={submitting}
+              disabled={needsReason && !reason}
+              onClick={submit}
+            >
+              {action === 'ACCEPT' ? 'Approve finding' : action === 'MODIFY' ? 'Record modification' : 'Record removal'}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setAction(null); setReason(''); setNote('') }}>Cancel</Button>
+          </div>
         </div>
       )}
     </div>

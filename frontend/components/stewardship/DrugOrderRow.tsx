@@ -1,141 +1,115 @@
 'use client'
 
-import React from 'react'
-import { CheckCircle2, AlertTriangle, XCircle, HelpCircle } from 'lucide-react'
+import React, { useState } from 'react'
+import { AlertTriangle, CheckCircle2, CircleSlash2, XCircle } from 'lucide-react'
 import type { ExtractedDrug } from '@/types/stewardship'
-import { Badge } from '@/components/ui/Badge'
 
 interface DrugOrderRowProps {
   drug: ExtractedDrug
-  onConfirm?: (id: string, confirmed: string) => void
+  onConfirm?: (id: string, generic: string) => void
+  onExclude?: (id: string) => void
 }
 
-const ROUTE_LABELS: Record<string, string> = {
-  PO: 'Oral',
-  IV: 'IV',
-  IM: 'IM',
-}
+export const DrugOrderRow: React.FC<DrugOrderRowProps> = ({ drug, onConfirm, onExclude }) => {
+  const [manualGeneric, setManualGeneric] = useState('')
+  const ambiguous = drug.norm_status === 'AMBIGUOUS'
+  const unmatched = drug.norm_status === 'NO_MATCH'
 
-export const DrugOrderRow: React.FC<DrugOrderRowProps> = ({ drug, onConfirm }) => {
-  const isAmbiguous = drug.norm_status === 'AMBIGUOUS'
-  const isNoMatch = drug.norm_status === 'NO_MATCH'
-  const confidencePct = Math.round(drug.confidence * 100)
+  if (drug.excluded) {
+    return (
+      <div className="flex items-center gap-3 rounded-md border border-[#E2E1DC] bg-[#F4F3EF] p-3 text-[#6B6A65]">
+        <CircleSlash2 className="h-4 w-4" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-medium">Excluded from antibiotic stewardship</p>
+          <p className="truncate font-mono text-[10px]">{drug.raw_text}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
-      className={`p-4 rounded-xl border transition-all ${
-        isAmbiguous
-          ? 'border-amber-500/30 bg-amber-500/5'
-          : isNoMatch
-          ? 'border-rose-500/30 bg-rose-500/5'
-          : 'border-[#2d3148] bg-[#1e2235]'
+      className={`rounded-md border p-4 ${
+        ambiguous
+          ? 'border-[#E8D5A7] bg-[#FFF9EB]'
+          : unmatched
+          ? 'border-[#D9A4A4] bg-[#FDF2F2]'
+          : 'border-[#E2E1DC] bg-white'
       }`}
     >
       <div className="flex items-start gap-3">
-        {/* Status icon */}
-        <div className="mt-0.5 shrink-0">
-          {drug.norm_status === 'ACCEPTED' || drug.norm_status === 'CONFIRMED' ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          ) : isAmbiguous ? (
-            <AlertTriangle className="w-5 h-5 text-amber-400" />
-          ) : (
-            <XCircle className="w-5 h-5 text-rose-400" />
-          )}
-        </div>
+        {drug.norm_status === 'ACCEPTED' || drug.norm_status === 'CONFIRMED' ? (
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#1A6B3C]" />
+        ) : ambiguous ? (
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#8B5E00]" />
+        ) : (
+          <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#8B1A1A]" />
+        )}
 
-        <div className="flex-1 min-w-0">
-          {/* Drug name header */}
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            {drug.generic ? (
-              <span className="text-sm font-semibold text-slate-100 capitalize">{drug.generic}</span>
-            ) : (
-              <span className="text-sm font-semibold text-slate-400 italic">Unknown drug</span>
-            )}
-            <Badge variant={drug.norm_status} size="sm">
-              {drug.norm_status === 'ACCEPTED'
-                ? 'Matched'
-                : drug.norm_status === 'CONFIRMED'
-                ? 'Confirmed'
-                : drug.norm_status === 'AMBIGUOUS'
-                ? 'Ambiguous'
-                : 'No match'}
-            </Badge>
-
-            {/* Confidence pill */}
-            <span
-              className={`text-[11px] font-mono px-2 py-0.5 rounded-full border ${
-                drug.confidence >= 0.85
-                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
-                  : drug.confidence >= 0.6
-                  ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
-                  : 'bg-rose-500/10 text-rose-300 border-rose-500/20'
-              }`}
-            >
-              {confidencePct}% confidence
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium capitalize text-[#1A1A1A]">
+              {drug.generic ?? (ambiguous ? 'Confirmation required' : 'Unknown medication')}
+            </p>
+            <span className="rounded-full border border-current/20 px-2 py-0.5 text-[10px] font-medium text-[#6B6A65]">
+              {drug.norm_status.replace('_', ' ')}
             </span>
           </div>
+          <p className="mt-1 font-mono text-xs text-[#6B6A65]">“{drug.raw_text}”</p>
 
-          {/* Raw text → normalized */}
-          <p className="text-xs text-slate-400">
-            <span className="font-mono text-slate-500">&ldquo;{drug.raw_text}&rdquo;</span>
-          </p>
-
-          {/* Drug details chips */}
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {drug.dose_mg && (
-              <span className="text-[11px] px-2 py-0.5 rounded bg-[#141724] border border-[#2d3148] text-slate-300 font-mono">
-                {drug.dose_mg >= 1000 ? `${drug.dose_mg / 1000} g` : `${drug.dose_mg} mg`}
-              </span>
-            )}
-            {drug.freq_per_day && (
-              <span className="text-[11px] px-2 py-0.5 rounded bg-[#141724] border border-[#2d3148] text-slate-300">
-                {drug.freq_per_day}×/day
-              </span>
-            )}
-            {drug.route && (
-              <span className="text-[11px] px-2 py-0.5 rounded bg-[#141724] border border-[#2d3148] text-slate-300">
-                {ROUTE_LABELS[drug.route] ?? drug.route}
-              </span>
-            )}
-            {drug.duration_days && (
-              <span className="text-[11px] px-2 py-0.5 rounded bg-[#141724] border border-[#2d3148] text-slate-300">
-                {drug.duration_days} days
-              </span>
-            )}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {drug.dose_mg && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.dose_mg >= 1000 ? `${drug.dose_mg / 1000} g` : `${drug.dose_mg} mg`}</span>}
+            {drug.freq_per_day && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.freq_per_day}×/day</span>}
+            {drug.route && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.route}</span>}
+            {drug.duration_days && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.duration_days} days</span>}
           </div>
 
-          {/* Ambiguous: show candidates + confirmation UI */}
-          {isAmbiguous && drug.norm_candidates.length > 0 && (
-            <div className="mt-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-              <div className="flex items-center gap-1.5 mb-2">
-                <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-xs font-semibold text-amber-300">
-                  Confirmation required — multiple matches found
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
+          {ambiguous && drug.norm_candidates.length > 0 && (
+            <div className="mt-3">
+              <p className="text-[11px] font-medium text-[#8B5E00]">Select the drug shown in the prescription:</p>
+              <div className="mt-2 flex flex-wrap gap-2">
                 {drug.norm_candidates.map((candidate) => (
                   <button
                     key={candidate}
+                    type="button"
                     onClick={() => onConfirm?.(drug.id, candidate)}
-                    className="text-xs px-2.5 py-1 rounded-lg border border-amber-500/30 text-amber-300 hover:bg-amber-500/20 transition-colors font-mono capitalize"
+                    className="rounded-md border border-[#D8B15B] bg-white px-2.5 py-1.5 text-xs capitalize text-[#8B5E00] hover:bg-[#FFF2D1]"
                   >
                     {candidate}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-[10px] text-amber-400/70">
-                Select the correct drug to proceed with evaluation.
-              </p>
             </div>
           )}
 
-          {/* No match: manual entry needed */}
-          {isNoMatch && (
-            <div className="mt-3 p-3 rounded-lg bg-rose-500/5 border border-rose-500/20">
-              <p className="text-xs text-rose-300">
-                Drug could not be matched. Manual review required before evaluation.
+          {unmatched && (
+            <div className="mt-3 space-y-2 border-t border-[#E8C4C4] pt-3">
+              <p className="text-xs text-[#8B1A1A]">
+                The antibiotic catalog could not identify this line. Confirm a catalog generic only after checking the source, or exclude it if it is not an antibiotic.
               </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={manualGeneric}
+                  onChange={(event) => setManualGeneric(event.target.value)}
+                  placeholder="Confirmed antibiotic generic"
+                  className="min-w-0 flex-1 rounded-md border border-[#D9A4A4] bg-white px-2.5 py-1.5 text-xs text-[#1A1A1A] outline-none focus:border-[#8B1A1A]"
+                />
+                <button
+                  type="button"
+                  disabled={!manualGeneric.trim()}
+                  onClick={() => onConfirm?.(drug.id, manualGeneric.trim())}
+                  className="rounded-md border border-[#D9A4A4] bg-white px-3 py-1.5 text-xs font-medium text-[#8B1A1A] disabled:opacity-40"
+                >
+                  Confirm antibiotic
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onExclude?.(drug.id)}
+                  className="rounded-md border border-[#C8C7C0] bg-white px-3 py-1.5 text-xs font-medium text-[#1A1A1A] hover:bg-[#F4F3EF]"
+                >
+                  Not an antibiotic
+                </button>
+              </div>
             </div>
           )}
         </div>

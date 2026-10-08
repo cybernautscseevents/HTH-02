@@ -1,11 +1,5 @@
 import React from 'react'
-import type {
-  EvaluationStatus,
-  NormStatus,
-  Outcome,
-  Severity,
-  SIR,
-} from '@/types/stewardship'
+import type { EvaluationStatus, NormStatus, Outcome, Severity, SIR } from '@/types/stewardship'
 
 export type BadgeVariant =
   | Severity
@@ -31,66 +25,49 @@ export const Badge: React.FC<BadgeProps> = ({
   size = 'md',
   className = '',
 }) => {
-  const sizeStyles = {
-    sm: 'text-[11px] px-2 py-0.5 font-medium',
-    md: 'text-xs px-2.5 py-1 font-medium',
+  const sizes = {
+    sm: 'px-2 py-0.5 text-[10px]',
+    md: 'px-2.5 py-1 text-[11px]',
   }
-
-  const getVariantStyles = (v: string): string => {
-    switch (v.toUpperCase()) {
-      // Severity
+  const styles = (value: string) => {
+    switch (value.toUpperCase()) {
       case 'HIGH':
-        return 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-      case 'MODERATE':
-        return 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-      case 'LOW':
-        return 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
-      case 'INFO':
-        return 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
-      // Outcome / EvaluationStatus
       case 'FLAG':
       case 'FLAGGED':
-        return 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-      case 'PASS':
-      case 'OK':
-        return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-      case 'CANNOT_ASSESS':
-        return 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-      case 'INCOMPLETE':
-        return 'bg-orange-500/15 text-orange-400 border border-orange-500/30'
-      // NormStatus
-      case 'ACCEPTED':
-      case 'CONFIRMED':
-        return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-      case 'AMBIGUOUS':
-        return 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
       case 'NO_MATCH':
-        return 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-      // SIR
-      case 'S':
-        return 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+      case 'R':
+        return 'border-[#D9A4A4] bg-[#FDF2F2] text-[#8B1A1A]'
+      case 'MODERATE':
+      case 'CANNOT_ASSESS':
+      case 'AMBIGUOUS':
       case 'I':
       case 'SDD':
-        return 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-      case 'R':
-        return 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-      // Roles
+        return 'border-[#E8D5A7] bg-[#FFF9EB] text-[#8B5E00]'
+      case 'LOW':
+      case 'INFO':
+        return 'border-[#B9C9E8] bg-[#F2F6FD] text-[#294F85]'
+      case 'PASS':
+      case 'OK':
+      case 'ACCEPTED':
+      case 'CONFIRMED':
+      case 'S':
+        return 'border-[#A9CFB7] bg-[#F0FBF4] text-[#1A6B3C]'
+      case 'INCOMPLETE':
+        return 'border-[#E9BE91] bg-[#FFF5EB] text-[#934B13]'
       case 'PHARMACIST':
-        return 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+        return 'border-[#C7C3E8] bg-[#F4F2FC] text-[#3730A3]'
       case 'DOCTOR':
-        return 'bg-sky-500/15 text-sky-400 border border-sky-500/30'
+        return 'border-[#B9C9E8] bg-[#F2F6FD] text-[#294F85]'
       default:
-        return 'bg-slate-800 text-slate-300 border border-slate-700'
+        return 'border-[#E2E1DC] bg-[#F4F3EF] text-[#6B6A65]'
     }
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full capitalize whitespace-nowrap ${sizeStyles[size]} ${getVariantStyles(
-        variant
-      )} ${className}`}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border font-medium capitalize ${sizes[size]} ${styles(variant)} ${className}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-80" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
       {children}
     </span>
   )
