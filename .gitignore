@@ -53,3 +53,8 @@ node_modules/
 # Hand-made labels transcribe those unlicensed images line by line; keep them local too
 data/ocr_test/*/ground_truth.csv
 data/ocr_test/*/adjudication.csv
+
+# PhysioNet demo tables for the typed prescription test: download locally (see its README)
+data/typed_rx_test/mimic/
+data/typed_rx_test/eicu/
+data/typed_rx_test/results/
