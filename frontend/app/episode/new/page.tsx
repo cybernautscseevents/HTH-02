@@ -103,6 +103,17 @@ export default function EpisodeNewPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    const ageYears = Number(age)
+    if (!age.trim() || !Number.isInteger(ageYears) || ageYears < 0 || ageYears > 120) {
+      setError('Enter the patient age in whole years (0-120).')
+      return
+    }
+    if (!syndromeCode) {
+      setError(
+        'Select the syndrome. It is never guessed from the diagnosis text, and the guideline checks need it.'
+      )
+      return
+    }
     if (!prescription.trim()) {
       setError('Enter the prescription: one medicine per line, e.g. "Ceftriaxone 2 g IV OD for 7 days".')
       return
@@ -118,7 +129,7 @@ export default function EpisodeNewPage() {
       const episode = await createEpisode({
         patient: {
           id: patientId || `PT-${Date.now()}`,
-          age_years: parseInt(age) || 30,
+          age_years: ageYears,
           sex,
           weight_kg: weight ? parseFloat(weight) : null,
           serum_creatinine_mg_dl: creatinine ? parseFloat(creatinine) : null,
@@ -126,7 +137,7 @@ export default function EpisodeNewPage() {
           allergies: allergyStatus === 'KNOWN' ? allergies.split(',').map((a) => a.trim()).filter(Boolean) : [],
         },
         setting,
-        syndrome_code: syndromeCode || null,
+        syndrome_code: syndromeCode,
         diagnosis_text: diagnosisText || null,
         prescription,
         // "Not sent" is sent as no culture at all: unknown, never negative.
@@ -294,9 +305,12 @@ export default function EpisodeNewPage() {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-slate-500 mt-1">
+                Chosen by you; the diagnosis text below is never used to pick it.
+              </p>
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel label="Diagnosis (free text)" />
+              <FieldLabel label="Diagnosis notes (optional)" />
               <textarea
                 className={`${inputClass} resize-none`}
                 rows={3}
@@ -327,7 +341,7 @@ export default function EpisodeNewPage() {
         {/* Culture */}
         <Card
           title="Culture Information"
-          subtitle="Microbiological specimen results (if available)"
+          subtitle="Optional: microbiological specimen results, if available"
         >
           <div className="space-y-4">
             <div>

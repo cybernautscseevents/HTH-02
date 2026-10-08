@@ -115,7 +115,7 @@ export default function DashboardPage() {
           >
             Refresh
           </Button>
-          <Link href="/upload">
+          <Link href="/episode/new">
             <Button variant="primary" size="sm" leftIcon={<ClipboardList className="w-4 h-4" />}>
               New Prescription
             </Button>
@@ -237,11 +237,11 @@ export default function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/upload">
+        <Link href="/episode/new">
           <div className="p-5 rounded-xl border border-indigo-500/30 bg-indigo-500/5 hover:bg-indigo-500/10 transition-all cursor-pointer group">
             <ClipboardList className="w-6 h-6 text-indigo-400 mb-3" />
             <p className="text-sm font-semibold text-slate-100">New Prescription</p>
-            <p className="text-xs text-slate-400 mt-1">Upload &amp; evaluate a new prescription</p>
+            <p className="text-xs text-slate-400 mt-1">Type &amp; evaluate a new prescription</p>
           </div>
         </Link>
         <Link href="/timeout">

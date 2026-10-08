@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
+  ClipboardList,
   Upload,
   Clock,
   FlaskConical,
@@ -23,7 +24,7 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'New Prescription', href: '/upload', icon: Upload },
+  { name: 'New Prescription', href: '/episode/new', icon: ClipboardList },
   { name: 'Culture & Resistance', href: '/culture', icon: FlaskConical },
   { name: 'Audit Log', href: '/audit', icon: ScrollText },
 ]
@@ -154,6 +155,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   Ruleset v1.0.0 · ICMR/NCDC 2023
                 </div>
               </div>
+              {/* Image OCR is kept for later work and is not part of the typed-prescription demo. */}
+              <Link
+                href="/upload"
+                onClick={() => setMobileOpen(false)}
+                className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-[#1e2235]"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Image OCR (experimental)</span>
+              </Link>
             </div>
           </div>
         </div>
