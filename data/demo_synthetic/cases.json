@@ -1,0 +1,199 @@
+{
+  "_label": "SYNTHETIC / DEMO DATA. Invented patients for manual entry through the frontend. Not real patient data. Not used by the engine, tests or any loader.",
+  "_format": "Each case's 'request' is the exact body of POST /api/episodes (and POST /api/evaluate). 'expected' lists the rule findings the current engine returns for it.",
+  "cases": [
+    {
+      "case_id": "SYN-DEMO-01",
+      "demonstrates": "Guideline-concordant prescription: first-line drug, guideline dose and duration",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-01",
+          "age_years": 42,
+          "sex": "F",
+          "weight_kg": 62,
+          "serum_creatinine_mg_dl": 0.8,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "syndrome_code": "cap_opd_no_comorbidity",
+        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
+        "prescription": "Tab Amoxicillin 1 g PO TDS x 5 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "OK",
+        "findings": {
+          "R0_IDENTIFIED": "PASS",
+          "R1_INDICATION": "PASS (amoxicillin is first-line)",
+          "R2_AWARE": "PASS (Access tier)",
+          "R3_DOSE": "PASS (3000 mg/day within 3000-3000)",
+          "R4_RENAL": "PASS (no adjustment at this kidney function)",
+          "R5_DURATION": "PASS (5 days within 5-7)",
+          "R6_ALLERGY": "PASS"
+        },
+        "actions": []
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-02",
+      "demonstrates": "Antibiotic not listed for the syndrome (R1) and a Watch drug where an Access first-line exists (R2)",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-02",
+          "age_years": 35,
+          "sex": "M",
+          "weight_kg": 74,
+          "serum_creatinine_mg_dl": 0.9,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "syndrome_code": "cap_opd_no_comorbidity",
+        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
+        "prescription": "Tab Ciprofloxacin 500 mg PO BD x 5 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "findings": {
+          "R0_IDENTIFIED": "PASS",
+          "R1_INDICATION": "FLAG (ciprofloxacin is not listed; suggests switch to amoxicillin)",
+          "R2_AWARE": "FLAG (Watch tier; Access first-line amoxicillin exists)",
+          "R3_DOSE": "CANNOT_ASSESS (no guideline dose for ciprofloxacin in this syndrome)",
+          "R5_DURATION": "CANNOT_ASSESS (no guideline duration for ciprofloxacin in this syndrome)",
+          "R6_ALLERGY": "PASS"
+        },
+        "actions": [
+          "R1: Review antibiotic selection against the NCDC guideline. Guideline option: amoxicillin.",
+          "R2: Review whether a lower-tier (Access) antibiotic can be used ... Guideline option: amoxicillin.",
+          "R3/R5: no matching guideline dose/duration for this drug; check manually."
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-03",
+      "demonstrates": "Right drug, wrong dose and duration: daily dose below range (R3) and course too long (R5)",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-03",
+          "age_years": 58,
+          "sex": "M",
+          "weight_kg": 80,
+          "serum_creatinine_mg_dl": 1.0,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "syndrome_code": "cap_opd_no_comorbidity",
+        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
+        "prescription": "Tab Amoxicillin 500 mg PO TDS x 10 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "findings": {
+          "R0_IDENTIFIED": "PASS",
+          "R1_INDICATION": "PASS (first-line)",
+          "R2_AWARE": "PASS (Access tier)",
+          "R3_DOSE": "FLAG (1500 mg/day below the guideline range 3000-3000 mg/day)",
+          "R5_DURATION": "FLAG (10 days longer than the guideline 5-7 days)",
+          "R6_ALLERGY": "PASS"
+        },
+        "actions": [
+          "R3: Review dose before administration against the guideline range.",
+          "R5: Review the planned duration against the guideline."
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-04",
+      "demonstrates": "Culture result contradicts therapy: urine isolate tested resistant to the prescribed drug (C3)",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-04",
+          "age_years": 29,
+          "sex": "F",
+          "weight_kg": 55,
+          "serum_creatinine_mg_dl": 0.7,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "syndrome_code": "cystitis",
+        "diagnosis_text": "SYNTHETIC: uncomplicated cystitis",
+        "prescription": "Tab Nitrofurantoin 100 mg PO BD x 5 days",
+        "cultures": [
+          {
+            "specimen_type": "urine",
+            "status": "FINAL",
+            "isolates": [
+              {
+                "organism": "Escherichia coli",
+                "susceptibilities": {
+                  "Nitrofurantoin": "R",
+                  "Cotrimoxazole": "S"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "findings": {
+          "R0_IDENTIFIED": "PASS",
+          "R1_INDICATION": "PASS (first-line)",
+          "R2_AWARE": "PASS (Access tier)",
+          "R3_DOSE": "PASS (200 mg/day)",
+          "R5_DURATION": "PASS (5 days)",
+          "R6_ALLERGY": "PASS",
+          "C3_BUG_DRUG_MISMATCH": "FLAG (escherichia coli tested resistant to nitrofurantoin)"
+        },
+        "actions": [
+          "C3: Review antibiotic selection and consider an alternative the organism is susceptible to."
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-05",
+      "demonstrates": "Incomplete prescription and patient data: the engine names what is missing instead of passing",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-05",
+          "age_years": 67,
+          "sex": "M",
+          "weight_kg": null,
+          "serum_creatinine_mg_dl": null,
+          "allergy_status": "UNKNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "syndrome_code": "cap_opd_no_comorbidity",
+        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
+        "prescription": "Amoxicillin 1 g",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "findings": {
+          "R0_IDENTIFIED": "PASS",
+          "R1_INDICATION": "PASS (first-line)",
+          "R3_DOSE": "CANNOT_ASSESS (missing freq_per_day)",
+          "R4_RENAL": "CANNOT_ASSESS (missing weight_kg, serum_creatinine_mg_dl)",
+          "R5_DURATION": "CANNOT_ASSESS (missing duration_days)",
+          "R6_ALLERGY": "CANNOT_ASSESS (missing allergy_status; beta-lactam)",
+          "R2_AWARE": "PASS (Access tier)"
+        },
+        "actions": [
+          "Supply the missing input (freq_per_day).",
+          "Provide age, weight and serum creatinine so renal dosing can be checked.",
+          "Document the patient's allergy status.",
+          "Supply the missing input (duration_days)."
+        ],
+        "note": "Status is FLAGGED, not INCOMPLETE: INCOMPLETE is reserved for a check that crashed. CANNOT_ASSESS findings make the evaluation FLAGGED so the gaps are not mistaken for a pass."
+      }
+    }
+  ],
+  "_verified": "All 5 requests parsed and evaluated with HTTP 200 against the real catalog, NCDC rule pack and renal table on 2026-10-08 (branch typed-rx-mvp). Findings above are the observed results."
+}
