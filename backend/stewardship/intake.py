@@ -55,12 +55,19 @@ class CultureInput(_Input):
     isolates: tuple[IsolateInput, ...] = ()
 
 
+class ConfirmedDrugInput(_Input):
+    order_id: str = Field(min_length=1)
+    raw_text: str = Field(min_length=1)
+    generic: str = Field(min_length=1)
+
+
 class EpisodeRequest(_Input):
     patient: Patient
     setting: Setting = Setting.WARD
     syndrome_code: str | None = None
     diagnosis_text: str | None = None
     prescription: str = Field(min_length=1)
+    confirmed_drugs: tuple[ConfirmedDrugInput, ...] = ()
     started_at: AwareDatetime | None = None
     cultures: tuple[CultureInput, ...] = ()
 
@@ -200,6 +207,47 @@ def parse_prescription_text(
     return readings, warnings
 
 
+def apply_confirmations(
+    readings: tuple[OrderReading, ...],
+    confirmations: tuple[ConfirmedDrugInput, ...],
+    catalog: Catalog,
+) -> tuple[OrderReading, ...]:
+    if not confirmations:
+        return readings
+    by_id = {reading.order.id: reading for reading in readings}
+    replacements: dict[str, OrderReading] = {}
+    for confirmation in confirmations:
+        reading = by_id.get(confirmation.order_id)
+        if reading is None or reading.raw_line != confirmation.raw_text:
+            raise IntakeError(f"Confirmation does not match parsed order {confirmation.order_id}.")
+        normalized = catalog.normalize(confirmation.generic)
+        if normalized.status is not NormStatus.ACCEPTED or normalized.generic is None:
+            raise IntakeError(f"Confirmed drug '{confirmation.generic}' is not in the catalog.")
+        if (
+            reading.order.norm_status is NormStatus.AMBIGUOUS
+            and normalized.generic not in reading.order.norm_candidates
+        ):
+            raise IntakeError(
+                f"Confirmed drug '{normalized.generic}' was not offered for "
+                f"{confirmation.order_id}."
+            )
+        order = reading.order.model_copy(
+            update={
+                "generic": normalized.generic,
+                "brand": normalized.brand,
+                "norm_status": NormStatus.CONFIRMED,
+                "norm_candidates": (),
+            }
+        )
+        replacements[confirmation.order_id] = OrderReading(
+            reading.line_number,
+            reading.raw_line,
+            order,
+            "Human confirmed from the drug catalog.",
+        )
+    return tuple(replacements.get(reading.order.id, reading) for reading in readings)
+
+
 def build_specimens(cultures: tuple[CultureInput, ...], catalog: Catalog) -> tuple[Specimen, ...]:
     """Validate and convert cultures. Inconsistent combinations are rejected, never repaired."""
     specimens = []
@@ -268,6 +316,7 @@ def build_episode(
     readings, warnings = parse_prescription_text(
         request.prescription, catalog, started_at=started_at
     )
+    readings = apply_confirmations(readings, request.confirmed_drugs, catalog)
     if how == "unresolved":
         _, why = read_diagnosis(request.diagnosis_text)
         warnings += (

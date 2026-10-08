@@ -14,6 +14,7 @@ import type {
 } from '@/types/stewardship'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
 
 // Fallback used only if the API cannot be reached. The live list comes from GET /api/syndromes
 // and is exactly the guideline rule pack; do not add codes here that the rule pack lacks.
@@ -35,7 +36,7 @@ const FALLBACK_SYNDROMES = [
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
-    <label className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wide">
+    <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">
       {label}
       {required && <span className="text-rose-400 ml-1">*</span>}
     </label>
@@ -43,10 +44,10 @@ function FieldLabel({ label, required }: { label: string; required?: boolean }) 
 }
 
 const inputClass =
-  'w-full bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500'
+  'w-full rounded-md border border-[#C8C7C0] bg-white px-3 py-2.5 text-sm text-[#1A1A1A] placeholder:text-[#8B8982] focus:border-[#3730A3] focus:outline-none focus:ring-2 focus:ring-[#3730A3]/10'
 
 const selectClass =
-  'w-full bg-[#0f1117] border border-[#2d3148] rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500'
+  'w-full rounded-md border border-[#C8C7C0] bg-white px-3 py-2.5 text-sm text-[#1A1A1A] focus:border-[#3730A3] focus:outline-none focus:ring-2 focus:ring-[#3730A3]/10'
 
 export default function EpisodeNewPage() {
   const router = useRouter()
@@ -140,6 +141,13 @@ export default function EpisodeNewPage() {
         syndrome_code: syndromeCode,
         diagnosis_text: diagnosisText || null,
         prescription,
+        confirmed_drugs: pendingDrugs
+          .filter((drug) => drug.norm_status === 'CONFIRMED' && drug.generic)
+          .map((drug) => ({
+            order_id: drug.id,
+            raw_text: drug.raw_text,
+            generic: drug.generic as string,
+          })),
         // "Not sent" is sent as no culture at all: unknown, never negative.
         cultures:
           cultureStatus === 'NOT_SENT'
@@ -162,10 +170,10 @@ export default function EpisodeNewPage() {
               ],
       })
 
-      await evaluateEpisode(episode.id)
+      const evaluation = await evaluateEpisode(episode.id)
       sessionStorage.removeItem('pendingDrugs')
       sessionStorage.removeItem('ocrRawText')
-      router.push(`/evaluation/${episode.id}`)
+      router.push(`/evaluation/${evaluation.id}`)
     } catch (e) {
       console.error('Episode creation failed:', e)
       setError(e instanceof Error ? e.message : 'Could not run the evaluation.')
@@ -174,14 +182,19 @@ export default function EpisodeNewPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100">Prescription → Audit → Action</h1>
-        <p className="text-sm text-slate-400 mt-0.5">
-          Enter the patient and the prescription. The deterministic engine checks it against the
-          NCDC guideline and tells you what to review.
-        </p>
+    <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
+      <div className="flex flex-col justify-between gap-3 border-b border-[#E2E1DC] pb-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">New stewardship review</p>
+          <h1 className="mt-1 text-2xl font-medium tracking-[-0.02em] text-[#1A1A1A]">Add clinical context</h1>
+          <p className="mt-1 text-sm text-[#6B6A65]">
+            Complete the patient, syndrome, renal, allergy, and culture information needed by the rules.
+          </p>
+        </div>
+        <span className="text-xs text-[#6B6A65]">Step 2 of 4</span>
       </div>
+
+      <WorkflowStepper current={2} />
 
       {/* Drugs summary */}
       {pendingDrugs.length > 0 && (

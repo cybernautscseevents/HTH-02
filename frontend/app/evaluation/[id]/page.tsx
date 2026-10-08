@@ -2,13 +2,20 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import { use } from 'react'
-import { Loader2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
-import { evaluateEpisode, getEpisode, submitReview } from '@/lib/api'
+import { Loader2, RefreshCw } from 'lucide-react'
+import {
+  evaluateEpisode,
+  getEpisode,
+  getEvaluation,
+  getEvaluationReviews,
+  submitReview,
+} from '@/lib/api'
 import type {
   Episode,
   EvaluationReport,
   Finding,
   ReasonCode,
+  Review,
   ReviewAction,
 } from '@/types/stewardship'
 import { EvaluationBanner } from '@/components/stewardship/EvaluationBanner'
@@ -17,6 +24,7 @@ import { ReviewPanel } from '@/components/stewardship/ReviewPanel'
 import { CulturePanel } from '@/components/stewardship/CulturePanel'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
 
 type Tab = 'findings' | 'culture' | 'patient'
 
@@ -25,9 +33,10 @@ export default function EvaluationPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id: episodeId } = use(params)
+  const { id: evaluationId } = use(params)
   const [episode, setEpisode] = useState<Episode | null>(null)
   const [evaluation, setEvaluation] = useState<EvaluationReport | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [rerunning, setRerunning] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('findings')
@@ -37,23 +46,36 @@ export default function EvaluationPage({
 
   const loadData = useCallback(async () => {
     try {
-      const [ep, ev] = await Promise.all([
-        getEpisode(episodeId),
-        evaluateEpisode(episodeId),
+      const ev = await getEvaluation(evaluationId)
+      const [ep, recordedReviews] = await Promise.all([
+        getEpisode(ev.episode_id),
+        getEvaluationReviews(evaluationId),
       ])
       setEpisode(ep)
       setEvaluation(ev)
+      setReviews(recordedReviews)
     } catch (e) {
       console.error('Failed to load evaluation:', e)
     } finally {
       setLoading(false)
       setRerunning(false)
     }
-  }, [episodeId])
+  }, [evaluationId])
 
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  const rerunEvaluation = async () => {
+    if (!episode) return
+    setRerunning(true)
+    try {
+      const next = await evaluateEpisode(episode.id)
+      window.location.assign(`/evaluation/${next.id}`)
+    } finally {
+      setRerunning(false)
+    }
+  }
 
   const handleReview = async (
     finding: Finding,
@@ -72,20 +94,21 @@ export default function EvaluationPage({
       reason_code: reasonCode,
       note,
     })
+    setReviews(await getEvaluationReviews(evaluation.id))
   }
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-        <p className="text-sm text-slate-400">Running stewardship evaluation...</p>
+        <Loader2 className="h-7 w-7 animate-spin text-[#3730A3]" />
+        <p className="text-sm text-[#6B6A65]">Loading stewardship evaluation...</p>
       </div>
     )
   }
 
   if (!evaluation || !episode) {
     return (
-      <div className="text-center py-24 text-slate-400">Evaluation not found.</div>
+      <div className="py-24 text-center text-[#6B6A65]">Evaluation not found.</div>
     )
   }
 
@@ -95,6 +118,16 @@ export default function EvaluationPage({
   const currentAntibiotics = episode.orders
     .filter((o) => o.generic)
     .map((o) => o.generic as string)
+  const reviewFor = (finding: Finding) =>
+    [...reviews]
+      .reverse()
+      .find(
+        (review) =>
+          review.finding_rule_id === finding.rule_id &&
+          (review.order_id ?? null) === (finding.order_id ?? null)
+      )
+  const actionable = evaluation.findings.filter((finding) => finding.outcome !== 'PASS')
+  const remaining = actionable.filter((finding) => !reviewFor(finding)).length
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
     {
@@ -108,66 +141,52 @@ export default function EvaluationPage({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col justify-between gap-3 border-b border-[#E2E1DC] pb-4 sm:flex-row sm:items-end">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono text-slate-400">Episode</span>
-            <span className="text-xs font-mono text-slate-300">{episode.id}</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-xs font-mono text-slate-400">Patient</span>
-            <span className="text-xs font-mono text-slate-300">{episode.patient.id}</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-100">Stewardship Evaluation</h1>
-          {episode.diagnosis_text && (
-            <p className="text-sm text-slate-400 mt-0.5">{episode.diagnosis_text}</p>
-          )}
+          <p className="font-mono text-[11px] text-[#6B6A65]">{episode.id} · {episode.patient.id}</p>
+          <h1 className="mt-1 text-2xl font-medium tracking-[-0.02em] text-[#1A1A1A]">Review the evaluation</h1>
+          <p className="mt-1 text-sm text-[#6B6A65]">
+            {episode.diagnosis_text || 'Assess each non-pass finding and record a pharmacist decision.'}
+          </p>
         </div>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          leftIcon={<RefreshCw className={`w-4 h-4 ${rerunning ? 'animate-spin' : ''}`} />}
-          onClick={() => { setRerunning(true); loadData() }}
+          leftIcon={<RefreshCw className={`h-4 w-4 ${rerunning ? 'animate-spin' : ''}`} />}
+          onClick={rerunEvaluation}
+          disabled={rerunning}
         >
           Re-evaluate
         </Button>
       </div>
 
-      {/* Prescription → Audit → Action */}
-      <div className="flex items-center gap-2 text-xs text-slate-400">
-        <span className="px-2 py-1 rounded bg-[#141724] border border-[#2d3148]">Prescription</span>
-        <span>→</span>
-        <span className="px-2 py-1 rounded bg-[#141724] border border-[#2d3148]">
-          Audit ({evaluation.ruleset_version})
-        </span>
-        <span>→</span>
-        <span className="px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
-          {evaluation.findings.filter((f) => f.outcome !== 'PASS').length} to review
-        </span>
+      <WorkflowStepper current={4} />
+
+      <div className={`rounded-md border px-3 py-2 text-xs ${
+        remaining === 0
+          ? 'border-[#A9CFB7] bg-[#F0FBF4] text-[#1A6B3C]'
+          : 'border-[#E8D5A7] bg-[#FFF9EB] text-[#8B5E00]'
+      }`}>
+        {remaining === 0
+          ? 'Review complete. Decisions are preserved in the audit log.'
+          : `${remaining} finding${remaining === 1 ? '' : 's'} still ${remaining === 1 ? 'requires' : 'require'} a pharmacist decision.`}
       </div>
 
       {evaluation.syndrome && (
-        <p className="text-xs text-slate-400">
-          Guideline syndrome:{' '}
-          <span className="text-slate-200">
-            {evaluation.syndrome.name ?? 'not recognised: guideline checks (R1, R3, R5) could not run'}
-          </span>
+        <p className="text-xs text-[#6B6A65]">
+          Guideline syndrome: <span className="font-medium text-[#1A1A1A]">{evaluation.syndrome.name ?? 'Not recognised; syndrome-specific checks could not run'}</span>
         </p>
       )}
 
       {(evaluation.warnings ?? []).map((w) => (
-        <div key={w} className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm text-amber-200">
-          {w}
-        </div>
+        <div key={w} className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-3 text-sm text-[#8B5E00]">{w}</div>
       ))}
 
       {evaluation.culture && (
-        <div className="p-3 rounded-lg border border-[#2d3148] bg-[#141724] text-sm">
-          <span className="text-slate-400">Culture: </span>
-          <span className="text-slate-200">{evaluation.culture.message}</span>
-          {evaluation.culture.action && (
-            <span className="text-indigo-300"> {evaluation.culture.action}</span>
-          )}
+        <div className="rounded-md border border-[#E2E1DC] bg-white p-3 text-sm">
+          <span className="text-[#6B6A65]">Culture: </span>
+          <span className="text-[#1A1A1A]">{evaluation.culture.message}</span>
+          {evaluation.culture.action && <span className="text-[#3730A3]"> {evaluation.culture.action}</span>}
         </div>
       )}
 
@@ -181,15 +200,15 @@ export default function EvaluationPage({
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-[#2d3148]">
+      <div className="flex gap-1 overflow-x-auto border-b border-[#E2E1DC]">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-1.5 ${
               activeTab === tab.key
-                ? 'border-indigo-500 text-indigo-300'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'border-[#1A1A1A] text-[#1A1A1A]'
+                : 'border-transparent text-[#6B6A65] hover:text-[#1A1A1A]'
             }`}
           >
             {tab.label}
@@ -197,8 +216,8 @@ export default function EvaluationPage({
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                   activeTab === tab.key
-                    ? 'bg-indigo-500/20 text-indigo-300'
-                    : 'bg-[#2d3148] text-slate-400'
+                    ? 'bg-[#1A1A1A] text-white'
+                    : 'bg-[#F4F3EF] text-[#6B6A65]'
                 }`}
               >
                 {tab.count}
@@ -212,7 +231,7 @@ export default function EvaluationPage({
       {activeTab === 'findings' && (
         <div className="space-y-4">
           {evaluation.findings.length === 0 && (
-            <div className="text-center py-12 text-slate-400 text-sm">
+            <div className="py-12 text-center text-sm text-[#6B6A65]">
               No findings generated.
             </div>
           )}
@@ -223,15 +242,16 @@ export default function EvaluationPage({
               orderText={finding.order_id ? orderMap[finding.order_id] : undefined}
               view={viewFor(finding)}
             >
-              <ReviewPanel
-                finding={finding}
-                evaluationId={evaluation.id}
-                episodeId={episode.id}
-                reviewer={REVIEWER}
-                onSubmit={(action, reasonCode, note) =>
-                  handleReview(finding, action, reasonCode, note)
-                }
-              />
+              {finding.outcome !== 'PASS' && (
+                <ReviewPanel
+                  finding={finding}
+                  reviewer={REVIEWER}
+                  review={reviewFor(finding)}
+                  onSubmit={(action, reasonCode, note) =>
+                    handleReview(finding, action, reasonCode, note)
+                  }
+                />
+              )}
             </FindingCard>
           ))}
         </div>
@@ -241,7 +261,7 @@ export default function EvaluationPage({
       {activeTab === 'culture' && (
         <div className="space-y-6">
           {episode.specimens.length === 0 && (
-            <div className="text-center py-12 text-slate-400 text-sm">
+            <div className="py-12 text-center text-sm text-[#6B6A65]">
               No culture specimens recorded for this episode.
             </div>
           )}
@@ -270,8 +290,8 @@ export default function EvaluationPage({
                 ['Known Allergies', episode.patient.allergies.join(', ') || '—'],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
-                  <dt className="text-slate-400 shrink-0">{k}</dt>
-                  <dd className="text-slate-200 text-right font-mono">{v}</dd>
+                  <dt className="shrink-0 text-[#6B6A65]">{k}</dt>
+                  <dd className="text-right font-mono text-[#1A1A1A]">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -287,8 +307,8 @@ export default function EvaluationPage({
                 ['Drug orders', `${episode.orders.length}`],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
-                  <dt className="text-slate-400 shrink-0">{k}</dt>
-                  <dd className="text-slate-200 text-right font-mono">{v}</dd>
+                  <dt className="shrink-0 text-[#6B6A65]">{k}</dt>
+                  <dd className="text-right font-mono text-[#1A1A1A]">{v}</dd>
                 </div>
               ))}
             </dl>

@@ -50,8 +50,9 @@ def apply_review(evaluation: Evaluation, review: Review) -> AuditEntry:
                 f"Finding {review.finding_rule_id} for order {review.order_id} "
                 "is not in evaluation."
             )
-        if review.action is ReviewAction.OVERRIDE and review.reason_code is None:
-            raise ReviewError("An override needs a reason code.")
+        if review.action in {ReviewAction.MODIFY, ReviewAction.REMOVE, ReviewAction.OVERRIDE}:
+            if review.reason_code is None:
+                raise ReviewError(f"A {review.action.value.lower()} decision needs a reason code.")
         if review.action is ReviewAction.ACCEPT and finding.outcome is Outcome.CANNOT_ASSESS:
             raise ReviewError(
                 "A CANNOT_ASSESS finding cannot be accepted; supply the missing "

@@ -15,9 +15,9 @@ Usage: python scripts/build_aware.py   (standard library only)
 
 import csv
 import re
+import xml.etree.ElementTree as ET
 import zipfile
 from difflib import SequenceMatcher
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

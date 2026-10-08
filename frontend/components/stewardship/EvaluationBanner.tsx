@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { CheckCircle2, AlertTriangle, XCircle, Info } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 import type { EvaluationStatus, Finding } from '@/types/stewardship'
 
 interface EvaluationBannerProps {
@@ -14,37 +14,34 @@ interface EvaluationBannerProps {
 
 const STATUS_CONFIG = {
   FLAGGED: {
-    bg: 'bg-rose-500/10',
-    border: 'border-rose-500/30',
-    icon: <AlertTriangle className="w-6 h-6 text-rose-400" />,
-    titleColor: 'text-rose-400',
-    label: 'FLAGGED',
-    description: 'Clinical review required. Findings identified.',
+    box: 'border-[#D9A4A4] bg-[#FDF2F2]',
+    icon: AlertTriangle,
+    color: 'text-[#8B1A1A]',
+    label: 'Review required',
+    description: 'The rules identified findings that need a clinical decision.',
   },
   OK: {
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
-    icon: <CheckCircle2 className="w-6 h-6 text-emerald-400" />,
-    titleColor: 'text-emerald-400',
-    label: 'PASS',
-    description: 'No issues identified. All checks passed.',
+    box: 'border-[#A9CFB7] bg-[#F0FBF4]',
+    icon: CheckCircle2,
+    color: 'text-[#1A6B3C]',
+    label: 'Checks passed',
+    description: 'No stewardship concerns were identified.',
   },
   INCOMPLETE: {
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/30',
-    icon: <XCircle className="w-6 h-6 text-amber-400" />,
-    titleColor: 'text-amber-400',
-    label: 'INCOMPLETE',
-    description: 'Some checks could not run. Missing information required.',
+    box: 'border-[#E8D5A7] bg-[#FFF9EB]',
+    icon: XCircle,
+    color: 'text-[#8B5E00]',
+    label: 'Information required',
+    description: 'Some checks could not run because clinical information is missing.',
   },
 }
 
-const TRIGGER_LABELS: Record<string, string> = {
-  NEW_PRESCRIPTION: 'New Prescription',
-  CULTURE_RESULT: 'Culture Result',
-  LAB_UPDATE: 'Lab Update',
-  TIMEOUT_DUE: '48-Hour Review',
-  MANUAL: 'Manual',
+const TRIGGERS: Record<string, string> = {
+  NEW_PRESCRIPTION: 'New prescription',
+  CULTURE_RESULT: 'Culture result',
+  LAB_UPDATE: 'Lab update',
+  TIMEOUT_DUE: '48-hour review',
+  MANUAL: 'Manual review',
 }
 
 export const EvaluationBanner: React.FC<EvaluationBannerProps> = ({
@@ -55,76 +52,34 @@ export const EvaluationBanner: React.FC<EvaluationBannerProps> = ({
   trigger,
 }) => {
   const config = STATUS_CONFIG[status]
-  const highCount = findings.filter((f) => f.severity === 'HIGH' && f.outcome === 'FLAG').length
-  const moderateCount = findings.filter((f) => f.severity === 'MODERATE' && f.outcome === 'FLAG').length
-  const cannotAssessCount = findings.filter((f) => f.outcome === 'CANNOT_ASSESS').length
-
-  const date = new Date(evaluatedAt)
-  const formattedDate = date.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const Icon = config.icon
+  const flags = findings.filter((finding) => finding.outcome === 'FLAG').length
+  const incomplete = findings.filter((finding) => finding.outcome === 'CANNOT_ASSESS').length
 
   return (
-    <div className={`rounded-xl border ${config.bg} ${config.border} p-5 animate-fade-in`}>
-      <div className="flex items-start gap-4">
-        <div className="shrink-0 mt-0.5">{config.icon}</div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-3 mb-1">
-            <h2 className={`text-xl font-bold tracking-wide ${config.titleColor}`}>
-              {config.label}
-            </h2>
-            <span className="text-sm text-slate-400">{config.description}</span>
-          </div>
-
-          {/* Finding counts */}
-          {status === 'FLAGGED' && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {highCount > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                  {highCount} HIGH
-                </span>
-              )}
-              {moderateCount > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  {moderateCount} MODERATE
-                </span>
-              )}
-              {cannotAssessCount > 0 && (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-700 text-slate-300 border border-slate-600">
-                  {cannotAssessCount} CANNOT ASSESS
-                </span>
-              )}
+    <section className={`rounded-[8px] border p-4 sm:p-5 ${config.box}`}>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${config.color}`} />
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className={`text-base font-medium ${config.color}`}>{config.label}</h2>
+              {flags > 0 && <span className="rounded border border-[#D9A4A4] bg-white/70 px-2 py-0.5 text-[10px] font-medium text-[#8B1A1A]">{flags} flagged</span>}
+              {incomplete > 0 && <span className="rounded border border-[#E8D5A7] bg-white/70 px-2 py-0.5 text-[10px] font-medium text-[#8B5E00]">{incomplete} incomplete</span>}
             </div>
-          )}
-
-          {/* Meta info */}
-          <div className="flex flex-wrap gap-4 mt-3 text-xs text-slate-400">
-            <span>
-              Evaluated: <span className="text-slate-300">{formattedDate}</span>
-            </span>
-            <span>
-              Trigger: <span className="text-slate-300">{TRIGGER_LABELS[trigger] ?? trigger}</span>
-            </span>
-            <span>
-              Ruleset: <span className="text-slate-300 font-mono">v{rulesetVersion}</span>
-            </span>
+            <p className="mt-1 text-sm text-[#6B6A65]">{config.description}</p>
+            <p className="mt-2 font-mono text-[10px] text-[#6B6A65]">
+              {new Date(evaluatedAt).toLocaleString('en-IN')} · {TRIGGERS[trigger] ?? trigger} · ruleset {rulesetVersion}
+            </p>
           </div>
         </div>
-
-        {/* Safety notice */}
-        <div className="hidden lg:flex items-start gap-1.5 px-3 py-2 rounded-lg bg-[#141724] border border-[#2d3148] shrink-0 max-w-xs">
-          <Info className="w-3.5 h-3.5 text-indigo-400 mt-0.5 shrink-0" />
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            This system <strong className="text-slate-300">recommends</strong> — it does not automatically modify prescriptions.
-            All changes require pharmacist approval.
+        <div className="flex max-w-sm items-start gap-2 rounded-md border border-[#E2E1DC] bg-white/70 px-3 py-2">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#3730A3]" />
+          <p className="text-[11px] leading-relaxed text-[#6B6A65]">
+            RxGuard recommends; it never changes a prescription automatically. A clinician must apply every approved change.
           </p>
         </div>
       </div>
-    </div>
+    </section>
   )
 }

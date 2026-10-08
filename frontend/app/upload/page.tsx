@@ -3,304 +3,301 @@
 import React, { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Upload,
-  FileImage,
-  X,
-  ArrowRight,
-  Loader2,
-  CheckCircle2,
   AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  FileImage,
+  FileText,
+  Loader2,
+  RotateCcw,
+  Upload,
   Zap,
 } from 'lucide-react'
-import { uploadPrescription } from '@/lib/api'
+import { parsePrescriptionText, uploadPrescription } from '@/lib/api'
 import type { ExtractedDrug, OCRResult } from '@/types/stewardship'
 import { Button } from '@/components/ui/Button'
 import { DrugOrderRow } from '@/components/stewardship/DrugOrderRow'
+import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
 
-type Step = 'upload' | 'processing' | 'review'
+type Mode = 'image' | 'typed'
+type Step = 'input' | 'processing' | 'review'
 
 export default function UploadPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [step, setStep] = useState<Step>('upload')
+  const [mode, setMode] = useState<Mode>('image')
+  const [step, setStep] = useState<Step>('input')
+  const [engine, setEngine] = useState<'glm' | 'qwen'>('glm')
   const [dragging, setDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null)
+  const [typedText, setTypedText] = useState('')
+  const [result, setResult] = useState<OCRResult | null>(null)
   const [drugs, setDrugs] = useState<ExtractedDrug[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const handleFile = useCallback(async (f: File) => {
-    if (!f.type.startsWith('image/')) {
-      setError('Please upload an image file (JPEG, PNG, or TIFF).')
+  const handleFile = useCallback(async (selected: File) => {
+    if (!selected.type.startsWith('image/')) {
+      setError('Upload a JPEG, PNG, TIFF, or WebP prescription image.')
       return
     }
     setError(null)
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
+    setFile(selected)
+    setPreview(URL.createObjectURL(selected))
     setStep('processing')
-
     try {
-      const result = await uploadPrescription(f)
-      setOcrResult(result)
-      setDrugs(result.drugs)
+      const response = await uploadPrescription(selected, engine)
+      setResult(response)
+      setDrugs(response.drugs)
       setStep('review')
-    } catch (e) {
-      setError('OCR processing failed. Please try again.')
-      setStep('upload')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'OCR processing failed.')
+      setStep('input')
     }
-  }, [])
+  }, [engine])
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      setDragging(false)
-      const f = e.dataTransfer.files[0]
-      if (f) handleFile(f)
-    },
-    [handleFile]
-  )
+  const handleTyped = async () => {
+    if (!typedText.trim()) {
+      setError('Enter at least one medicine line.')
+      return
+    }
+    setError(null)
+    setStep('processing')
+    try {
+      const parsed = await parsePrescriptionText(typedText)
+      setDrugs(parsed.orders)
+      setResult({
+        success: true,
+        raw_text: typedText,
+        drugs: parsed.orders,
+        processing_time_ms: 0,
+        model: 'Typed input',
+        warnings: parsed.warnings,
+      })
+      setStep('review')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Prescription parsing failed.')
+      setStep('input')
+    }
+  }
 
-  const handleConfirmDrug = (id: string, confirmed: string) => {
-    setDrugs((prev) =>
-      prev.map((d) =>
-        d.id === id
-          ? { ...d, generic: confirmed, norm_status: 'CONFIRMED', norm_candidates: [] }
-          : d
+  const confirmDrug = (id: string, generic: string) => {
+    setDrugs((current) =>
+      current.map((drug) =>
+        drug.id === id
+          ? { ...drug, generic, norm_status: 'CONFIRMED', norm_candidates: [], excluded: false }
+          : drug
       )
     )
   }
 
-  const handleProceed = () => {
-    // Store drugs in sessionStorage so the episode form can pick them up
-    sessionStorage.setItem('pendingDrugs', JSON.stringify(drugs))
-    sessionStorage.setItem('ocrRawText', ocrResult?.raw_text ?? '')
+  const excludeDrug = (id: string) => {
+    setDrugs((current) =>
+      current.map((drug) => (drug.id === id ? { ...drug, excluded: true } : drug))
+    )
+  }
+
+  const reset = () => {
+    setStep('input')
+    setFile(null)
+    setPreview(null)
+    setResult(null)
+    setDrugs([])
+    setError(null)
+  }
+
+  const proceed = () => {
+    const activeDrugs = drugs.filter((drug) => !drug.excluded)
+    sessionStorage.setItem('pendingDrugs', JSON.stringify(activeDrugs))
+    sessionStorage.setItem('ocrRawText', result?.raw_text ?? typedText)
     router.push('/episode/new')
   }
 
-  const ambiguousCount = drugs.filter((d) => d.norm_status === 'AMBIGUOUS').length
-  const noMatchCount = drugs.filter((d) => d.norm_status === 'NO_MATCH').length
-  const canProceed = drugs.length > 0 && noMatchCount === 0
+  const activeDrugs = drugs.filter((drug) => !drug.excluded)
+  const ambiguous = activeDrugs.filter((drug) => drug.norm_status === 'AMBIGUOUS').length
+  const unmatched = activeDrugs.filter((drug) => drug.norm_status === 'NO_MATCH').length
+  const ready = activeDrugs.length > 0 && ambiguous === 0 && unmatched === 0
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100">New Prescription</h1>
-        <p className="text-sm text-slate-400 mt-0.5">
-          Upload a prescription image to extract drug orders and run stewardship evaluation
-        </p>
+    <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
+      <div className="flex flex-col justify-between gap-3 border-b border-[#E2E1DC] pb-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">New stewardship review</p>
+          <h1 className="mt-1 text-2xl font-medium tracking-[-0.02em] text-[#1A1A1A]">Start with the prescription</h1>
+          <p className="mt-1 text-sm text-[#6B6A65]">
+            Upload an image or paste typed orders. You will verify extraction before clinical analysis.
+          </p>
+        </div>
+        <span className="text-xs text-[#6B6A65]">Step 1 of 4</span>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 text-xs">
-        {(['upload', 'processing', 'review'] as Step[]).map((s, i) => (
-          <React.Fragment key={s}>
-            <div
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${
-                step === s
-                  ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300 font-semibold'
-                  : step === 'review' && i < 2
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                  : step === 'processing' && i < 1
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                  : 'border-[#2d3148] text-slate-500'
-              }`}
-            >
-              {step === 'review' && i < 2 ? (
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              ) : (
-                <span>{i + 1}</span>
-              )}
-              <span className="capitalize">{s === 'processing' ? 'OCR Processing' : s}</span>
-            </div>
-            {i < 2 && <div className="h-px w-4 bg-[#2d3148]" />}
-          </React.Fragment>
-        ))}
-      </div>
+      <WorkflowStepper current={1} />
 
-      {/* Step 1: Upload zone */}
-      {step === 'upload' && (
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`relative rounded-2xl border-2 border-dashed transition-all cursor-pointer p-12 text-center ${
-            dragging
-              ? 'border-indigo-500/60 bg-indigo-500/10'
-              : 'border-[#2d3148] hover:border-[#3b4263] bg-[#1e2235]'
-          }`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) handleFile(f)
-            }}
-          />
-
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-              <FileImage className="w-8 h-8 text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-base font-semibold text-slate-100">
-                Drop prescription image here
-              </p>
-              <p className="text-sm text-slate-400 mt-1">or click to browse — JPEG, PNG, TIFF</p>
-            </div>
-            <Button variant="outline" size="sm" leftIcon={<Upload className="w-4 h-4" />}>
-              Choose file
-            </Button>
-          </div>
-
-          {error && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-rose-400">
-              <AlertTriangle className="w-4 h-4" />
-              {error}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Step 2: Processing */}
-      {step === 'processing' && (
-        <div className="rounded-2xl border border-[#2d3148] bg-[#1e2235] overflow-hidden">
-          {/* Image preview */}
-          {preview && (
-            <div className="border-b border-[#2d3148] bg-[#141724] p-4 flex items-center gap-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={preview}
-                alt="Prescription preview"
-                className="w-24 h-24 object-cover rounded-lg border border-[#2d3148]"
-              />
-              <div>
-                <p className="text-sm font-semibold text-slate-100">{file?.name}</p>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {file ? `${(file.size / 1024).toFixed(1)} KB` : ''}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Processing animation */}
-          <div className="p-10 flex flex-col items-center gap-4 text-center">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                <Zap className="w-8 h-8 text-indigo-400" />
-              </div>
-              <Loader2 className="absolute -top-2 -right-2 w-6 h-6 text-indigo-400 animate-spin" />
-            </div>
-            <div>
-              <p className="text-base font-semibold text-slate-100">OCR Processing...</p>
-              <p className="text-sm text-slate-400 mt-1">
-                Extracting drug orders from prescription image
-              </p>
-            </div>
-            <div className="flex gap-1 mt-2">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce"
-                  style={{ animationDelay: `${i * 0.15}s` }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Review extracted drugs */}
-      {step === 'review' && ocrResult && (
-        <div className="space-y-4">
-          {/* Image + raw text */}
-          <div className="rounded-xl border border-[#2d3148] bg-[#1e2235] overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#2d3148] flex items-center justify-between">
-              <p className="text-sm font-semibold text-slate-100">Prescription Image</p>
+      {step === 'input' && (
+        <section className="overflow-hidden rounded-[8px] border border-[#E2E1DC] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+          <div className="flex border-b border-[#E2E1DC] bg-[#F4F3EF] p-1">
+            {([
+              ['image', FileImage, 'Image upload'],
+              ['typed', FileText, 'Typed prescription'],
+            ] as const).map(([value, Icon, label]) => (
               <button
-                onClick={() => {
-                  setStep('upload')
-                  setFile(null)
-                  setPreview(null)
-                  setOcrResult(null)
-                  setDrugs([])
-                }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-[#2d3148] transition-colors"
+                key={value}
+                onClick={() => { setMode(value); setError(null) }}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors ${
+                  mode === value ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#6B6A65] hover:text-[#1A1A1A]'
+                }`}
               >
-                <X className="w-4 h-4" />
+                <Icon className="h-4 w-4" /> {label}
               </button>
-            </div>
-            <div className="p-4 flex gap-4 flex-wrap">
-              {preview && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={preview}
-                  alt="Prescription"
-                  className="max-h-48 rounded-lg border border-[#2d3148] object-contain"
+            ))}
+          </div>
+
+          {mode === 'image' ? (
+            <div className="p-5">
+              <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <h2 className="text-sm font-medium text-[#1A1A1A]">Prescription image</h2>
+                  <p className="text-xs text-[#6B6A65]">The selected OCR engine extracts text; the drug catalog decides identity.</p>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-[#6B6A65]">
+                  OCR engine
+                  <select
+                    value={engine}
+                    onChange={(event) => setEngine(event.target.value as 'glm' | 'qwen')}
+                    className="rounded-md border border-[#C8C7C0] bg-white px-2.5 py-1.5 text-xs text-[#1A1A1A] outline-none focus:border-[#3730A3]"
+                  >
+                    <option value="glm">GLM-OCR</option>
+                    <option value="qwen">Qwen-VL</option>
+                  </select>
+                </label>
+              </div>
+              <div
+                onDragOver={(event) => { event.preventDefault(); setDragging(true) }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault()
+                  setDragging(false)
+                  const selected = event.dataTransfer.files[0]
+                  if (selected) handleFile(selected)
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`cursor-pointer rounded-[8px] border border-dashed p-10 text-center transition-colors ${
+                  dragging ? 'border-[#3730A3] bg-[#F4F2FC]' : 'border-[#C8C7C0] bg-[#FAFAF8] hover:border-[#6B6A65]'
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/tiff,image/webp"
+                  className="hidden"
+                  onChange={(event) => {
+                    const selected = event.target.files?.[0]
+                    if (selected) handleFile(selected)
+                  }}
                 />
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-400 mb-2">Raw OCR text</p>
-                <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap bg-[#141724] rounded-lg p-3 border border-[#2d3148] max-h-40 overflow-y-auto">
-                  {ocrResult.raw_text}
-                </pre>
-                <p className="text-[11px] text-slate-500 mt-2">
-                  Processed in {ocrResult.processing_time_ms}ms
-                  {ocrResult.model && ` · ${ocrResult.model}`}
-                </p>
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md border border-[#E2E1DC] bg-white text-[#1A1A1A]">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-sm font-medium text-[#1A1A1A]">Drop a prescription image here</p>
+                <p className="mt-1 text-xs text-[#6B6A65]">JPEG, PNG, TIFF or WebP · maximum 15 MB</p>
+                <Button className="mt-4" variant="outline" size="sm">Choose image</Button>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-5">
+              <h2 className="text-sm font-medium text-[#1A1A1A]">Typed medication orders</h2>
+              <p className="mt-0.5 text-xs text-[#6B6A65]">Enter one medicine per line, including dose, route, frequency and duration.</p>
+              <textarea
+                value={typedText}
+                onChange={(event) => setTypedText(event.target.value)}
+                rows={7}
+                placeholder={'Tab Nitrofurantoin 100 mg PO BD x 5 days\nInj Ceftriaxone 2 g IV OD x 7 days'}
+                className="mt-4 w-full resize-y rounded-md border border-[#C8C7C0] bg-white px-3 py-2.5 font-mono text-sm text-[#1A1A1A] outline-none placeholder:text-[#8B8982] focus:border-[#3730A3] focus:ring-2 focus:ring-[#3730A3]/10"
+              />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={handleTyped} rightIcon={<ArrowRight className="h-4 w-4" />}>Parse orders</Button>
+              </div>
+            </div>
+          )}
+          {error && (
+            <div className="mx-5 mb-5 flex items-start gap-2 rounded-md border border-[#D9A4A4] bg-[#FDF2F2] p-3 text-xs text-[#8B1A1A]">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
+            </div>
+          )}
+        </section>
+      )}
 
-          {/* Extracted drugs */}
-          <div className="rounded-xl border border-[#2d3148] bg-[#1e2235] overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#2d3148] flex items-center justify-between">
+      {step === 'processing' && (
+        <section className="rounded-[8px] border border-[#E2E1DC] bg-white p-12 text-center shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-[#F4F2FC] text-[#3730A3]">
+            {mode === 'image' ? <Zap className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
+          </div>
+          <Loader2 className="mx-auto mt-4 h-5 w-5 animate-spin text-[#3730A3]" />
+          <p className="mt-3 text-sm font-medium text-[#1A1A1A]">
+            {mode === 'image' ? 'Reading prescription image' : 'Structuring medication orders'}
+          </p>
+          <p className="mt-1 text-xs text-[#6B6A65]">No clinical rule runs until you verify these results.</p>
+        </section>
+      )}
+
+      {step === 'review' && result && (
+        <div className="space-y-4">
+          <section className="overflow-hidden rounded-[8px] border border-[#E2E1DC] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+            <div className="flex items-center justify-between border-b border-[#E2E1DC] px-5 py-4">
               <div>
-                <p className="text-sm font-semibold text-slate-100">Extracted Medicines</p>
-                <p className="text-xs text-slate-400">{drugs.length} drug orders identified</p>
+                <h2 className="text-sm font-medium text-[#1A1A1A]">Verify extraction</h2>
+                <p className="text-xs text-[#6B6A65]">Compare every line with the source before continuing.</p>
               </div>
-              <div className="flex gap-2">
-                {ambiguousCount > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                    {ambiguousCount} need confirmation
-                  </span>
-                )}
-                {noMatchCount > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                    {noMatchCount} unmatched
-                  </span>
-                )}
+              <Button variant="ghost" size="sm" leftIcon={<RotateCcw className="h-3.5 w-3.5" />} onClick={reset}>Start again</Button>
+            </div>
+            <div className="grid gap-4 border-b border-[#E2E1DC] p-5 md:grid-cols-[220px_1fr]">
+              {preview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={preview} alt="Uploaded prescription" className="max-h-56 w-full rounded-md border border-[#E2E1DC] object-contain" />
+              ) : (
+                <div className="flex min-h-36 items-center justify-center rounded-md border border-[#E2E1DC] bg-[#F4F3EF] text-[#6B6A65]">
+                  <FileText className="h-8 w-8" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Source text</p>
+                <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-[#E2E1DC] bg-[#FAFAF8] p-3 font-mono text-xs text-[#1A1A1A]">{result.raw_text}</pre>
+                <p className="mt-2 text-[10px] text-[#6B6A65]">{result.model}{result.processing_time_ms ? ` · ${result.processing_time_ms} ms` : ''}</p>
               </div>
             </div>
-
-            <div className="p-4 space-y-3">
-              {drugs.map((drug) => (
-                <DrugOrderRow key={drug.id} drug={drug} onConfirm={handleConfirmDrug} />
-              ))}
+            <div className="p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-medium text-[#1A1A1A]">Medication orders</h3>
+                  <p className="text-xs text-[#6B6A65]">{drugs.length} line{drugs.length === 1 ? '' : 's'} detected</p>
+                </div>
+                <div className="flex gap-2 text-[10px]">
+                  {ambiguous > 0 && <span className="rounded-full border border-[#E8D5A7] bg-[#FFF9EB] px-2 py-0.5 text-[#8B5E00]">{ambiguous} ambiguous</span>}
+                  {unmatched > 0 && <span className="rounded-full border border-[#D9A4A4] bg-[#FDF2F2] px-2 py-0.5 text-[#8B1A1A]">{unmatched} unmatched</span>}
+                </div>
+              </div>
+              <div className="space-y-3">
+                {drugs.map((drug) => (
+                  <DrugOrderRow
+                    key={drug.id}
+                    drug={drug}
+                    onConfirm={confirmDrug}
+                    onExclude={excludeDrug}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* CTA */}
-          <div className="flex items-center justify-between pt-2">
-            <p className="text-xs text-slate-400">
-              {ambiguousCount > 0
-                ? `⚠ Confirm ${ambiguousCount} ambiguous drug(s) before proceeding`
-                : '✓ All drugs confirmed — ready to proceed'}
-            </p>
-            <Button
-              variant="primary"
-              size="md"
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-              disabled={!canProceed}
-              onClick={handleProceed}
-            >
-              Proceed to patient information
-            </Button>
+          <div className="flex flex-col justify-between gap-3 rounded-[8px] border border-[#E2E1DC] bg-white p-4 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-xs">
+              {ready ? (
+                <><CheckCircle2 className="h-4 w-4 text-[#1A6B3C]" /><span className="text-[#1A6B3C]">Verified orders are ready for clinical context.</span></>
+              ) : (
+                <><AlertTriangle className="h-4 w-4 text-[#8B5E00]" /><span className="text-[#8B5E00]">Resolve {ambiguous + unmatched} order{ambiguous + unmatched === 1 ? '' : 's'} before continuing.</span></>
+              )}
+            </div>
+            <Button disabled={!ready} onClick={proceed} rightIcon={<ArrowRight className="h-4 w-4" />}>Continue to clinical context</Button>
           </div>
         </div>
       )}

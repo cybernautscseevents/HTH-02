@@ -20,32 +20,30 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0f1117] disabled:opacity-50 disabled:cursor-not-allowed select-none'
-
-  const sizeStyles = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2 gap-2',
-    lg: 'text-base px-5 py-2.5 gap-2.5',
+  const base =
+    'inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[#3730A3]/30 focus:ring-offset-2 focus:ring-offset-[#FAFAF8] disabled:cursor-not-allowed disabled:opacity-45'
+  const sizes = {
+    sm: 'gap-1.5 px-3 py-1.5 text-xs',
+    md: 'gap-2 px-4 py-2 text-sm',
+    lg: 'gap-2.5 px-5 py-2.5 text-sm',
   }
-
-  const variantStyles = {
-    primary: 'bg-[#6366f1] hover:bg-[#4f46e5] text-white shadow-sm hover:shadow-indigo-500/20 focus:ring-[#6366f1]',
-    danger: 'bg-[#ef4444] hover:bg-[#dc2626] text-white shadow-sm hover:shadow-red-500/20 focus:ring-[#ef4444]',
-    success: 'bg-[#10b981] hover:bg-[#059669] text-white shadow-sm hover:shadow-emerald-500/20 focus:ring-[#10b981]',
-    warning: 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm hover:shadow-amber-500/20 focus:ring-amber-500',
-    ghost: 'bg-transparent hover:bg-[#2d3148]/60 text-slate-300 hover:text-white focus:ring-slate-500',
-    outline: 'bg-transparent border border-[#2d3148] hover:border-slate-500 text-slate-200 hover:text-white hover:bg-[#1a1d2e] focus:ring-indigo-500',
-    secondary: 'bg-[#2d3148] hover:bg-[#3b4263] text-slate-100 focus:ring-slate-400',
+  const variants = {
+    primary: 'bg-[#1A1A1A] text-white hover:bg-[#2D2D2D]',
+    danger: 'border border-[#D9A4A4] bg-[#FDF2F2] text-[#8B1A1A] hover:bg-[#F8E4E4]',
+    success: 'border border-[#A9CFB7] bg-[#F0FBF4] text-[#1A6B3C] hover:bg-[#E3F5E9]',
+    warning: 'border border-[#E8D5A7] bg-[#FFF9EB] text-[#8B5E00] hover:bg-[#FFF2D1]',
+    ghost: 'bg-transparent text-[#6B6A65] hover:bg-[#F4F3EF] hover:text-[#1A1A1A]',
+    outline: 'border border-[#C8C7C0] bg-white text-[#1A1A1A] hover:bg-[#F4F3EF]',
+    secondary: 'border border-[#E2E1DC] bg-[#F4F3EF] text-[#1A1A1A] hover:bg-[#EEEEE9]',
   }
 
   return (
     <button
-      className={`${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
+      className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >
-      {isLoading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : leftIcon}
+      {isLoading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : leftIcon}
       {children}
       {!isLoading && rightIcon}
     </button>

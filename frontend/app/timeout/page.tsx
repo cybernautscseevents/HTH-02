@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Loader2, Clock } from 'lucide-react'
+import { Clock, Loader2 } from 'lucide-react'
 import { getTimeoutDue } from '@/lib/api'
 import type { TimeoutItem } from '@/types/stewardship'
 import { TimeoutCard } from '@/components/stewardship/TimeoutCard'
@@ -9,108 +9,43 @@ import { TimeoutCard } from '@/components/stewardship/TimeoutCard'
 export default function TimeoutPage() {
   const [items, setItems] = useState<TimeoutItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    getTimeoutDue()
-      .then(setItems)
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    getTimeoutDue().then(setItems).catch((cause) => setError(cause instanceof Error ? cause.message : 'Could not load the review queue.')).finally(() => setLoading(false))
   }, [])
 
-  const overdue = items.filter((i) => i.hours_elapsed > 72 && i.status === 'REVIEW_DUE')
-  const due = items.filter((i) => i.hours_elapsed <= 72 && i.status === 'REVIEW_DUE')
-  const reviewed = items.filter((i) => i.status === 'REVIEWED')
+  const overdue = items.filter((item) => item.hours_elapsed > 72 && item.status === 'REVIEW_DUE')
+  const due = items.filter((item) => item.hours_elapsed <= 72 && item.status === 'REVIEW_DUE')
+  const reviewed = items.filter((item) => item.status === 'REVIEWED')
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100">48-Hour Antimicrobial Review</h1>
-        <p className="text-sm text-slate-400 mt-0.5">
-          Prescriptions requiring review per antibiotic stewardship time-out guidelines
-        </p>
+      <header className="border-b border-[#E2E1DC] pb-4">
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">Scheduled reassessment</p>
+        <h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">48-hour antimicrobial reviews</h1>
+        <p className="mt-1 text-sm text-[#6B6A65]">Reassess empiric therapy when culture and clinical response data should be available.</p>
+      </header>
+
+      <div className="flex items-start gap-3 rounded-[8px] border border-[#E8D5A7] bg-[#FFF9EB] p-4">
+        <Clock className="mt-0.5 h-4 w-4 shrink-0 text-[#8B5E00]" />
+        <div><p className="text-sm font-medium text-[#8B5E00]">Why this queue exists</p><p className="mt-1 text-xs leading-relaxed text-[#6B6A65]">NCDC guidance recommends reviewing empiric antibiotics after 48–72 hours. RxGuard reruns the rules; a clinician still decides whether therapy changes.</p></div>
       </div>
 
-      {/* Context box */}
-      <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/5">
-        <div className="flex items-start gap-3">
-          <Clock className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-amber-300">Why 48-hour reviews?</p>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              ICMR/NCDC guidelines recommend reassessing empiric antibiotic therapy 48–72 hours
-              after initiation, once culture results are typically available. This helps identify
-              opportunities for de-escalation, confirms appropriateness, and reduces resistance risk.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {loading && (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
-        </div>
-      )}
-
-      {!loading && (
+      {loading && <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-[#3730A3]" /></div>}
+      {error && <div className="rounded-md border border-[#D9A4A4] bg-[#FDF2F2] px-4 py-3 text-sm text-[#8B1A1A]">{error}</div>}
+      {!loading && !error && (
         <div className="space-y-6">
-          {/* Overdue */}
-          {overdue.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-rose-400 uppercase tracking-wide">
-                  Overdue ({overdue.length})
-                </h2>
-                <div className="h-px flex-1 bg-rose-500/20" />
-              </div>
-              {overdue.map((item) => (
-                <TimeoutCard key={item.episode_id} item={item} />
-              ))}
-            </div>
-          )}
-
-          {/* Due */}
-          {due.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wide">
-                  Review Due ({due.length})
-                </h2>
-                <div className="h-px flex-1 bg-amber-500/20" />
-              </div>
-              {due.map((item) => (
-                <TimeoutCard key={item.episode_id} item={item} />
-              ))}
-            </div>
-          )}
-
-          {/* Empty state */}
-          {overdue.length === 0 && due.length === 0 && (
-            <div className="text-center py-16">
-              <Clock className="w-10 h-10 mx-auto mb-3 text-emerald-500/50" />
-              <p className="text-slate-300 font-medium">No reviews pending</p>
-              <p className="text-sm text-slate-400 mt-1">
-                All prescriptions are within the review window.
-              </p>
-            </div>
-          )}
-
-          {/* Reviewed */}
-          {reviewed.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
-                  Completed ({reviewed.length})
-                </h2>
-                <div className="h-px flex-1 bg-[#2d3148]" />
-              </div>
-              {reviewed.map((item) => (
-                <TimeoutCard key={item.episode_id} item={item} />
-              ))}
-            </div>
-          )}
+          {overdue.length > 0 && <Queue title="Overdue" count={overdue.length} color="text-[#8B1A1A]" items={overdue} />}
+          {due.length > 0 && <Queue title="Due now" count={due.length} color="text-[#8B5E00]" items={due} />}
+          {overdue.length === 0 && due.length === 0 && <div className="rounded-[8px] border border-dashed border-[#C8C7C0] bg-white py-16 text-center"><Clock className="mx-auto h-8 w-8 text-[#1A6B3C]" /><p className="mt-3 text-sm font-medium text-[#1A1A1A]">No reviews pending</p><p className="mt-1 text-xs text-[#6B6A65]">All active prescriptions are within the review window.</p></div>}
+          {reviewed.length > 0 && <Queue title="Completed" count={reviewed.length} color="text-[#6B6A65]" items={reviewed} />}
         </div>
       )}
     </div>
   )
+}
+
+function Queue({ title, count, color, items }: { title: string; count: number; color: string; items: TimeoutItem[] }) {
+  return <section className="space-y-3"><div className="flex items-center gap-3"><h2 className={`text-xs font-medium uppercase tracking-[0.06em] ${color}`}>{title} ({count})</h2><div className="h-px flex-1 bg-[#E2E1DC]" /></div>{items.map((item) => <TimeoutCard key={item.episode_id} item={item} />)}</section>
 }
