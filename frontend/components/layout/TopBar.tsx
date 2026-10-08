@@ -7,9 +7,16 @@ interface TopBarProps {
   onMenuClick: () => void
   role: 'doctor' | 'pharmacist'
   onRoleChange: (role: 'doctor' | 'pharmacist') => void
+  /** From GET /api/health; the label is hidden when it is not known. */
+  rulesetVersion?: string | null
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ onMenuClick, role, onRoleChange }) => {
+export const TopBar: React.FC<TopBarProps> = ({
+  onMenuClick,
+  role,
+  onRoleChange,
+  rulesetVersion,
+}) => {
   return (
     <header className="h-16 bg-[#1a1d2e] border-b border-[#2d3148] px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm backdrop-blur-md">
       {/* Left section */}
@@ -31,10 +38,12 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuClick, role, onRoleChange 
             <span className="font-medium hidden sm:inline">Engine Active</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#141724] border border-[#2d3148] text-xs">
-            <Shield className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-slate-300 font-mono text-[11px]">ICMR/NCDC Ruleset v1.0</span>
-          </div>
+          {rulesetVersion && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#141724] border border-[#2d3148] text-xs">
+              <Shield className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-slate-300 font-mono text-[11px]">Ruleset {rulesetVersion}</span>
+            </div>
+          )}
         </div>
       </div>
 

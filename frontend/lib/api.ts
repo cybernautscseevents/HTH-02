@@ -54,6 +54,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// ─── Health ────────────────────────────────────────────────────────────────────
+
+/** Backend status and the version of the guideline rule pack it evaluates with. */
+export async function getHealth(): Promise<{ status: string; ruleset_version: string }> {
+  if (USE_MOCK) return { status: 'ok', ruleset_version: 'mock data' }
+  return apiFetch<{ status: string; ruleset_version: string }>('/api/health')
+}
+
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
 
 export async function getStats(): Promise<DashboardStats> {

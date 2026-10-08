@@ -20,6 +20,8 @@ interface SidebarProps {
   setMobileOpen: (open: boolean) => void
   pendingCount?: number
   timeoutCount?: number
+  /** From GET /api/health; the label is hidden when it is not known. */
+  rulesetVersion?: string | null
 }
 
 const navItems = [
@@ -34,6 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setMobileOpen,
   pendingCount = 0,
   timeoutCount = 0,
+  rulesetVersion = null,
 }) => {
   const pathname = usePathname()
 
@@ -151,9 +154,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="text-xs text-slate-300">Stewardship Engine</span>
                   <span className="ml-auto text-[10px] text-emerald-400 font-mono">Active</span>
                 </div>
-                <div className="text-[10px] text-slate-500 font-mono">
-                  Ruleset v1.0.0 · ICMR/NCDC 2023
-                </div>
+                {rulesetVersion && (
+                  <div className="text-[10px] text-slate-500 font-mono break-all">
+                    Ruleset {rulesetVersion}
+                  </div>
+                )}
               </div>
               {/* Image OCR is kept for later work and is not part of the typed-prescription demo. */}
               <Link

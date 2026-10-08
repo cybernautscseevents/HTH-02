@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { getHealth, getTimeoutDue } from '@/lib/api'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 
@@ -11,6 +12,18 @@ export default function ShellLayout({
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [role, setRole] = useState<'doctor' | 'pharmacist'>('pharmacist')
+  // Shown only once the API has answered; nothing is displayed for a failed call.
+  const [timeoutCount, setTimeoutCount] = useState(0)
+  const [rulesetVersion, setRulesetVersion] = useState<string | null>(null)
+
+  useEffect(() => {
+    getTimeoutDue()
+      .then((due) => setTimeoutCount(due.length))
+      .catch(() => setTimeoutCount(0))
+    getHealth()
+      .then((h) => setRulesetVersion(h.ruleset_version))
+      .catch(() => setRulesetVersion(null))
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#0f1117] flex overflow-hidden">
@@ -18,8 +31,8 @@ export default function ShellLayout({
       <Sidebar
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
-        timeoutCount={5}
-        pendingCount={8}
+        timeoutCount={timeoutCount}
+        rulesetVersion={rulesetVersion}
       />
 
       {/* Main Content Area */}
@@ -28,6 +41,7 @@ export default function ShellLayout({
           onMenuClick={() => setMobileOpen(true)}
           role={role}
           onRoleChange={setRole}
+          rulesetVersion={rulesetVersion}
         />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#0f1117]">
           <div className="max-w-7xl mx-auto space-y-6">
