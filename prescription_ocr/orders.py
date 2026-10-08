@@ -29,7 +29,14 @@ _FREQUENCY_WORDS = {
 }
 _AS_NEEDED = re.compile(r"\b(?:sos|prn|as\s+needed|stat)\b", re.IGNORECASE)
 _MEAL_PATTERN = re.compile(r"(?<![\d/.-])([0-4])\s*-\s*([0-4])\s*-\s*([0-4])(?![\d/.-])")
-_HOURLY = re.compile(r"\b(?:q\s*(\d{1,2})\s*h|(\d{1,2})\s*(?:-\s*)?hourly)\b", re.IGNORECASE)
+_HOURLY = re.compile(
+    r"\b(?:q\s*(\d{1,2})\s*h(?:rs?|ours?)?|(\d{1,2})\s*(?:-\s*)?hourly)\b", re.IGNORECASE
+)
+# "Daily" alone is once a day. Preceded by a count ("2 times daily", "1xDaily") it is not read.
+_BARE_DAILY = re.compile(r"\bdaily\b", re.IGNORECASE)
+_COUNTED_DAILY = re.compile(
+    r"(?:\d|\b(?:one|two|three|four|five|six))\s*(?:x|times?)\s*(?:a\s+)?daily\b", re.IGNORECASE
+)
 _DURATION = re.compile(r"\b(\d{1,3})\s*(days?|weeks?|wks?)\b", re.IGNORECASE)
 _ROUTE_WORDS = {
     Route.IV: r"iv|i\.v\.?|intravenous(?:ly)?",
@@ -45,11 +52,17 @@ def _single(values: set) -> object | None:
 
 
 def dose_mg(strength: str | None) -> float | None:
-    """Single-ingredient strength in mg ("500 mg", "1 g"); None for combinations or other units."""
+    """Single-ingredient strength in mg ("500 mg", "1 g").
+
+    None for combinations, other units, a zero amount, or a number written with a comma
+    ("1,000 mg" or "1,5 g" depends on the writer's convention, so it is not read).
+    """
     match = _SINGLE_STRENGTH.match((strength or "").strip())
     if not match:
         return None
     amount = float(match.group(1))
+    if amount <= 0:
+        return None
     return amount * 1000 if match.group(2).lower().startswith("g") else amount
 
 
@@ -69,6 +82,8 @@ def doses_per_day(text: str) -> float | None:
         hours = int(match.group(1) or match.group(2))
         if hours and 24 % hours == 0:
             found.add(24.0 / hours)
+    if not found and _BARE_DAILY.search(text) and not _COUNTED_DAILY.search(text):
+        found.add(1.0)
     return _single(found)
 
 

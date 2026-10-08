@@ -444,10 +444,93 @@ def test_parse_endpoint_does_not_accept_unknown_drugs(client):
         ("complicated UTI", None),
         ("cellulitis", None),
         ("", None),
+        ("Acute cystitis", "cystitis"),
+        ("Acute exacerbation of COPD", "copd_exacerbation"),
+        ("Acute gastroenteritis without danger signs", "acute_gastroenteritis_no_danger_signs"),
+        ("Cystitis, uncomplicated UTI", "cystitis"),  # two phrases, one syndrome
+        # negated
+        ("Complicated UTI, not cystitis", None),
+        ("No cystitis", None),
+        ("Cystitis ruled out", None),
+        # conflicting: a second syndrome, supported or not
+        ("Pneumonia with acute bronchitis", None),
+        ("Cellulitis, cystitis", None),
+        ("Cystitis and pyelonephritis", None),
+        # ambiguous
+        ("Cystitis?", None),
+        ("Cystitis vs pyelonephritis", None),
+        ("Recurrent cystitis in pregnancy", None),
     ],
 )
 def test_free_text_diagnosis_mapping_is_explicit(text, code):
     assert syndrome_from_text(text) == code
+
+
+def test_unclear_diagnosis_is_unresolved_and_says_why(client):
+    text = "Pneumonia with acute bronchitis"
+    report = evaluate(client, NITRO, syndrome=None, diagnosis_text=text)
+    assert report["syndrome"]["resolution"] == "unresolved"
+    # never "antibiotics are not indicated" for a patient whose diagnosis includes pneumonia
+    assert finding(report, "R1_INDICATION", "rx-1")["outcome"] == "CANNOT_ASSESS"
+    why = "says more than the syndrome name ('pneumonia with')"
+    assert any(why in w for w in report["warnings"])
+    report = evaluate(client, NITRO, syndrome=None, diagnosis_text="Complicated UTI, not cystitis")
+    assert report["syndrome"]["resolution"] == "unresolved"
+    assert any("negation" in w for w in report["warnings"])
+
+
+def test_explicit_syndrome_code_outranks_diagnosis_text(client):
+    report = evaluate(client, NITRO, syndrome="cystitis", diagnosis_text="Not cystitis")
+    assert report["syndrome"]["code"] == "cystitis"
+    assert report["syndrome"]["resolution"] == "selected"
+
+
+# --- malformed numbers never crash the API ---
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Tab Nitrofurantoin 0 mg BD x 5 days",
+        "Tab Nitrofurantoin 1,000 mg BD x 5 days",
+        "Tab Nitrofurantoin 1,5 g BD x 5 days",
+    ],
+)
+def test_unreadable_dose_is_cannot_assess_not_a_server_error(client, line):
+    report = evaluate(client, line)  # asserts HTTP 200
+    (order,) = report["orders"]
+    assert (order["generic"], order["dose_mg"], order["freq_per_day"]) == (
+        "nitrofurantoin",
+        None,
+        2.0,
+    )
+    item = finding(report, "R3_DOSE", "rx-1")
+    assert item["outcome"] == "CANNOT_ASSESS" and "dose_mg" in item["missing_inputs"]
+
+
+def test_invalid_episode_data_is_rejected_not_a_server_error(client, service, monkeypatch):
+    from backend.stewardship.schemas import DrugOrder
+
+    def broken(request):
+        DrugOrder(id="rx-1", raw_text="X 0 mg", dose_mg=0)
+
+    monkeypatch.setattr(service, "evaluate_request", broken)
+    response = client.post(
+        "/api/evaluate", json={"patient": PATIENT, "prescription": NITRO, "syndrome_code": None}
+    )
+    assert response.status_code == 422
+    assert "dose_mg" in response.json()["detail"]
+
+
+def test_ampicillin_typed_without_a_form_word_is_identified(client):
+    report = evaluate(client, "Ampicillin 500 mg IV q6h", syndrome=None)
+    (order,) = report["orders"]
+    assert (order["generic"], order["norm_status"], order["dose_mg"], order["freq_per_day"]) == (
+        "ampicillin",
+        "ACCEPTED",
+        500.0,
+        4.0,
+    )
 
 
 # --- evidence retrieval and explanation (never decides) ---

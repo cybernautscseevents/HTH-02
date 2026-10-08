@@ -89,17 +89,47 @@ DIAGNOSIS_PHRASES: dict[str, tuple[str, ...]] = {
 }
 
 
-def syndrome_from_text(text: str | None) -> str | None:
-    """Syndrome code named by a free-text diagnosis, or None when it names none or several."""
-    if not text:
-        return None
+# Words a diagnosis may carry beside its phrase without changing the syndrome.
+_DIAGNOSIS_FILLER = frozenset({"acute"})
+_PHRASE_CODE = {p: code for code, phrases in DIAGNOSIS_PHRASES.items() for p in phrases}
+# Longest phrase first, so "uncomplicated viral urti" is not read as "viral urti" plus a word.
+_PHRASE = re.compile(
+    r"\b(?:" + "|".join(re.escape(p) for p in sorted(_PHRASE_CODE, key=len, reverse=True)) + r")\b"
+)
+_NEGATION = re.compile(
+    r"\b(?:no|not|non|without|negative|denies|denied|excluded|ruled|rule|unlikely|absent)\b"
+)
+
+
+def read_diagnosis(text: str | None) -> tuple[str | None, str | None]:
+    """(syndrome code, why none) for a free-text diagnosis.
+
+    A code is returned only when the text is one phrase of the table, or several phrases of the
+    same syndrome, with nothing else but "acute". A negated, uncertain or second diagnosis
+    ("Complicated UTI, not cystitis", "Pneumonia with acute bronchitis", "cystitis?") could
+    change the syndrome, so it is not mapped: a person selects the code.
+    """
+    if not text or not text.strip():
+        return None, None
     normalized = " ".join(re.sub(r"[^a-z0-9 ]", " ", text.lower()).split())
-    hits = {
-        code
-        for code, phrases in DIAGNOSIS_PHRASES.items()
-        if any(re.search(rf"\b{re.escape(p)}\b", normalized) for p in phrases)
-    }
-    return hits.pop() if len(hits) == 1 else None
+    codes = {_PHRASE_CODE[m.group()] for m in _PHRASE.finditer(normalized)}
+    if not codes:
+        return None, None
+    if len(codes) > 1:
+        return None, "The diagnosis names more than one syndrome."
+    other = [w for w in _PHRASE.sub(" ", normalized).split() if w not in _DIAGNOSIS_FILLER]
+    if any(_NEGATION.fullmatch(w) for w in other):
+        return None, "The diagnosis contains a negation."
+    if "?" in text:
+        return None, "The diagnosis is marked uncertain."
+    if other:
+        return None, f"The diagnosis says more than the syndrome name ('{' '.join(other)}')."
+    return codes.pop(), None
+
+
+def syndrome_from_text(text: str | None) -> str | None:
+    """Syndrome code named by a free-text diagnosis, or None when it is not unambiguous."""
+    return read_diagnosis(text)[0]
 
 
 def resolve_syndrome(
@@ -239,9 +269,10 @@ def build_episode(
         request.prescription, catalog, started_at=started_at
     )
     if how == "unresolved":
+        _, why = read_diagnosis(request.diagnosis_text)
         warnings += (
             "No supported syndrome was selected or recognised in the diagnosis; guideline "
-            "checks (R1, R3, R5) cannot run.",
+            "checks (R1, R3, R5) cannot run." + (f" {why} Select the syndrome." if why else ""),
         )
     episode = Episode(
         id=episode_id,

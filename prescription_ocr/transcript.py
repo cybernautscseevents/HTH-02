@@ -17,11 +17,14 @@ _PREFIX = re.compile(
     r"(?:(?P<form>tab(?:let)?s?|t(?=\s|[.:-])|[j7]ab|jub|cap(?:sule)?s?|"
     r"syr(?:up)?|syp|inj(?:ection)?s?|cream|ointment|gel|drops?|"
     r"susp(?:ension)?|solution|inhaler|spray|lotion|"
-    r"sachet|powder|pwd|mdi|neb(?:ule)?|amp(?:oule)?|vial)\s*[.:-]?\s*)?",
+    r"sachet|powder|pwd|mdi|neb(?:ule)?|amp(?:oule)?|vial)"
+    # A form word ends at a non-letter: "Ampicillin" is not "Amp" + "icillin".
+    r"(?![a-z])\s*[.:-]?\s*)?",
     re.IGNORECASE,
 )
 _STRENGTH = re.compile(
-    r"\b(\d+(?:\.\d+)?(?:\s*/\s*\d+(?:\.\d+)?)?\s*(?:mcg|mg|gm?|ml|iu|%)"
+    # A number keeps its commas ("1,000 mg", "1,5 g"), so a part of it is never read as the dose.
+    r"\b(\d+(?:[.,]\d+)*(?:\s*/\s*\d+(?:\.\d+)?)?\s*(?:mcg|mg|gm?|ml|iu|%)"
     r"(?:\s*/\s*\d+(?:\.\d+)?\s*(?:mcg|mg|gm?|ml|iu))?)\b",
     re.IGNORECASE,
 )
@@ -46,7 +49,7 @@ _NON_MEDICINE_START = re.compile(
 _INSTRUCTION = re.compile(
     r"\b(?:od|bd|bid|tid|tds|qid|qds|hs|sos|prn|stat|daily|once|twice|thrice|morning|noon|"
     r"evening|night|after|before|with|without|food|meals?|days?|weeks?|months?|hourly|"
-    r"iv|im|po|i\.v|i\.m|q\s*\d{1,2}\s*h|x\s*\d+|"
+    r"iv|im|po|i\.v|i\.m|q\s*\d{1,2}\s*h(?:rs?|ours?)?|x\s*\d+|"
     r"\d+\s*[-x]\s*\d+(?:\s*[-x]\s*\d+)?|\d+\s*x\s*/?\s*day)\b.*$",
     re.IGNORECASE,
 )

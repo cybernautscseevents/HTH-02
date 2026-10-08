@@ -47,7 +47,17 @@ def ocr(text: str) -> OcrResult:
 
 @pytest.mark.parametrize(
     ("strength", "expected"),
-    [("500 mg", 500.0), ("1 g", 1000.0), ("1gm", 1000.0), ("500/125 mg", None), ("5 ml", None)],
+    [
+        ("500 mg", 500.0),
+        ("1 g", 1000.0),
+        ("1gm", 1000.0),
+        ("500/125 mg", None),
+        ("5 ml", None),
+        ("0 mg", None),  # a zero dose is not a dose; R3 cannot assess it
+        ("0.0 g", None),
+        ("1,000 mg", None),  # thousands or decimal comma depends on the writer: not read
+        ("1,5 g", None),
+    ],
 )
 def test_dose_mg(strength, expected):
     assert dose_mg(strength) == expected
@@ -64,6 +74,17 @@ def test_dose_mg(strength, expected):
         ("Tab X 650 mg SOS", None),
         ("Tab X 500 mg BD 1-1-1", None),  # two readings disagree
         ("Tab X 500 mg", None),
+        ("X 500 mg PO DAILY", 1.0),
+        ("X 500 mg daily x 5 days", 1.0),
+        ("Inj X 1 g q8hr", 3.0),
+        ("Inj X 1 g q8hrs", 3.0),
+        ("Inj X 1 g q 8 hour", 3.0),
+        ("Inj X 1 g q 12 hours", 2.0),
+        ("Tab X 500 mg twice daily", 2.0),  # "daily" here is not a second, once-daily reading
+        ("Tab X 1-0-1 daily", 2.0),
+        ("Tab X 500 mg 2 times daily", None),  # counts are not read beside "daily"
+        ("Tab X 500 mg 1xDaily", None),
+        ("Tab X 500 mg daily PRN", None),
     ],
 )
 def test_doses_per_day(text, expected):

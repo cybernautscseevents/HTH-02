@@ -157,3 +157,9 @@ def test_unlisted_route_uses_tier_only_when_all_routes_agree(catalog):
 def test_indian_combination_spelling_is_accepted(catalog):
     result = catalog.normalize("Amoxycillin + Clavulanate 625")
     assert (result.status, result.generic) == (NormStatus.ACCEPTED, "amoxicillin/clavulanic acid")
+
+
+def test_usan_rifampin_is_the_who_rifampicin(catalog):
+    result = catalog.normalize("Rifampin")
+    assert (result.status, result.generic) == (NormStatus.ACCEPTED, "rifampicin")
+    assert "J04AB02" in result.reason

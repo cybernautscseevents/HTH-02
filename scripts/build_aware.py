@@ -202,6 +202,23 @@ def main() -> None:
                     ),
                 )
         codes.setdefault(generic, set()).add(a["WHONET_ABX_CODE"])
+    # AMRIE names outside J01 (rifampin, J04AB02) are only aliases of a WHO AWaRe entry with the
+    # same ATC code; they never add rows of their own.
+    with AMRIE_ANTIBIOTICS.open(encoding="utf-8-sig") as f:
+        for a in csv.DictReader(f, delimiter="\t"):
+            name = a["ANTIBIOTIC"].lower()
+            if a["HUMAN"] != "X" or a["ATC_CODE"].startswith("J01") or name in who_generics:
+                continue
+            same_atc = {
+                w["generic"]
+                for w in who
+                if w["atc_code"] == a["ATC_CODE"] and same_drug(name, w["generic"])
+            }
+            if a["ATC_CODE"] and len(same_atc) == 1:
+                aliases[name] = (
+                    same_atc.pop(),
+                    f"same ATC code {a['ATC_CODE']} (WHONET AMRIE name vs WHO AWaRe 2025 name)",
+                )
     for alias, generic, basis in INDIAN_ALIASES:
         assert generic in who_generics, generic
         aliases[alias] = (generic, basis)

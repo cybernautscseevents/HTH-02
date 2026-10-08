@@ -104,3 +104,46 @@ def test_empty_image_is_rejected():
 
     with pytest.raises(ValueError, match="positive"):
         prepare_image(image_module.new("RGB", (0, 10)))
+
+
+@pytest.mark.parametrize(
+    ("text", "name"),
+    [
+        ("Ampicillin 500 mg IV q6h", "Ampicillin"),
+        ("Amphotericin B 50 mg IV OD", "Amphotericin B"),
+        ("Capreomycin 1 g IM OD", "Capreomycin"),
+        ("Gentamicin 80 mg IV q8h", "Gentamicin"),
+    ],
+)
+def test_drug_name_starting_with_a_form_word_is_not_cut(text, name):
+    (line,) = parse_prescription_lines(text)
+    assert (line.medicine_text, line.dosage_form) == (name, None)
+
+
+@pytest.mark.parametrize(
+    ("text", "form"),
+    [
+        ("Amp Ampicillin 500 mg IV", "ampoule"),
+        ("Amp. Ampicillin 500 mg IV", "ampoule"),
+        ("Ampoule Ampicillin 500 mg IV", "ampoule"),
+        ("Inj Ampicillin 500 mg IV", "injection"),
+        ("Cap Amoxicillin 500 mg TDS", "capsule"),
+    ],
+)
+def test_written_form_word_is_still_read(text, form):
+    (line,) = parse_prescription_lines(text)
+    assert (line.medicine_text, line.dosage_form) == (text.split()[1], form)
+
+
+@pytest.mark.parametrize(
+    ("text", "strength"),
+    [("Vancomycin 1,000 mg IV q12h", "1,000 mg"), ("Ceftriaxone 1,5 g IV OD", "1,5 g")],
+)
+def test_comma_number_is_kept_whole_and_the_line_is_read(text, strength):
+    (line,) = parse_prescription_lines(text)
+    assert (line.medicine_text, line.strength) == (text.split()[0], strength)
+
+
+def test_hour_words_are_not_part_of_the_drug_name():
+    lines = parse_prescription_lines("Cefazolin 2 g q8hr\nCefazolin 2 g q 8 hour")
+    assert [line.medicine_text for line in lines] == ["Cefazolin", "Cefazolin"]

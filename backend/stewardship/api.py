@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from . import config
 from .audit import JsonlAuditLog
@@ -64,6 +64,17 @@ def create_app(service: StewardshipService | None = None) -> FastAPI:
         from fastapi.responses import JSONResponse
 
         return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(ValidationError)
+    async def _invalid(request, exc):
+        """Input that passed the request schema but could not become a valid episode or order.
+        It is rejected like any other inconsistent input, never answered with a server error."""
+        from fastapi.responses import JSONResponse
+
+        errors = "; ".join(f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in exc.errors())
+        return JSONResponse(
+            status_code=422, content={"detail": f"Input could not be read: {errors}"}
+        )
 
     @app.exception_handler(NotFoundError)
     async def _missing(request, exc):
