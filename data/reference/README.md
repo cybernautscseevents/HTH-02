@@ -22,3 +22,20 @@ Caveats:
   represented; handle them in the rule pack if needed.
 - Combination names use AMRIE spelling (`amoxicillin/clavulanic acid`); drug normalization must
   map to these names.
+
+## `../intrinsic_resistance.csv` — derived from `amrie/ExpectedResistancePhenotypes.txt`
+
+Built by `scripts/build_intrinsic_resistance.py`: every **CLSI** expected-resistance rule
+expanded to one row per organism name and generic in `aware.csv` (7,466 rows). CLSI is used
+because ICMR AMRSN reports against CLSI breakpoints. Organism names are AMRIE scientific names
+in lower case; a lab report written as "E. coli" will not match.
+
+## `../renal_dosing.csv` — US FDA label renal dosing tables
+
+One row per creatinine clearance band (mL/min, inclusive integers) for 13 antibiotics, each
+quoting the label text word for word, with DailyMed set id, effective date and section.
+Labels were fetched through the openFDA drug label API on 2026-10-08.
+`action`: `none` (no change), `adjust` (modified regimen; `max_daily_mg` set only where the
+label gives an absolute single-agent dose), `avoid` (contraindicated or not recommended).
+Drugs not listed (for example vancomycin, aminoglycosides, linezolid) get CANNOT_ASSESS.
+These are US labels; verify against Indian prescribing information before clinical use.
