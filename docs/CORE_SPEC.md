@@ -97,8 +97,9 @@ The core codes against these. Until teammates merge, use fakes in `backend/tests
 
 ```python
 class DrugCatalog(Protocol):            # Person 2
-    def aware_tier(self, generic: str) -> AwareTier: ...
+    def aware_tier(self, generic: str, route: Route | None = None) -> AwareTier: ...  # WHO 2025 tiers differ by route for fosfomycin, minocycline
     def is_antibiotic(self, generic: str) -> bool: ...            # ATC J01*
+    def knows_organism(self, organism: str) -> bool: ...          # False -> C9 CANNOT_ASSESS
     def intrinsically_resistant(self, organism: str, generic: str) -> bool: ...
 
 class RenalChecker(Protocol):           # Person 2
@@ -156,6 +157,7 @@ Signature: `(ctx: RuleContext) -> tuple[Finding, ...]`. "Active antibiotics" = i
 | `C6_CONTAMINANT` | isolate `probable_contaminant` | FLAG / LOW; C3/C4 ignore that isolate |
 | `C7_INTERMEDIATE` | active drug has result I | FLAG / MODERATE ("not treated as susceptible for step-down") |
 | `C8_NOT_TESTED` | FINAL isolate exists but active drug not in its susceptibilities and not intrinsic | CANNOT_ASSESS / MODERATE |
+| `C9_ORGANISM_UNKNOWN` | FINAL non-contaminant isolate whose organism is not in the reference list (`catalog.knows_organism` false); intrinsic resistance could not be checked | CANNOT_ASSESS / MODERATE |
 
 `NOT_SENT` never counts as negative. PENDING → no culture findings except C1.
 
@@ -187,7 +189,7 @@ def evaluate_episode(episode: Episode, *, now: datetime, trigger: Trigger,
 
 1. Build `RuleContext`.
 2. For each order: run R0; if not identified, skip the rest for that order. Else run R1–R6.
-3. Run C1–C8.
+3. Run C1–C9.
 4. Coverage: only if no specimen is FINAL and `coverage` is given — estimate for the prescribed
    generics + the syndrome's first-line generics. Coverage never creates findings in P0.
 5. Any rule that raises → `Finding(rule_id, CANNOT_ASSESS, HIGH, message="check failed: <type>")`,

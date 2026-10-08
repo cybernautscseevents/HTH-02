@@ -4,7 +4,7 @@
 AMRIE states expected (intrinsic) resistance as rules over organism groups (family, genus,
 species group, single organism) and antibiotic groups (single WHONET code or an ATC class
 prefix), with exceptions. The engine needs a plain lookup, so this script expands every CLSI
-rule into one row per organism name and generic antibiotic from data/aware.csv.
+rule into one row per organism name and generic antibiotic from data/aware.csv (canonical WHO names; build that first with scripts/build_aware.py).
 
 CLSI is used because ICMR's AMR surveillance network reports against CLSI breakpoints.
 
@@ -26,8 +26,8 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f, delimiter="\t"))
 
 
-def split_codes(value: str) -> set[str]:
-    return {c.strip() for c in value.split(",") if c.strip()}
+def split_codes(value: str, sep: str = ",") -> set[str]:
+    return {c.strip() for c in value.split(sep) if c.strip()}
 
 
 def matches(organism: dict[str, str], code_type: str, codes: set[str]) -> bool:
@@ -38,7 +38,7 @@ def main() -> None:
     organisms = [o for o in read_tsv(AMRIE / "Organisms.txt") if not o["REPLACED_BY"]]
     with AWARE_CSV.open(encoding="utf-8") as f:
         drugs = list(csv.DictReader(f))
-    by_whonet = {d["whonet_codes"]: d["generic"] for d in drugs}
+    by_whonet = {code: d["generic"] for d in drugs for code in split_codes(d["whonet_codes"], "|")}
 
     rows = set()
     for rule in read_tsv(AMRIE / "ExpectedResistancePhenotypes.txt"):
@@ -50,7 +50,7 @@ def main() -> None:
                 d["generic"]
                 for d in drugs
                 if d["atc_code"].startswith(rule["ABX_CODE"])
-                and d["whonet_codes"] not in excluded_abx
+                and not split_codes(d["whonet_codes"], "|") <= excluded_abx
             }
         else:
             generics = {by_whonet[rule["ABX_CODE"]]} if rule["ABX_CODE"] in by_whonet else set()

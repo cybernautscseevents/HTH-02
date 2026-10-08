@@ -1,0 +1,29 @@
+alias,generic,basis
+amoxicillin and clavulanate potassium,amoxicillin/clavulanic acid,US FDA label generic name (DailyMed)
+amoxicillin clavulanate,amoxicillin/clavulanic acid,Short form of 'amoxicillin and clavulanate potassium' (US FDA label generic name)
+amoxycillin,amoxicillin,Indian Pharmacopoeia spelling; GSK India Augmentin PI: 'Amoxycillin and Potassium Clavulanate Tablets IP'
+amoxycillin and potassium clavulanate,amoxicillin/clavulanic acid,"GSK India Augmentin 625/1g Duo PI, section 1 Generic Name"
+amoxycillin clavulanate,amoxicillin/clavulanic acid,Short form of the Indian Pharmacopoeia name 'Amoxycillin and Potassium Clavulanate' (GSK India Augmentin PI)
+cefditoren,cefditoren pivoxil,same ATC code J01DD16 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+cefetamet,cefetamet pivoxil,same ATC code J01DD10; USAN/INN synonym (reviewed by hand)
+cefpodoxime,cefpodoxime proxetil,same ATC code J01DD13 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+ceftaroline,ceftaroline fosamil,same ATC code J01DI02 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+ceftobiprole,ceftobiprole medocaril,same ATC code J01DI01 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+cefuroxime axetil,cefuroxime,same ATC code J01DC02 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+cephalexin,cefalexin,same ATC code J01DB01 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+cephalothin,cefalotin,same ATC code J01DB03 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+co-trimoxazole,sulfamethoxazole/trimethoprim,"ICMR Treatment Guidelines 2019, Table 9.2: 'Co-trimoxazole'"
+cotrimoxazole,sulfamethoxazole/trimethoprim,"NCDC National Treatment Guidelines v2.0 (2025), section 5.1: 'Cotrimoxazole 960 mg BD'"
+gentamicin-high,gentamicin,same ATC code J01GB03 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+imipenem,imipenem/cilastatin,same ATC code J01DH51 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+imipenem/relebactam,imipenem/cilastatin/relebactam,same ATC code J01DH56 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+kanamycin-high,kanamycin,same ATC code J01GB04 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+mecillinam (amdinocillin),mecillinam,same ATC code J01CA11 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+methicillin,meticillin,same ATC code J01CF03 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+moxalactam (latamoxef),latamoxef,same ATC code J01DD06; USAN/INN synonym (reviewed by hand)
+penicillin g,benzylpenicillin,same ATC code J01CE01 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+penicillin v,phenoxymethylpenicillin,same ATC code J01CE02; USAN/INN synonym (reviewed by hand)
+quinupristin/dalfopristin,dalfopristin/quinupristin,same ATC code J01FG02 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+streptomycin-high,streptomycin,same ATC code J01GA01 (WHONET AMRIE name vs WHO AWaRe 2025 name)
+sulfisoxazole,sulfafurazole,same ATC code J01EB05; USAN/INN synonym (reviewed by hand)
+trimethoprim/sulfamethoxazole,sulfamethoxazole/trimethoprim,same ATC code J01EE01 (WHONET AMRIE name vs WHO AWaRe 2025 name)

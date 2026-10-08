@@ -7,13 +7,30 @@ drug catalog, kidney checker, rule pack and coverage estimator are finished.
 from collections.abc import Sequence
 from typing import Protocol
 
-from .schemas import AwareTier, CoverageEstimate, DrugOrder, Finding, Patient, Setting, SyndromeRule
+from .schemas import (
+    AwareTier,
+    CoverageEstimate,
+    DrugOrder,
+    Finding,
+    Patient,
+    Route,
+    Setting,
+    SyndromeRule,
+)
 
 
 class DrugCatalog(Protocol):
-    def aware_tier(self, generic: str) -> AwareTier: ...
+    def aware_tier(self, generic: str, route: Route | None = None) -> AwareTier:
+        """WHO AWaRe tier. Some drugs (fosfomycin, minocycline) differ by route; without a route
+        such a drug is NOT_CLASSIFIED."""
+        ...
 
     def is_antibiotic(self, generic: str) -> bool: ...
+
+    def knows_organism(self, organism: str) -> bool:
+        """False when the organism is not in the reference list, so intrinsic resistance for it
+        cannot be checked."""
+        ...
 
     def intrinsically_resistant(self, organism: str, generic: str) -> bool: ...
 

@@ -108,12 +108,16 @@ class FakeRulePack:
 @dataclass
 class FakeCatalog:
     intrinsic: set[tuple[str, str]] = field(default_factory=set)
+    unknown_organisms: set[str] = field(default_factory=set)
 
-    def aware_tier(self, generic: str) -> AwareTier:
+    def aware_tier(self, generic: str, route: Route | None = None) -> AwareTier:
         return TIERS.get(generic, AwareTier.NOT_CLASSIFIED)
 
     def is_antibiotic(self, generic: str) -> bool:
         return generic in TIERS
+
+    def knows_organism(self, organism: str) -> bool:
+        return organism not in self.unknown_organisms
 
     def intrinsically_resistant(self, organism: str, generic: str) -> bool:
         return (organism, generic) in self.intrinsic

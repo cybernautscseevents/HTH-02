@@ -1,124 +1,275 @@
-generic,atc_code,drug_class,subclass,aware_tier,whonet_codes
-amikacin,J01GB06,Aminoglycosides,,Access,AMK
-amoxicillin,J01CA04,Penicillins,Aminopenicillin,Access,AMX
-amoxicillin/clavulanic acid,J01CR02,Beta-lactam+Inhibitors,,Access,AMC
-ampicillin,J01CA01,Penicillins,Aminopenicillin,Access,AMP
-ampicillin/sulbactam,J01CR01,Beta-lactam+Inhibitors,,Access,SAM
-azithromycin,J01FA10,Macrolides,15-Membered ring,Watch,AZM
-azlocillin,J01CA09,Penicillins,Ureidopenicillin,Watch,AZL
-aztreonam,J01DF01,Monobactams,,Reserve,ATM
-bacitracin zinc,J01XX10,Polypeptides,,Not classified,BAC
-carbenicillin,J01CA03,Penicillins,Carboxypenicillin,Watch,CRB
-cefaclor,J01DC04,Cephems-Oral,Cephalosporin,Watch,CEC
-cefadroxil,J01DB05,Cephems-Oral,Cephalosporin,Access,CFR
-cefamandole,J01DC03,Cephems,Cephalosporin II,Watch,MAN
-cefazolin,J01DB04,Cephems,Cephalosporin I,Access,CZO
-cefdinir,J01DD15,Cephems-Oral,Cephalosporin,Watch,CDR
-cefditoren,J01DD16,Cephems-Oral,Cephalosporin,Not classified,DIT
-cefepime,J01DE01,Cephems,Cephalosporin IV,Watch,FEP
-cefetamet,J01DD10,Cephems-Oral,Cephalosporin,Not classified,CAT
-cefixime,J01DD08,Cephems-Oral,Cephalosporin,Watch,CFM
-cefmetazole,J01DC09,Cephems,Cephamycin,Watch,CMZ
-cefonicid,J01DC06,Cephems,Cephalosporin II,Watch,CID
-cefoperazone,J01DD12,Cephems,Cephalosporin II,Watch,CFP
-cefotaxime,J01DD01,Cephems,Cephalosporin III,Watch,CTX
-cefotaxime/clavulanic acid,J01DD51,Beta-lactam+Inhibitors,,Not classified,CTC
-cefotetan,J01DC05,Cephems,Cephamycin,Watch,CTT
-cefoxitin,J01DC01,Cephems,Cephamycin,Watch,FOX
-cefpodoxime,J01DD13,Cephems,Cephalosporin III,Not classified,CPD
-cefprozil,J01DC10,Cephems-Oral,Cephalosporin,Watch,CPR
-ceftaroline,J01DI02,Cephems,Cephalosporin,Not classified,CPT
-ceftazidime,J01DD02,Cephems,Cephalosporin III,Watch,CAZ
-ceftazidime/clavulanic acid,J01DD52,Beta-lactam+Inhibitors,,Not classified,CCV
-ceftibuten,J01DD14,Cephems-Oral,Cephalosporin,Watch,CTB
-ceftizoxime,J01DD07,Cephems,Cephalosporin III,Watch,CZX
-ceftobiprole,J01DI01,Cephems,Cephalosporin,Not classified,BPR
-ceftolozane/tazobactam,J01DI54,Beta-lactam+Inhibitors,,Reserve,CZT
-ceftriaxone,J01DD04,Cephems,Cephalosporin III,Watch,CRO
-cefuroxime,J01DC02,Cephems,Cephalosporin II,Watch,CXM
-cefuroxime axetil,J01DC02,Cephems-Oral,Cephalosporin,Not classified,CXA
-cephalexin,J01DB01,Cephems-Oral,Cephalosporin,Access,LEX
-cephalothin,J01DB03,Cephems,Cephalosporin I,Access,CEP
-chloramphenicol,J01BA01,Phenicols,,Access,CHL
-cinoxacin,J01MB06,Quinolones,Quinolone,Watch,CIN
-ciprofloxacin,J01MA02,Quinolones,Fluoroquinolone,Watch,CIP
-clarithromycin,J01FA09,Macrolides,14-Membered ring,Watch,CLR
-clindamycin,J01FF01,Lincosamides,,Access,CLI
-colistin,J01XB01,Lipopeptides,,Reserve,COL
-colistin/polysorbate,J01XB01,Lipopeptides,,Not classified,COP
-dalbavancin,J01XA04,Glycopeptides,,Reserve,DAL
-daptomycin,J01XX09,Lipopeptides,,Reserve,DAP
-dirithromycin,J01FA13,Macrolides,,Watch,DIR
-doripenem,J01DH04,Penems,Carbapenems,Watch,DOR
-doxycycline,J01AA02,Tetracyclines,,Access,DOX
-enoxacin,J01MA04,Quinolones,Fluoroquinolone,Watch,ENX
-ertapenem,J01DH03,Penems,Carbapenems,Watch,ETP
-erythromycin,J01FA01,Macrolides,,Watch,ERY
-faropenem,J01DI03,Penems,Penem,Reserve,FAR
-fleroxacin,J01MA08,Quinolones,Fluoroquinolone,Watch,FLE
-fosfomycin,J01XX01,Fosfomycins,Fosfomycin,Watch,FOS
-fusidic acid,J01XC01,Steroidals,Fusidane,Watch,FUS
-garenoxacin,J01MA19,Quinolones,Quinolone,Watch,GRN
-gatifloxacin,J01MA16,Quinolones,Fluoroquinolone,Watch,GAT
-gemifloxacin,J01MA15,Quinolones,Fluoroquinolone,Watch,GEM
-gentamicin,J01GB03,Aminoglycosides,,Access,GEN
-gentamicin-high,J01GB03,Aminoglycosides,,Not classified,GEH
-grepafloxacin,J01MA11,Quinolones,Fluoroquinolone,Watch,GRX
-iclaprim,J01EA03,Folate pathway inhibitors,,Reserve,ICL
-imipenem,J01DH51,Penems,Carbapenems,Not classified,IPM
-imipenem/relebactam,J01DH56,Beta-lactam+Inhibitors,,Not classified,IMR
-kanamycin,J01GB04,Aminoglycosides,,Watch,KAN
-kanamycin-high,J01GB04,Aminoglycosides,,Watch,KAH
-levofloxacin,J01MA12,Quinolones,Fluoroquinolone,Watch,LVX
-linezolid,J01XX08,Oxazolidinones,,Reserve,LNZ
-lomefloxacin,J01MA07,Quinolones,Fluoroquinolone,Watch,LOM
-loracarbef,J01DC08,Cephems-Oral,Carbacephem,Watch,LOR
-mecillinam (amdinocillin),J01CA11,Penicillins,Amidinopenicillin,Access,MEC
-meropenem,J01DH02,Penems,Carbapenems,Watch,MEM
-meropenem/vaborbactam,J01DH52,Beta-lactam+Inhibitors,,Reserve,MEV
-methicillin,J01CF03,Penicillins,Penicillin (Stable),Not classified,MET
-metronidazole,J01XD01,Nitroimidazoles,,Access,MTR
-mezlocillin,J01CA10,Penicillins,Ureidopenicillin,Watch,MEZ
-minocycline,J01AA08,Tetracyclines,,Watch,MNO
-moxalactam (latamoxef),J01DD06,Cephems,Oxacephem,Not classified,MOX
-moxifloxacin,J01MA14,Quinolones,Fluoroquinolone,Watch,MFX
-nafcillin,J01CF06,Penicillins,Penicillin (Stable),Access,NAF
-nalidixic acid,J01MB02,Quinolones,Quinolone,Not classified,NAL
-neomycin,J01GB05,Aminoglycosides,,Watch,NEO
-netilmicin,J01GB07,Aminoglycosides,,Watch,NET
-nitrofurantoin,J01XE01,Nitrofurans,,Access,NIT
-norfloxacin,J01MA06,Quinolones,Fluoroquinolone,Watch,NOR
-ofloxacin,J01MA01,Quinolones,Fluoroquinolone,Watch,OFX
-omadacycline,J01AA15,Tetracyclines,,Reserve,OMC
-oritavancin,J01XA05,Glycopeptides,,Reserve,ORI
-oxacillin,J01CF04,Penicillins,Penicillin (Stable),Access,OXA
-penicillin g,J01CE01,Penicillins,Penicillin,Access,PEN
-penicillin v,J01CE02,Penicillins,Penicillin,Not classified,PNV
-piperacillin,J01CA12,Penicillins,Ureidopenicillin,Watch,PIP
-piperacillin/tazobactam,J01CR05,Beta-lactam+Inhibitors,,Watch,TZP
-plazomicin,J01GB14,Aminoglycosides,,Reserve,PLZ
-polymyxin b,J01XB02,Lipopeptides,Polymyxin,Reserve,POL
-polymyxin b/polysorbate 80,J01XB02,Lipopeptides,Polymyxin,Not classified,POP
-quinupristin/dalfopristin,J01FG02,Streptogramins,,Reserve,QDA
-ridinilazole,J01DB02,,,Not classified,RDZ
-solithromycin,J01FA16,Macrolides,,Watch,SOL
-sparfloxacin,J01MA09,Quinolones,Fluoroquinolone,Watch,SPX
-spectinomycin,J01XX04,Aminocyclitols,,Access,SPT
-streptomycin,J01GA01,Aminoglycosides,,Watch,STR
-streptomycin-high,J01GA01,Aminoglycosides,,Watch,STH
-sulfamethoxazole,J01EC01,Folate pathway inhibitors,,Access,SMX
-sulfisoxazole,J01EB05,Folate pathway inhibitors,,Not classified,SOX
-tebipenem,J01DH06,Penems,Carbapenems,Watch,TBP
-teicoplanin,J01XA02,Glycopeptides,Lipoglycopeptide,Watch,TEC
-telavancin,J01XA03,Glycopeptides,Lipoglycopeptide,Reserve,TLV
-telithromycin,J01FA15,Macrolides,Ketolide,Watch,TLT
-temafloxacin,J01MA05,Quinolones,Fluoroquinolone,Watch,TMX
-tetracycline,J01AA07,Tetracyclines,,Access,TCY
-ticarcillin,J01CA13,Penicillins,Carboxypenicillin,Watch,TIC
-ticarcillin/clavulanic acid,J01CR03,Beta-lactam+Inhibitors,,Not classified,TCC
-tigecycline,J01AA12,Tetracyclines,Glycylglycine,Reserve,TGC
-tobramycin,J01GB01,Aminoglycosides,,Watch,TOB
-trimethoprim,J01EA01,Folate pathway inhibitors,,Access,TMP
-trimethoprim/sulfamethoxazole,J01EE01,Folate pathway inhibitors,,Access,SXT
-trovafloxacin,J01MA13,Quinolones,Fluoroquinolone,Watch,TVA
-vancomycin,J01XA01,Glycopeptides,Glycopeptide,Watch,VAN
+generic,route,who_name,atc_code,drug_class,aware_tier,eml_2025,whonet_codes,source
+amikacin,,Amikacin,J01GB06,Aminoglycosides,Access,Yes,AMK,WHO AWaRe 2025
+amoxicillin,,Amoxicillin,J01CA04,Penicillins,Access,Yes,AMX,WHO AWaRe 2025
+amoxicillin/clavulanic acid,,Amoxicillin/clavulanic-acid,J01CR02,Beta-lactam/beta-lactamase-inhibitor,Access,Yes,AMC,WHO AWaRe 2025
+amoxicillin/sulbactam,,Amoxicillin/sulbactam,J01CR02,Beta-lactam/beta-lactamase-inhibitor,Access,No,,WHO AWaRe 2025
+ampicillin,,Ampicillin,J01CA01,Penicillins,Access,Yes,AMP,WHO AWaRe 2025
+ampicillin/sulbactam,,Ampicillin/sulbactam,J01CR01,Beta-lactam/beta-lactamase-inhibitor,Access,No,SAM,WHO AWaRe 2025
+arbekacin,,Arbekacin,J01GB12,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+aspoxicillin,,Aspoxicillin,J01CA19,Penicillins,Watch,No,,WHO AWaRe 2025
+azanidazole,,Azanidazole,P01AB04,Imidazoles,Access,No,,WHO AWaRe 2025
+azidocillin,,Azidocillin,J01CE04,Penicillins,Access,No,,WHO AWaRe 2025
+azithromycin,,Azithromycin,J01FA10,Macrolides,Watch,Yes,AZM,WHO AWaRe 2025
+azlocillin,,Azlocillin,J01CA09,Penicillins,Watch,No,AZL,WHO AWaRe 2025
+aztreonam,,Aztreonam,J01DF01,Monobactams,Reserve,No,ATM,WHO AWaRe 2025
+aztreonam/avibactam,,Aztreonam/avibactam,J01DF51,Monobactam/beta-lactamase-inhibitor,Reserve,No,,WHO AWaRe 2025
+bacampicillin,,Bacampicillin,J01CA06,Penicillins,Access,No,,WHO AWaRe 2025
+bacitracin zinc,,,J01XX10,Polypeptides,Not classified,,BAC,WHONET AMRIE (not in WHO AWaRe 2025)
+bekanamycin,,Bekanamycin,J01GB13,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+benzathine benzylpenicillin,,Benzathine-benzylpenicillin,J01CE08,Penicillins,Access,Yes,,WHO AWaRe 2025
+benzathine phenoxymethylpenicillin,,Benzathine-phenoxymethylpenicillin,J01CE10,Penicillins,Access,No,,WHO AWaRe 2025
+benzylpenicillin,,Benzylpenicillin,J01CE01,Penicillins,Access,Yes,PEN,WHO AWaRe 2025
+biapenem,,Biapenem,J01DH05,Carbapenems,Watch,No,,WHO AWaRe 2025
+brodimoprim,,Brodimoprim,J01EA02,Trimethoprim-derivatives,Access,No,,WHO AWaRe 2025
+carbenicillin,,Carbenicillin,J01CA03,Penicillins,Watch,No,CRB,WHO AWaRe 2025
+carindacillin,,Carindacillin,J01CA05,Penicillins,Watch,No,,WHO AWaRe 2025
+carumonam,,Carumonam,J01DF02,Monobactams,Reserve,No,,WHO AWaRe 2025
+cefacetrile,,Cefacetrile,J01DB10,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+cefaclor,,Cefaclor,J01DC04,Second-generation-cephalosporins,Watch,No,CEC,WHO AWaRe 2025
+cefadroxil,,Cefadroxil,J01DB05,First-generation-cephalosporins,Access,No,CFR,WHO AWaRe 2025
+cefalexin,,Cefalexin,J01DB01,First-generation-cephalosporins,Access,Yes,LEX,WHO AWaRe 2025
+cefaloridine,,Cefaloridine,J01DB02,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+cefalotin,,Cefalotin,J01DB03,First-generation-cephalosporins,Access,No,CEP,WHO AWaRe 2025
+cefamandole,,Cefamandole,J01DC03,Second-generation-cephalosporins,Watch,No,MAN,WHO AWaRe 2025
+cefapirin,,Cefapirin,J01DB08,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+cefatrizine,,Cefatrizine,J01DB07,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+cefazedone,,Cefazedone,J01DB06,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+cefazolin,,Cefazolin,J01DB04,First-generation-cephalosporins,Access,Yes,CZO,WHO AWaRe 2025
+cefbuperazone,,Cefbuperazone,J01DC13,Second-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefcapene pivoxil,,Cefcapene-pivoxil,J01DD17,Third-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefdinir,,Cefdinir,J01DD15,Third-generation-cephalosporins,Watch,No,CDR,WHO AWaRe 2025
+cefditoren pivoxil,,Cefditoren-pivoxil,J01DD16,Third-generation-cephalosporins,Watch,No,DIT,WHO AWaRe 2025
+cefepime,,Cefepime,J01DE01,Fourth-generation-cephalosporins,Watch,No,FEP,WHO AWaRe 2025
+cefetamet pivoxil,,Cefetamet-pivoxil,J01DD10,Third-generation-cephalosporins,Watch,No,CAT,WHO AWaRe 2025
+cefiderocol,,Cefiderocol,J01DI04,Other-cephalosporins,Reserve,Yes,,WHO AWaRe 2025
+cefixime,,Cefixime,J01DD08,Third-generation-cephalosporins,Watch,Yes,CFM,WHO AWaRe 2025
+cefmenoxime,,Cefmenoxime,J01DD05,Third-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefmetazole,,Cefmetazole,J01DC09,Second-generation-cephalosporins,Watch,No,CMZ,WHO AWaRe 2025
+cefminox,,Cefminox,J01DC12,Second-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefodizime,,Cefodizime,J01DD09,Third-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefonicid,,Cefonicid,J01DC06,Second-generation-cephalosporins,Watch,No,CID,WHO AWaRe 2025
+cefoperazone,,Cefoperazone,J01DD12,Third-generation-cephalosporins,Watch,No,CFP,WHO AWaRe 2025
+ceforanide,,Ceforanide,J01DC11,Second-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefoselis,,Cefoselis,not assigned,Fourth-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefotaxime,,Cefotaxime,J01DD01,Third-generation-cephalosporins,Watch,Yes,CTX,WHO AWaRe 2025
+cefotaxime/clavulanic acid,,,J01DD51,Beta-lactam+Inhibitors,Not classified,,CTC,WHONET AMRIE (not in WHO AWaRe 2025)
+cefotetan,,Cefotetan,J01DC05,Second-generation-cephalosporins,Watch,No,CTT,WHO AWaRe 2025
+cefotiam,,Cefotiam,J01DC07,Second-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefoxitin,,Cefoxitin,J01DC01,Second-generation-cephalosporins,Watch,No,FOX,WHO AWaRe 2025
+cefozopran,,Cefozopran,J01DE03,Fourth-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefpiramide,,Cefpiramide,J01DD11,Third-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefpirome,,Cefpirome,J01DE02,Fourth-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+cefpodoxime proxetil,,Cefpodoxime-proxetil,J01DD13,Third-generation-cephalosporins,Watch,No,CPD,WHO AWaRe 2025
+cefprozil,,Cefprozil,J01DC10,Second-generation-cephalosporins,Watch,No,CPR,WHO AWaRe 2025
+cefradine,,Cefradine,J01DB09,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+cefroxadine,,Cefroxadine,J01DB11,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+cefsulodin,,Cefsulodin,J01DD03,Third-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+ceftaroline fosamil,,Ceftaroline-fosamil,J01DI02,Fifth-generation-cephalosporins,Reserve,No,CPT,WHO AWaRe 2025
+ceftazidime,,Ceftazidime,J01DD02,Third-generation-cephalosporins,Watch,Yes,CAZ,WHO AWaRe 2025
+ceftazidime/avibactam,,Ceftazidime/avibactam,J01DD52,Third-generation-cephalosporins,Reserve,Yes,,WHO AWaRe 2025
+ceftazidime/clavulanic acid,,,J01DD52,Beta-lactam+Inhibitors,Not classified,,CCV,WHONET AMRIE (not in WHO AWaRe 2025)
+cefteram pivoxil,,Cefteram-pivoxil,J01DD18,Third-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+ceftezole,,Ceftezole,J01DB12,First-generation-cephalosporins,Access,No,,WHO AWaRe 2025
+ceftibuten,,Ceftibuten,J01DD14,Third-generation-cephalosporins,Watch,No,CTB,WHO AWaRe 2025
+ceftizoxime,,Ceftizoxime,J01DD07,Third-generation-cephalosporins,Watch,No,CZX,WHO AWaRe 2025
+ceftobiprole medocaril,,Ceftobiprole-medocaril,J01DI01,Fifth-generation-cephalosporins,Reserve,No,BPR,WHO AWaRe 2025
+ceftolozane/tazobactam,,Ceftolozane/tazobactam,J01DI54,Fifth-generation-cephalosporins,Reserve,Yes,CZT,WHO AWaRe 2025
+ceftriaxone,,Ceftriaxone,J01DD04,Third-generation-cephalosporins,Watch,Yes,CRO,WHO AWaRe 2025
+cefuroxime,,Cefuroxime,J01DC02,Second-generation-cephalosporins,Watch,Yes,CXA|CXM,WHO AWaRe 2025
+chloramphenicol,,Chloramphenicol,J01BA01,Amphenicols,Access,Yes,CHL,WHO AWaRe 2025
+chlortetracycline,,Chlortetracycline,J01AA03,Tetracyclines,Watch,No,,WHO AWaRe 2025
+cinoxacin,,Cinoxacin,J01MB06,Quinolones,Watch,No,CIN,WHO AWaRe 2025
+ciprofloxacin,,Ciprofloxacin,J01MA02,Fluoroquinolones,Watch,Yes,CIP,WHO AWaRe 2025
+clarithromycin,,Clarithromycin,J01FA09,Macrolides,Watch,Yes,CLR,WHO AWaRe 2025
+clindamycin,,Clindamycin,J01FF01,Lincosamides,Access,Yes,CLI,WHO AWaRe 2025
+clofoctol,,Clofoctol,J01XX03,Phenol-derivatives,Watch,No,,WHO AWaRe 2025
+clometocillin,,Clometocillin,J01CE07,Penicillins,Access,No,,WHO AWaRe 2025
+clomocycline,,Clomocycline,J01AA11,Tetracyclines,Watch,No,,WHO AWaRe 2025
+cloxacillin,,Cloxacillin,J01CF02,Penicillins,Access,Yes,,WHO AWaRe 2025
+colistin,IV,Colistin_IV,J01XB01,Polymyxins,Reserve,Yes,COL,WHO AWaRe 2025
+colistin,PO,Colistin_oral,A07AA10,Polymyxins,Reserve,No,COL,WHO AWaRe 2025
+colistin/polysorbate,,,J01XB01,Lipopeptides,Not classified,,COP,WHONET AMRIE (not in WHO AWaRe 2025)
+dalbavancin,,Dalbavancin,J01XA04,Glycopeptides,Reserve,No,DAL,WHO AWaRe 2025
+dalfopristin/quinupristin,,Dalfopristin/quinupristin,J01FG02,Streptogramins,Reserve,No,QDA,WHO AWaRe 2025
+daptomycin,,Daptomycin,J01XX09,Lipopeptides,Reserve,No,DAP,WHO AWaRe 2025
+delafloxacin,,Delafloxacin,J01MA23,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+demeclocycline,,Demeclocycline,J01AA01,Tetracyclines,Watch,No,,WHO AWaRe 2025
+dibekacin,,Dibekacin,J01GB09,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+dicloxacillin,,Dicloxacillin,J01CF01,Penicillins,Access,Yes,,WHO AWaRe 2025
+dirithromycin,,Dirithromycin,J01FA13,Macrolides,Watch,No,DIR,WHO AWaRe 2025
+doripenem,,Doripenem,J01DH04,Carbapenems,Watch,No,DOR,WHO AWaRe 2025
+doxycycline,,Doxycycline,J01AA02,Tetracyclines,Access,Yes,DOX,WHO AWaRe 2025
+enoxacin,,Enoxacin,J01MA04,Fluoroquinolones,Watch,No,ENX,WHO AWaRe 2025
+epicillin,,Epicillin,J01CA07,Penicillins,Access,No,,WHO AWaRe 2025
+eravacycline,,Eravacycline,J01AA13,Tetracyclines,Reserve,No,,WHO AWaRe 2025
+ertapenem,,Ertapenem,J01DH03,Carbapenems,Watch,No,ETP,WHO AWaRe 2025
+erythromycin,,Erythromycin,J01FA01,Macrolides,Watch,Yes,ERY,WHO AWaRe 2025
+faropenem,,Faropenem,J01DI03,Penems,Reserve,No,FAR,WHO AWaRe 2025
+fidaxomicin,,Fidaxomicin,A07AA12,Macrolides,Watch,No,,WHO AWaRe 2025
+fleroxacin,,Fleroxacin,J01MA08,Fluoroquinolones,Watch,No,FLE,WHO AWaRe 2025
+flomoxef,,Flomoxef,J01DC14,Second-generation-cephalosporins,Watch,No,,WHO AWaRe 2025
+flucloxacillin,,Flucloxacillin,J01CF05,Penicillins,Access,Yes,,WHO AWaRe 2025
+flumequine,,Flumequine,J01MB07,Quinolones,Watch,No,,WHO AWaRe 2025
+flurithromycin,,Flurithromycin,J01FA14,Macrolides,Watch,No,,WHO AWaRe 2025
+fosfomycin,IV,Fosfomycin_IV,J01XX01,Phosphonics,Reserve,Yes,FOS,WHO AWaRe 2025
+fosfomycin,PO,Fosfomycin_oral,J01XX01,Phosphonics,Watch,No,FOS,WHO AWaRe 2025
+furazidin,,Furazidin,J01XE03,Nitrofuran-derivatives,Access,No,,WHO AWaRe 2025
+fusidic acid,,Fusidic-acid,J01XC01,Steroid-antibacterials,Watch,No,FUS,WHO AWaRe 2025
+garenoxacin,,Garenoxacin,J01MA19,Fluoroquinolones,Watch,No,GRN,WHO AWaRe 2025
+gatifloxacin,,Gatifloxacin,J01MA16,Fluoroquinolones,Watch,No,GAT,WHO AWaRe 2025
+gemifloxacin,,Gemifloxacin,J01MA15,Fluoroquinolones,Watch,No,GEM,WHO AWaRe 2025
+gentamicin,,Gentamicin,J01GB03,Aminoglycosides,Access,Yes,GEH|GEN,WHO AWaRe 2025
+gepotidacin,,Gepotidacin,J01XX13,Triazaacenaphthylenes,Watch,No,,WHO AWaRe 2025
+grepafloxacin,,Grepafloxacin,J01MA11,Fluoroquinolones,Watch,No,GRX,WHO AWaRe 2025
+hetacillin,,Hetacillin,J01CA18,Penicillins,Access,No,,WHO AWaRe 2025
+iclaprim,,Iclaprim,J01EA03,Trimethoprim-derivatives,Reserve,No,ICL,WHO AWaRe 2025
+imipenem/cilastatin,,Imipenem/cilastatin,J01DH51,Carbapenems,Watch,Yes,IPM,WHO AWaRe 2025
+imipenem/cilastatin/relebactam,,Imipenem/cilastatin/relebactam,J01DH56,Carbapenems,Reserve,No,IMR,WHO AWaRe 2025
+isepamicin,,Isepamicin,J01GB11,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+josamycin,,Josamycin,J01FA07,Macrolides,Watch,No,,WHO AWaRe 2025
+kanamycin,IV,Kanamycin_IV,J01GB04,Aminoglycosides,Watch,No,KAH|KAN,WHO AWaRe 2025
+kanamycin,PO,Kanamycin_oral,A07AA08,Aminoglycosides,Watch,No,KAH|KAN,WHO AWaRe 2025
+lascufloxacin,,Lascufloxacin,J01MA25,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+latamoxef,,Latamoxef,J01DD06,Third-generation-cephalosporins,Watch,No,MOX,WHO AWaRe 2025
+lefamulin,,Lefamulin,J01XX12,Pleuromutilin,Reserve,No,,WHO AWaRe 2025
+levofloxacin,,Levofloxacin,J01MA12,Fluoroquinolones,Watch,No,LVX,WHO AWaRe 2025
+levonadifloxacin,,Levonadifloxacin,J01MA24,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+lincomycin,,Lincomycin,J01FF02,Lincosamides,Watch,No,,WHO AWaRe 2025
+linezolid,,Linezolid,J01XX08,Oxazolidinones,Reserve,Yes,LNZ,WHO AWaRe 2025
+lomefloxacin,,Lomefloxacin,J01MA07,Fluoroquinolones,Watch,No,LOM,WHO AWaRe 2025
+loracarbef,,Loracarbef,J01DC08,Second-generation-cephalosporins,Watch,No,LOR,WHO AWaRe 2025
+lymecycline,,Lymecycline,J01AA04,Tetracyclines,Watch,No,,WHO AWaRe 2025
+mecillinam,,Mecillinam,J01CA11,Penicillins,Access,No,MEC,WHO AWaRe 2025
+meropenem,,Meropenem,J01DH02,Carbapenems,Watch,Yes,MEM,WHO AWaRe 2025
+meropenem/vaborbactam,,Meropenem/vaborbactam,J01DH52,Carbapenems,Reserve,Yes,MEV,WHO AWaRe 2025
+metacycline,,Metacycline,J01AA05,Tetracyclines,Watch,No,,WHO AWaRe 2025
+metampicillin,,Metampicillin,J01CA14,Penicillins,Access,No,,WHO AWaRe 2025
+meticillin,,Meticillin,J01CF03,Penicillins,Access,Yes,MET,WHO AWaRe 2025
+metronidazole,IV,Metronidazole_IV,J01XD01,Imidazoles,Access,Yes,MTR,WHO AWaRe 2025
+metronidazole,PO,Metronidazole_oral,P01AB01,Imidazoles,Access,Yes,MTR,WHO AWaRe 2025
+mezlocillin,,Mezlocillin,J01CA10,Penicillins,Watch,No,MEZ,WHO AWaRe 2025
+micronomicin,,Micronomicin,not assigned,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+midecamycin,,Midecamycin,J01FA03,Macrolides,Watch,No,,WHO AWaRe 2025
+minocycline,IV,Minocycline_IV,J01AA08,Tetracyclines,Reserve,No,MNO,WHO AWaRe 2025
+minocycline,PO,Minocycline_oral,J01AA08,Tetracyclines,Watch,No,MNO,WHO AWaRe 2025
+miocamycin,,Miocamycin,J01FA11,Macrolides,Watch,No,,WHO AWaRe 2025
+moxifloxacin,,Moxifloxacin,J01MA14,Fluoroquinolones,Watch,No,MFX,WHO AWaRe 2025
+nafcillin,,Nafcillin,J01CF06,Penicillins,Access,Yes,NAF,WHO AWaRe 2025
+nalidixic acid,,Nalidixic-acid,J01MB02,Quinolones,Watch,No,NAL,WHO AWaRe 2025
+nemonoxacin,,Nemonoxacin,J01MB08,Quinolones,Watch,No,,WHO AWaRe 2025
+neomycin,IV,Neomycin_IV,J01GB05,Aminoglycosides,Watch,No,NEO,WHO AWaRe 2025
+neomycin,PO,Neomycin_oral,A07AA01,Aminoglycosides,Watch,No,NEO,WHO AWaRe 2025
+netilmicin,,Netilmicin,J01GB07,Aminoglycosides,Watch,No,NET,WHO AWaRe 2025
+nifurtoinol,,Nifurtoinol,J01XE02,Nitrofuran-derivatives,Access,No,,WHO AWaRe 2025
+nimorazole,,Nimorazole,P01AB06,Imidazoles,Access,No,,WHO AWaRe 2025
+nitrofurantoin,,Nitrofurantoin,J01XE01,Nitrofuran-derivatives,Access,Yes,NIT,WHO AWaRe 2025
+norfloxacin,,Norfloxacin,J01MA06,Fluoroquinolones,Watch,No,NOR,WHO AWaRe 2025
+ofloxacin,,Ofloxacin,J01MA01,Fluoroquinolones,Watch,No,OFX,WHO AWaRe 2025
+oleandomycin,,Oleandomycin,J01FA05,Macrolides,Watch,No,,WHO AWaRe 2025
+omadacycline,,Omadacycline,J01AA15,Tetracyclines,Reserve,No,OMC,WHO AWaRe 2025
+oritavancin,,Oritavancin,J01XA05,Glycopeptides,Reserve,No,ORI,WHO AWaRe 2025
+ornidazole,IV,Ornidazole_IV,J01XD03,Imidazoles,Access,No,,WHO AWaRe 2025
+ornidazole,PO,Ornidazole_oral,P01AB03,Imidazoles,Access,No,,WHO AWaRe 2025
+oxacillin,,Oxacillin,J01CF04,Penicillins,Access,Yes,OXA,WHO AWaRe 2025
+oxolinic acid,,Oxolinic-acid,J01MB05,Quinolones,Watch,No,,WHO AWaRe 2025
+oxytetracycline,,Oxytetracycline,J01AA06,Tetracyclines,Watch,No,,WHO AWaRe 2025
+panipenem,,Panipenem,J01DH55,Carbapenems,Watch,No,,WHO AWaRe 2025
+paromomycin,PO,Paromomycin_oral,A07AA06,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+pazufloxacin,,Pazufloxacin,J01MA18,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+pefloxacin,,Pefloxacin,J01MA03,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+penamecillin,,Penamecillin,J01CE06,Penicillins,Access,No,,WHO AWaRe 2025
+penimepicycline,,Penimepicycline,J01AA10,Tetracyclines,Watch,No,,WHO AWaRe 2025
+pheneticillin,,Pheneticillin,J01CE05,Penicillins,Watch,No,,WHO AWaRe 2025
+phenoxymethylpenicillin,,Phenoxymethylpenicillin,J01CE02,Penicillins,Access,Yes,PNV,WHO AWaRe 2025
+pipemidic acid,,Pipemidic-acid,J01MB04,Quinolones,Watch,No,,WHO AWaRe 2025
+piperacillin,,Piperacillin,J01CA12,Penicillins,Watch,No,PIP,WHO AWaRe 2025
+piperacillin/tazobactam,,Piperacillin/tazobactam,J01CR05,Beta-lactam/beta-lactamase-inhibitor_anti-pseudomonal,Watch,Yes,TZP,WHO AWaRe 2025
+piromidic acid,,Piromidic-acid,J01MB03,Quinolones,Watch,No,,WHO AWaRe 2025
+pivampicillin,,Pivampicillin,J01CA02,Penicillins,Access,No,,WHO AWaRe 2025
+pivmecillinam,,Pivmecillinam,J01CA08,Penicillins,Access,No,,WHO AWaRe 2025
+plazomicin,,Plazomicin,J01GB14,Aminoglycosides,Reserve,Yes,PLZ,WHO AWaRe 2025
+polymyxin b,IV,Polymyxin-B_IV,J01XB02,Polymyxins,Reserve,Yes,POL,WHO AWaRe 2025
+polymyxin b,PO,Polymyxin-B_oral,A07AA05,Polymyxins,Reserve,No,POL,WHO AWaRe 2025
+polymyxin b/polysorbate 80,,,J01XB02,Lipopeptides,Not classified,,POP,WHONET AMRIE (not in WHO AWaRe 2025)
+pristinamycin,,Pristinamycin,J01FG01,Streptogramins,Watch,No,,WHO AWaRe 2025
+procaine benzylpenicillin,,Procaine-benzylpenicillin,J01CE09,Penicillins,Access,Yes,,WHO AWaRe 2025
+propenidazole,,Propenidazole,P01AB05,Imidazoles,Access,No,,WHO AWaRe 2025
+propicillin,,Propicillin,J01CE03,Penicillins,Access,No,,WHO AWaRe 2025
+prulifloxacin,,Prulifloxacin,J01MA17,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+ribostamycin,,Ribostamycin,J01GB10,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+ridinilazole,,,J01DB02,,Not classified,,RDZ,WHONET AMRIE (not in WHO AWaRe 2025)
+rifabutin,,Rifabutin,J04AB04,Rifamycins,Watch,No,,WHO AWaRe 2025
+rifampicin,,Rifampicin,J04AB02,Rifamycins,Watch,No,,WHO AWaRe 2025
+rifamycin,IV,Rifamycin_IV,J04AB03,Rifamycins,Watch,No,,WHO AWaRe 2025
+rifamycin,PO,Rifamycin_oral,A07AA13,Rifamycins,Watch,No,,WHO AWaRe 2025
+rifaximin,,Rifaximin,A07AA11,Rifamycins,Watch,No,,WHO AWaRe 2025
+rokitamycin,,Rokitamycin,J01FA12,Macrolides,Watch,No,,WHO AWaRe 2025
+rolitetracycline,,Rolitetracycline,J01AA09,Tetracyclines,Watch,No,,WHO AWaRe 2025
+rosoxacin,,Rosoxacin,J01MB01,Quinolones,Watch,No,,WHO AWaRe 2025
+roxithromycin,,Roxithromycin,J01FA06,Macrolides,Watch,No,,WHO AWaRe 2025
+rufloxacin,,Rufloxacin,J01MA10,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+sarecycline,,Sarecycline,J01AA14,Tetracyclines,Watch,No,,WHO AWaRe 2025
+satranidazole,,Satranidazole,P01AB08,Imidazoles,Access,No,,WHO AWaRe 2025
+secnidazole,,Secnidazole,P01AB07,Imidazoles,Access,No,,WHO AWaRe 2025
+sisomicin,,Sisomicin,J01GB08,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+sitafloxacin,,Sitafloxacin,J01MA21,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+solithromycin,,Solithromycin,J01FA16,Macrolides,Watch,No,SOL,WHO AWaRe 2025
+sparfloxacin,,Sparfloxacin,J01MA09,Fluoroquinolones,Watch,No,SPX,WHO AWaRe 2025
+spectinomycin,,Spectinomycin,J01XX04,Aminocyclitols,Access,Yes,SPT,WHO AWaRe 2025
+spiramycin,,Spiramycin,J01FA02,Macrolides,Watch,No,,WHO AWaRe 2025
+streptoduocin,,Streptoduocin,J01GA02,Aminoglycosides,Watch,No,,WHO AWaRe 2025
+streptomycin,IV,Streptomycin_IV,J01GA01,Aminoglycosides,Watch,No,STH|STR,WHO AWaRe 2025
+streptomycin,PO,Streptomycin_oral,A07AA04,Aminoglycosides,Watch,No,STH|STR,WHO AWaRe 2025
+sulbactam,,Sulbactam,J01CG01,Beta-lactamase-inhibitors,Access,No,,WHO AWaRe 2025
+sulbenicillin,,Sulbenicillin,J01CA16,Penicillins,Watch,No,,WHO AWaRe 2025
+sulfadiazine,,Sulfadiazine,J01EC02,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfadiazine/tetroxoprim,,Sulfadiazine/tetroxoprim,J01EE06,Sulfonamide-trimethoprim-combinations,Access,No,,WHO AWaRe 2025
+sulfadiazine/trimethoprim,,Sulfadiazine/trimethoprim,J01EE02,Sulfonamide-trimethoprim-combinations,Access,No,,WHO AWaRe 2025
+sulfadimethoxine,,Sulfadimethoxine,J01ED01,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfadimidine,,Sulfadimidine,J01EB03,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfadimidine/trimethoprim,,Sulfadimidine/trimethoprim,J01EE05,Sulfonamide-trimethoprim-combinations,Access,No,,WHO AWaRe 2025
+sulfafurazole,,Sulfafurazole,J01EB05,Sulfonamides,Access,No,SOX,WHO AWaRe 2025
+sulfaisodimidine,,Sulfaisodimidine,J01EB01,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfalene,,Sulfalene,J01ED02,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfamazone,,Sulfamazone,J01ED09,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfamerazine,,Sulfamerazine,J01ED07,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfamerazine/trimethoprim,,Sulfamerazine/trimethoprim,J01EE07,Sulfonamide-trimethoprim-combinations,Access,No,,WHO AWaRe 2025
+sulfamethizole,,Sulfamethizole,J01EB02,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfamethoxazole,,Sulfamethoxazole,J01EC01,Sulfonamides,Access,No,SMX,WHO AWaRe 2025
+sulfamethoxazole/trimethoprim,,Sulfamethoxazole/trimethoprim,J01EE01,Sulfonamide-trimethoprim-combinations,Access,Yes,SXT,WHO AWaRe 2025
+sulfamethoxypyridazine,,Sulfamethoxypyridazine,J01ED05,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfametomidine,,Sulfametomidine,J01ED03,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfametoxydiazine,,Sulfametoxydiazine,J01ED04,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfametrole/trimethoprim,,Sulfametrole/trimethoprim,J01EE03,Sulfonamide-trimethoprim-combinations,Access,No,,WHO AWaRe 2025
+sulfamoxole,,Sulfamoxole,J01EC03,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfamoxole/trimethoprim,,Sulfamoxole/trimethoprim,J01EE04,Sulfonamide-trimethoprim-combinations,Access,No,,WHO AWaRe 2025
+sulfanilamide,,Sulfanilamide,J01EB06,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfaperin,,Sulfaperin,J01ED06,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfaphenazole,,Sulfaphenazole,J01ED08,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfapyridine,,Sulfapyridine,J01EB04,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfathiazole,,Sulfathiazole,J01EB07,Sulfonamides,Access,No,,WHO AWaRe 2025
+sulfathiourea,,Sulfathiourea,J01EB08,Sulfonamides,Access,No,,WHO AWaRe 2025
+sultamicillin,,Sultamicillin,J01CR04,Beta-lactam/beta-lactamase-inhibitor,Access,No,,WHO AWaRe 2025
+talampicillin,,Talampicillin,J01CA15,Penicillins,Access,No,,WHO AWaRe 2025
+tazobactam,,Tazobactam,J01CG02,Beta-lactamase-inhibitors,Watch,No,,WHO AWaRe 2025
+tebipenem,,Tebipenem,J01DH06,Carbapenems,Watch,No,TBP,WHO AWaRe 2025
+tedizolid,,Tedizolid,J01XX11,Oxazolidinones,Reserve,Yes,,WHO AWaRe 2025
+teicoplanin,,Teicoplanin,J01XA02,Glycopeptides,Watch,No,TEC,WHO AWaRe 2025
+telavancin,,Telavancin,J01XA03,Glycopeptides,Reserve,No,TLV,WHO AWaRe 2025
+telithromycin,,Telithromycin,J01FA15,Macrolides,Watch,No,TLT,WHO AWaRe 2025
+temafloxacin,,Temafloxacin,J01MA05,Fluoroquinolones,Watch,No,TMX,WHO AWaRe 2025
+temocillin,,Temocillin,J01CA17,Penicillins,Watch,No,,WHO AWaRe 2025
+tetracycline,,Tetracycline,J01AA07,Tetracyclines,Access,No,TCY,WHO AWaRe 2025
+thiamphenicol,,Thiamphenicol,J01BA02,Amphenicols,Access,No,,WHO AWaRe 2025
+ticarcillin,,Ticarcillin,J01CA13,Penicillins,Watch,No,TIC,WHO AWaRe 2025
+ticarcillin/clavulanic acid,,Ticarcillin/clavulanic-acid,J01CR03,Beta-lactam/beta-lactamase-inhibitor,Watch,No,TCC,WHO AWaRe 2025
+tigecycline,,Tigecycline,J01AA12,Glycylcyclines,Reserve,No,TGC,WHO AWaRe 2025
+tinidazole,IV,Tinidazole_IV,J01XD02,Imidazoles,Access,No,,WHO AWaRe 2025
+tinidazole,PO,Tinidazole_oral,P01AB02,Imidazoles,Access,No,,WHO AWaRe 2025
+tobramycin,,Tobramycin,J01GB01,Aminoglycosides,Watch,No,TOB,WHO AWaRe 2025
+tosufloxacin,,Tosufloxacin,J01MA22,Fluoroquinolones,Watch,No,,WHO AWaRe 2025
+trimethoprim,,Trimethoprim,J01EA01,Trimethoprim-derivatives,Access,Yes,TMP,WHO AWaRe 2025
+troleandomycin,,Troleandomycin,J01FA08,Macrolides,Watch,No,,WHO AWaRe 2025
+trovafloxacin,,Trovafloxacin,J01MA13,Fluoroquinolones,Watch,No,TVA,WHO AWaRe 2025
+vancomycin,IV,Vancomycin_IV,J01XA01,Glycopeptides,Watch,Yes,VAN,WHO AWaRe 2025
+vancomycin,PO,Vancomycin_oral,A07AA09,Glycopeptides,Watch,Yes,VAN,WHO AWaRe 2025

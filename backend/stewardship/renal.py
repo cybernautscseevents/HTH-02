@@ -1,9 +1,11 @@
-"""Kidney-function dose check (rule R4) against US FDA label renal dosing tables.
+"""Kidney-function dose check (rule R4) against cited renal dosing tables.
 
-Creatinine clearance is estimated with the Cockcroft-Gault equation, the estimate the drug
-labels themselves use. Each band in data/renal_dosing.csv quotes its label and says one of:
-no change needed ("none"), a modified regimen with an optional daily cap ("adjust"), or do
-not use ("avoid"). A drug, route or clearance the table does not cover is CANNOT_ASSESS.
+Creatinine clearance is estimated with the Cockcroft-Gault equation, the estimate the dosing
+tables themselves use. Each band in data/renal_dosing.csv quotes its source and says one of:
+no change needed ("none"), a modified regimen with an optional daily cap ("adjust"), do not use
+("avoid"), or sources disagree and a pharmacist decides ("review"). Sources are Indian first
+(ICMR 2019 Table 14.1, Indian prescribing information); US FDA labels fill gaps and say so in
+their title. A drug, route or clearance the table does not cover is CANNOT_ASSESS.
 """
 
 import csv
@@ -46,16 +48,31 @@ class RenalBand:
     routes: frozenset[Route]
     crcl_low: int
     crcl_high: int
-    action: str  # "none" | "adjust" | "avoid"
+    action: str  # "none" | "adjust" | "avoid" | "review"
     max_daily_mg: float | None
-    evidence: Evidence
+    evidence: tuple[Evidence, ...]
+
+
+ACTIONS = frozenset({"none", "adjust", "avoid", "review"})
 
 
 def load_renal_bands(path: Path = config.RENAL_DOSING_CSV) -> dict[str, tuple[RenalBand, ...]]:
-    """Read the renal dosing table, grouped by generic name."""
-    bands: dict[str, list[RenalBand]] = {}
+    """Read the renal dosing table, grouped by generic name.
+
+    Rows for the same drug, routes and clearance range are one band citing several sources;
+    they must agree on the action and cap, otherwise loading fails.
+    """
+    merged: dict[tuple, RenalBand] = {}
     with path.open(encoding="utf-8") as f:
         for row in csv.DictReader(f):
+            if row["action"] not in ACTIONS:
+                raise ValueError(f"Unknown renal action {row['action']!r} for {row['generic']}")
+            evidence = Evidence(
+                source_id=row["source_id"],
+                title=row["title"],
+                page=row["section"],
+                quote=row["quote"],
+            )
             band = RenalBand(
                 generic=row["generic"],
                 routes=frozenset(Route(r) for r in row["routes"].split("|")),
@@ -63,19 +80,23 @@ def load_renal_bands(path: Path = config.RENAL_DOSING_CSV) -> dict[str, tuple[Re
                 crcl_high=int(row["crcl_high"]),
                 action=row["action"],
                 max_daily_mg=float(row["max_daily_mg"]) if row["max_daily_mg"] else None,
-                evidence=Evidence(
-                    source_id=row["source_id"],
-                    title=row["title"],
-                    page=f"Section {row['section']}",
-                    quote=row["quote"],
-                ),
+                evidence=(evidence,),
             )
-            bands.setdefault(band.generic, []).append(band)
+            key = (band.generic, band.routes, band.crcl_low, band.crcl_high)
+            if key in merged:
+                first = merged[key]
+                if (first.action, first.max_daily_mg) != (band.action, band.max_daily_mg):
+                    raise ValueError(f"Conflicting renal rows for {key}")
+                band = RenalBand(**{**first.__dict__, "evidence": first.evidence + (evidence,)})
+            merged[key] = band
+    bands: dict[str, list[RenalBand]] = {}
+    for band in merged.values():
+        bands.setdefault(band.generic, []).append(band)
     return {generic: tuple(rows) for generic, rows in bands.items()}
 
 
 class RenalDosing:
-    """RenalChecker port backed by the FDA label renal dosing table."""
+    """RenalChecker port backed by data/renal_dosing.csv."""
 
     def __init__(self, bands: dict[str, tuple[RenalBand, ...]]) -> None:
         self._bands = bands
@@ -100,6 +121,13 @@ class RenalDosing:
         bands = self._bands.get(order.generic, ())
         if order.route is not None:
             bands = tuple(b for b in bands if order.route in b.routes)
+        elif len({b.routes for b in bands}) > 1:
+            return finding(
+                Outcome.CANNOT_ASSESS,
+                Severity.MODERATE,
+                f"Renal dosing for {order.generic} depends on the route; route not recorded.",
+                missing_inputs=("route",),
+            )
         if not bands:
             route = f" by the {order.route} route" if order.route else ""
             return finding(
@@ -107,18 +135,18 @@ class RenalDosing:
                 Severity.LOW,
                 f"No renal dosing data for {order.generic}{route}; kidney dosing not checked.",
             )
-        if all(b.action == "none" for b in bands):
-            return finding(
-                Outcome.PASS,
-                Severity.INFO,
-                f"No renal dose adjustment is needed for {order.generic}.",
-                evidence=(bands[0].evidence,),
-            )
         if patient.age_years < config.ADULT_AGE_YEARS:
             return finding(
                 Outcome.CANNOT_ASSESS,
                 Severity.MODERATE,
                 "Renal dosing rules cover adults only; kidney dosing was not checked.",
+            )
+        if all(b.action == "none" for b in bands):
+            return finding(
+                Outcome.PASS,
+                Severity.INFO,
+                f"No renal dose adjustment is needed for {order.generic}.",
+                evidence=bands[0].evidence,
             )
         crcl = creatinine_clearance(patient)
         if crcl is None:
@@ -144,9 +172,9 @@ class RenalDosing:
             return finding(
                 Outcome.CANNOT_ASSESS,
                 Severity.MODERATE,
-                f"The label gives no dosing for {order.generic} at {crcl_text}.",
+                f"The renal dosing source gives no dosing for {order.generic} at {crcl_text}.",
             )
-        evidence = (band.evidence, COCKCROFT_GAULT)
+        evidence = (*band.evidence, COCKCROFT_GAULT)
 
         if band.action == "none":
             return finding(
@@ -159,7 +187,7 @@ class RenalDosing:
             return finding(
                 Outcome.FLAG,
                 Severity.HIGH,
-                f"The label advises against {order.generic} at {crcl_text}.",
+                f"{order.generic} is not recommended at {crcl_text}.",
                 evidence=evidence,
                 suggestion=Suggestion(
                     action="switch",
@@ -167,8 +195,22 @@ class RenalDosing:
                 ),
             )
 
+        if band.action == "review":
+            return finding(
+                Outcome.FLAG,
+                Severity.MODERATE,
+                f"Sources disagree on {order.generic} at {crcl_text}; see the cited evidence.",
+                evidence=evidence,
+                suggestion=Suggestion(
+                    action="provide_input",
+                    drug=order.generic,
+                    detail="Pharmacist to decide; the sources set different kidney thresholds.",
+                ),
+            )
         regimen = Suggestion(
-            action="adjust_dose", drug=order.generic, detail=f"Label: {band.evidence.quote}"
+            action="adjust_dose",
+            drug=order.generic,
+            detail=f"Source: {band.evidence[0].quote}",
         )
         if band.max_daily_mg is None:
             return finding(
