@@ -64,7 +64,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
           </p>
         )}
         <p className="mt-2 text-[10px] text-[#6B6A65]">
-          Recorded in the audit log. Apply medication changes in the prescribing system.
+          Finding response recorded. Reconcile medication changes in the final treatment plan.
         </p>
       </div>
     )
@@ -92,7 +92,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
     <div className="space-y-3">
       <div>
         <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Pharmacist decision</p>
-        <p className="mt-0.5 text-xs text-[#6B6A65]">Choose what should happen to this recommendation.</p>
+        <p className="mt-0.5 text-xs text-[#6B6A65]">Respond to this finding. Medication changes are reconciled in the final plan.</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <button
@@ -102,7 +102,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
             action === 'ACCEPT' ? 'border-[#1A6B3C] bg-[#F0FBF4] text-[#1A6B3C]' : 'border-[#C8C7C0] bg-white text-[#1A1A1A]'
           } disabled:cursor-not-allowed disabled:opacity-40`}
         >
-          <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+          <CheckCircle2 className="h-3.5 w-3.5" /> Agree
         </button>
         <button
           onClick={() => setAction(action === 'MODIFY' ? null : 'MODIFY')}

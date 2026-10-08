@@ -121,8 +121,8 @@ def test_timeout_is_due_after_threshold_until_reviewed():
     ep, catalog = episode(), FakeCatalog()
     assert not is_timeout_due(ep, T0 + timedelta(hours=47), [], catalog)
     assert is_timeout_due(ep, T0 + timedelta(hours=48), [], catalog)
-    done = review(finding_rule_id=None, order_id=None, reason_code=TIMEOUT_DONE)
-    assert not is_timeout_due(ep, T0 + timedelta(hours=72), [done], catalog)
+    legacy = review(finding_rule_id=None, order_id=None, reason_code=TIMEOUT_DONE)
+    assert is_timeout_due(ep, T0 + timedelta(hours=72), [legacy], catalog)
 
 
 def test_timeout_never_due_without_antibiotics():

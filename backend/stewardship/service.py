@@ -10,7 +10,7 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .advice import CultureSummary, action_for, culture_summary
 from .audit import AuditLog
@@ -18,6 +18,7 @@ from .drugs import Catalog
 from .episode import evaluate_episode
 from .evidence import EvidenceRetriever, Explainer, Passage, TemplateExplainer
 from .intake import EpisodeRequest, build_episode, diagnosis_line, read_diagnosis
+from .narrative import PlanNarrativeSummarizer, TemplatePlanNarrativeSummarizer
 from .ports import RenalChecker
 from .review import ReviewError, apply_review
 from .rulepack import YamlRulePack
@@ -32,11 +33,14 @@ from .schemas import (
     Outcome,
     Review,
     ReviewAction,
+    ReviewPhase,
     Severity,
+    TreatmentPlanSignOff,
     Trigger,
 )
 from .summary import EvaluationSummary, Summarizer, TemplateSummarizer, evidence_for
 from .timeout import first_antibiotic_start, is_timeout_due
+from .treatment_plan import PlanError, TreatmentPlanRequest, validate_plan
 
 
 class OrderView(BaseModel):
@@ -98,6 +102,8 @@ class EvaluationReport(Evaluation):
 
 
 class ReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     episode_id: str
     evaluation_id: str
     finding_rule_id: str | None = None
@@ -127,8 +133,26 @@ class DashboardStats(BaseModel):
     recent_evaluations: tuple[RecentEvaluation, ...]
 
 
+class TimeoutItem(BaseModel):
+    episode_id: str
+    patient_id: str
+    setting: str
+    antibiotic_name: str
+    started_at: datetime
+    hours_elapsed: float
+    status: str
+    evaluation_id: str | None = None
+    plan_id: str | None = None
+    reviewed_at: datetime | None = None
+    reviewed_by: str | None = None
+
+
 class NotFoundError(KeyError):
-    """Unknown episode or evaluation id."""
+    """Unknown episode, evaluation, or treatment plan id."""
+
+
+class ConflictError(ValueError):
+    """A write conflicts with a newer or duplicate clinical record."""
 
 
 class StewardshipService:
@@ -142,6 +166,7 @@ class StewardshipService:
         retriever: EvidenceRetriever | None = None,
         explainer: Explainer | None = None,
         summarizer: Summarizer | None = None,
+        plan_summarizer: PlanNarrativeSummarizer | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self.catalog = catalog
@@ -151,11 +176,14 @@ class StewardshipService:
         self.retriever = retriever
         self.explainer = explainer or TemplateExplainer()
         self.summarizer = summarizer or TemplateSummarizer()
+        self.plan_summarizer = plan_summarizer or TemplatePlanNarrativeSummarizer()
         self.clock = clock
         self._episodes: dict[str, Episode] = {}
         self._extras: dict[str, tuple[tuple[OrderView, ...], str, tuple[str, ...]]] = {}
         self._evaluations: dict[str, EvaluationReport] = {}
         self._reviews: list[Review] = []
+        self._treatment_plans: list[TreatmentPlanSignOff] = []
+        self._plan_idempotency: dict[str, tuple[str, TreatmentPlanSignOff]] = {}
 
     # --- episodes -----------------------------------------------------------------------
 
@@ -279,8 +307,7 @@ class StewardshipService:
                     for finding in report.findings
                 ),
                 moderate_count=sum(
-                    finding.outcome is not Outcome.PASS
-                    and finding.severity is Severity.MODERATE
+                    finding.outcome is not Outcome.PASS and finding.severity is Severity.MODERATE
                     for finding in report.findings
                 ),
             )
@@ -334,29 +361,158 @@ class StewardshipService:
         self._reviews.append(review)
         return entry
 
-    def timeout_due(self) -> list[dict]:
+    def treatment_plans_for_evaluation(
+        self, evaluation_id: str
+    ) -> tuple[TreatmentPlanSignOff, ...]:
+        self.get_evaluation(evaluation_id)
+        return tuple(
+            reversed(
+                [plan for plan in self._treatment_plans if plan.evaluation_id == evaluation_id]
+            )
+        )
+
+    def latest_treatment_plan(self, evaluation_id: str) -> TreatmentPlanSignOff:
+        plans = self.treatment_plans_for_evaluation(evaluation_id)
+        if not plans:
+            raise NotFoundError(f"No treatment plan for evaluation {evaluation_id}")
+        return plans[0]
+
+    def sign_treatment_plan(
+        self, evaluation_id: str, request: TreatmentPlanRequest
+    ) -> TreatmentPlanSignOff:
+        evaluation = self.get_evaluation(evaluation_id)
+        episode = self.get_episode(evaluation.episode_id)
+        fingerprint = request.model_dump_json()
+        existing = self._plan_idempotency.get(request.idempotency_key)
+        if existing:
+            if existing[0] != fingerprint:
+                raise ConflictError("Idempotency key was already used for a different plan.")
+            return existing[1]
+
+        episode_evaluations = [
+            report for report in self._evaluations.values() if report.episode_id == episode.id
+        ]
+        if not episode_evaluations or episode_evaluations[-1].id != evaluation.id:
+            raise ConflictError("A newer evaluation exists; review it before signing a plan.")
+        prior = [plan for plan in self._treatment_plans if plan.evaluation_id == evaluation.id]
+        if prior and request.supersedes_id != prior[-1].id:
+            raise ConflictError("A signed plan exists; a revision must supersede the latest plan.")
+        if request.supersedes_id and (not prior or request.supersedes_id != prior[-1].id):
+            raise ConflictError("The superseded plan is not the latest plan for this evaluation.")
+
         now = self.clock()
-        due = []
+        if request.phase is ReviewPhase.ANTIBIOTIC_TIMEOUT_48H:
+            if evaluation.trigger is not Trigger.TIMEOUT_DUE:
+                raise PlanError("A 48-hour plan requires a TIMEOUT_DUE evaluation.")
+            if not prior and not is_timeout_due(episode, now, self._treatment_plans, self.catalog):
+                raise PlanError("This episode is not currently due for a 48-hour review.")
+
+        items, status = validate_plan(
+            request,
+            episode,
+            evaluation,
+            self.reviews_for_evaluation(evaluation.id),
+            self.catalog,
+        )
+        narrative = self.plan_summarizer.summarize(items, status, now)
+        plan = TreatmentPlanSignOff(
+            id=f"PLAN-{uuid.uuid4().hex[:10]}",
+            episode_id=episode.id,
+            evaluation_id=evaluation.id,
+            evaluation_inputs_hash=evaluation.inputs_hash,
+            ruleset_version=evaluation.ruleset_version,
+            phase=request.phase,
+            status=status,
+            items=items,
+            reviewer=request.reviewer,
+            reviewer_role=request.reviewer_role,
+            signed_at=now,
+            version=len(prior) + 1,
+            supersedes_id=request.supersedes_id,
+            idempotency_key=request.idempotency_key,
+            narrative=narrative,
+        )
+        action = "treatment_plan.superseded" if prior else "treatment_plan.signed"
+        self.audit.append(
+            AuditEntry(
+                at=now,
+                actor=plan.reviewer,
+                action=action,
+                entity="treatment_plan",
+                entity_id=plan.id,
+                payload=plan.model_dump(mode="json"),
+            )
+        )
+        self._treatment_plans.append(plan)
+        self._plan_idempotency[request.idempotency_key] = (fingerprint, plan)
+        return plan
+
+    def timeout_items(self) -> tuple[TimeoutItem, ...]:
+        now = self.clock()
+        items: list[TimeoutItem] = []
         for episode in self._episodes.values():
-            if is_timeout_due(episode, now, self._reviews, self.catalog):
-                start = first_antibiotic_start(episode, self.catalog)
-                drugs = [
-                    o.generic
-                    for o in episode.orders
-                    if o.generic and self.catalog.is_antibiotic(o.generic)
-                ]
-                due.append(
-                    {
-                        "episode_id": episode.id,
-                        "patient_id": episode.patient.id,
-                        "setting": episode.setting.value,
-                        "antibiotic_name": ", ".join(drugs),
-                        "started_at": start.isoformat(),
-                        "hours_elapsed": round((now - start).total_seconds() / 3600, 1),
-                        "status": "REVIEW_DUE",
-                    }
+            start = first_antibiotic_start(episode, self.catalog)
+            if start is None:
+                continue
+            drugs = [
+                order.generic
+                for order in episode.orders
+                if order.generic and self.catalog.is_antibiotic(order.generic)
+            ]
+            completed = next(
+                (
+                    plan
+                    for plan in reversed(self._treatment_plans)
+                    if plan.episode_id == episode.id
+                    and plan.phase is ReviewPhase.ANTIBIOTIC_TIMEOUT_48H
+                ),
+                None,
+            )
+            if completed:
+                items.append(
+                    TimeoutItem(
+                        episode_id=episode.id,
+                        patient_id=episode.patient.id,
+                        setting=episode.setting.value,
+                        antibiotic_name=", ".join(drugs),
+                        started_at=start,
+                        hours_elapsed=round((now - start).total_seconds() / 3600, 1),
+                        status="REVIEWED",
+                        evaluation_id=completed.evaluation_id,
+                        plan_id=completed.id,
+                        reviewed_at=completed.signed_at,
+                        reviewed_by=completed.reviewer,
+                    )
                 )
-        return due
+            elif is_timeout_due(episode, now, self._treatment_plans, self.catalog):
+                latest = next(
+                    (
+                        report
+                        for report in reversed(tuple(self._evaluations.values()))
+                        if report.episode_id == episode.id
+                    ),
+                    None,
+                )
+                items.append(
+                    TimeoutItem(
+                        episode_id=episode.id,
+                        patient_id=episode.patient.id,
+                        setting=episode.setting.value,
+                        antibiotic_name=", ".join(drugs),
+                        started_at=start,
+                        hours_elapsed=round((now - start).total_seconds() / 3600, 1),
+                        status="REVIEW_DUE",
+                        evaluation_id=latest.id if latest else None,
+                    )
+                )
+        return tuple(items)
+
+    def timeout_due(self) -> list[dict]:
+        return [
+            item.model_dump(mode="json")
+            for item in self.timeout_items()
+            if item.status == "REVIEW_DUE"
+        ]
 
 
 def _order_view(order, reason: str) -> OrderView:

@@ -131,7 +131,7 @@ export default function UploadPage() {
             Upload an image or paste typed orders. You will verify extraction before clinical analysis.
           </p>
         </div>
-        <span className="text-xs text-[#6B6A65]">Step 1 of 4</span>
+        <span className="text-xs text-[#6B6A65]">Step 1 of 5</span>
       </div>
 
       <WorkflowStepper current={1} />

@@ -19,6 +19,9 @@ import type {
   PatientRecord,
   Review,
   TimeoutItem,
+  TreatmentPlan,
+  TreatmentPlanRequest,
+  Trigger,
 } from '@/types/stewardship'
 import {
   MOCK_AUDIT_LOG,
@@ -36,6 +39,7 @@ const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === 'true'
 
 /** Base URL of the stewardship API (ignored when USE_MOCK = true). */
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const mockPlans = new Map<string, TreatmentPlan[]>()
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -160,15 +164,19 @@ export async function getEpisodes(hasCulture = false): Promise<Episode[]> {
 
 // ─── Evaluation ────────────────────────────────────────────────────────────────
 
-export async function evaluateEpisode(episodeId: string): Promise<EvaluationReport> {
+export async function evaluateEpisode(
+  episodeId: string,
+  trigger: Trigger = 'NEW_PRESCRIPTION'
+): Promise<EvaluationReport> {
   if (USE_MOCK) {
     // Simulate engine processing time
     await delay(1800)
     return { ...MOCK_EVALUATION, episode_id: episodeId }
   }
-  return apiFetch<EvaluationReport>(`/api/episodes/${episodeId}/evaluate`, {
-    method: 'POST',
-  })
+  return apiFetch<EvaluationReport>(
+    `/api/episodes/${episodeId}/evaluate?trigger=${encodeURIComponent(trigger)}`,
+    { method: 'POST' }
+  )
 }
 
 export async function getEvaluation(evaluationId: string): Promise<EvaluationReport> {
@@ -182,6 +190,27 @@ export async function getEvaluation(evaluationId: string): Promise<EvaluationRep
 export async function getEvaluationReviews(evaluationId: string): Promise<Review[]> {
   if (USE_MOCK) return []
   return apiFetch<Review[]>(`/api/evaluations/${evaluationId}/reviews`)
+}
+
+export async function getTreatmentPlans(evaluationId: string): Promise<TreatmentPlan[]> {
+  if (USE_MOCK) return mockPlans.get(evaluationId) ?? []
+  return apiFetch<TreatmentPlan[]>(`/api/evaluations/${evaluationId}/treatment-plans`)
+}
+
+export async function getLatestTreatmentPlan(evaluationId: string): Promise<TreatmentPlan | null> {
+  const plans = await getTreatmentPlans(evaluationId)
+  return plans[0] ?? null
+}
+
+export async function signTreatmentPlan(
+  evaluationId: string,
+  request: TreatmentPlanRequest
+): Promise<TreatmentPlan> {
+  if (USE_MOCK) throw new Error('Treatment-plan sign-off requires the backend.')
+  return apiFetch<TreatmentPlan>(`/api/evaluations/${evaluationId}/treatment-plans`, {
+    method: 'POST',
+    body: JSON.stringify(request),
+  })
 }
 
 // ─── Review ────────────────────────────────────────────────────────────────────
@@ -214,7 +243,7 @@ export async function getTimeoutDue(): Promise<TimeoutItem[]> {
     await delay(300)
     return MOCK_TIMEOUTS
   }
-  return apiFetch<TimeoutItem[]>('/api/timeout-due')
+  return apiFetch<TimeoutItem[]>('/api/timeouts?status=all')
 }
 
 // ─── Audit Log ─────────────────────────────────────────────────────────────────
