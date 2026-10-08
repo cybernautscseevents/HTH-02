@@ -49,6 +49,7 @@ export default function EvaluationPage({
   const [reviews, setReviews] = useState<Review[]>([])
   const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [rerunning, setRerunning] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('findings')
   const [patientOpen, setPatientOpen] = useState(false)
@@ -68,7 +69,7 @@ export default function EvaluationPage({
       setReviews(recordedReviews)
       setTreatmentPlan(recordedPlan)
     } catch (e) {
-      console.error('Failed to load evaluation:', e)
+      setLoadError(e instanceof Error ? e.message : 'Could not load the evaluation.')
     } finally {
       setLoading(false)
       setRerunning(false)
@@ -121,7 +122,16 @@ export default function EvaluationPage({
 
   if (!evaluation || !episode) {
     return (
-      <div className="py-24 text-center text-[#6B6A65]">Evaluation not found.</div>
+      <div className="mx-auto max-w-md py-24 text-center">
+        <p className="text-sm font-medium text-[#1A1A1A]">Evaluation not found.</p>
+        <p className="mt-2 text-sm text-[#6B6A65]">
+          {loadError ?? 'Unknown evaluation.'} Evaluations are held in the running backend, so a
+          backend restart clears them. Enter the prescription again to create a new one.
+        </p>
+        <Link href="/upload" className="mt-4 inline-block text-sm font-medium text-[#3730A3] hover:underline">
+          Start a new evaluation
+        </Link>
+      </div>
     )
   }
 
