@@ -25,6 +25,7 @@ import { EvaluationBanner } from '@/components/stewardship/EvaluationBanner'
 import { FindingCard } from '@/components/stewardship/FindingCard'
 import { ReviewPanel } from '@/components/stewardship/ReviewPanel'
 import { CulturePanel } from '@/components/stewardship/CulturePanel'
+import { reviewerLabel, useSession } from '@/lib/auth'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
@@ -54,7 +55,8 @@ export default function EvaluationPage({
   const [activeTab, setActiveTab] = useState<Tab>('findings')
   const [patientOpen, setPatientOpen] = useState(false)
 
-  const REVIEWER = 'Dr. Priya Mehta (Pharmacist)'
+  const { user } = useSession()
+  const REVIEWER = reviewerLabel(user)
 
   const loadData = useCallback(async () => {
     try {

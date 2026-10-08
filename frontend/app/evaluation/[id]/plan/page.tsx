@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, Download, Loader2, Printer } from 'lucide-
 import { getEpisode, getEvaluation, getLatestTreatmentPlan, signTreatmentPlan } from '@/lib/api'
 import type { DrugOrder, Episode, EvaluationReport, MedicationDisposition, PlanItemRequest, Route, TreatmentPlan } from '@/types/stewardship'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
+import { useSession } from '@/lib/auth'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 
@@ -22,6 +23,7 @@ type Draft = PlanItemRequest
 
 export default function TreatmentPlanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const { user } = useSession()
   const [episode, setEpisode] = useState<Episode | null>(null)
   const [evaluation, setEvaluation] = useState<EvaluationReport | null>(null)
   const [plan, setPlan] = useState<TreatmentPlan | null>(null)
@@ -54,15 +56,15 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
   const update = (orderId: string, patch: Partial<Draft>) => setDrafts((current) => ({ ...current, [orderId]: { ...current[orderId], ...patch } }))
 
   const sign = async () => {
-    if (!evaluation) return
+    if (!evaluation || !user) return
     setSaving(true)
     setError(null)
     try {
       const signed = await signTreatmentPlan(evaluation.id, {
         phase: evaluation.trigger === 'TIMEOUT_DUE' ? 'ANTIBIOTIC_TIMEOUT_48H' : 'INITIAL',
         items: orders.map((order) => drafts[order.id]),
-        reviewer: 'Dr. Priya Mehta',
-        reviewer_role: 'PHARMACIST',
+        reviewer: user.name,
+        reviewer_role: user.role === 'pharmacist' ? 'PHARMACIST' : 'PHYSICIAN',
         idempotency_key: idempotencyKey.current,
         supersedes_id: supersedesId,
       })

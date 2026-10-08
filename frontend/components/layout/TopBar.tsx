@@ -1,19 +1,20 @@
 'use client'
 
 import React from 'react'
-import { Bell, BookOpenCheck, Shield, Stethoscope } from 'lucide-react'
+import { Bell, BookOpenCheck, LogOut } from 'lucide-react'
+import type { DemoUser } from '@/lib/auth'
 
 interface TopBarProps {
   onMenuClick: () => void
-  role: 'doctor' | 'pharmacist'
-  onRoleChange: (role: 'doctor' | 'pharmacist') => void
+  user: DemoUser
+  onSignOut: () => void
   rulesetVersion?: string | null
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   onMenuClick,
-  role,
-  onRoleChange,
+  user,
+  onSignOut,
   rulesetVersion,
 }) => (
   <header className="sticky top-0 z-30 flex h-[52px] items-center justify-between border-b border-[#E2E1DC] bg-white px-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] sm:px-6">
@@ -42,40 +43,23 @@ export const TopBar: React.FC<TopBarProps> = ({
     </div>
 
     <div className="flex items-center gap-2.5 sm:gap-3">
-      <div className="flex items-center rounded-md border border-[#E2E1DC] bg-[#F4F3EF] p-0.5">
-        <button
-          onClick={() => onRoleChange('doctor')}
-          className={`flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium transition-all ${
-            role === 'doctor' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#6B6A65]'
-          }`}
-        >
-          <Stethoscope className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Doctor</span>
-        </button>
-        <button
-          onClick={() => onRoleChange('pharmacist')}
-          className={`flex items-center gap-1.5 rounded px-2 py-1 text-[11px] font-medium transition-all ${
-            role === 'pharmacist' ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-[#6B6A65]'
-          }`}
-        >
-          <Shield className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Pharmacist</span>
-        </button>
-      </div>
-
       <div className="hidden items-center gap-2 border-l border-[#E2E1DC] pl-3 sm:flex">
         <div className="text-right">
           <p className="text-xs font-medium text-[#1A1A1A]">
-            {role === 'pharmacist' ? 'Dr. Priya Mehta' : 'Dr. Suresh Kumar'}
+            {user.name}
           </p>
           <p className="font-mono text-[10px] text-[#6B6A65]">
-            {role === 'pharmacist' ? 'PHARMACIST · ID-0042' : 'PHYSICIAN · ID-0031'}
+            {user.badge}
           </p>
         </div>
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1A1A1A] text-xs font-medium text-white">
-          {role === 'pharmacist' ? 'PM' : 'SK'}
+          {user.initials}
         </div>
       </div>
+
+      <button onClick={onSignOut} className="rounded p-1.5 text-[#6B6A65] hover:bg-[#F4F3EF] hover:text-[#1A1A1A]" title="Sign out" aria-label="Sign out">
+        <LogOut className="h-4 w-4" />
+      </button>
 
       <button className="relative rounded p-1.5 text-[#6B6A65] hover:bg-[#F4F3EF] hover:text-[#1A1A1A]" title="Notifications">
         <Bell className="h-4 w-4" />
