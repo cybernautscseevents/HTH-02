@@ -40,14 +40,17 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
         setEvaluation(report)
         setEpisode(ep)
         setPlan(existing)
-        const antibioticOrders = ep.orders.filter((order) => order.generic)
-        setDrafts(Object.fromEntries(antibioticOrders.map((order) => [order.id, initialDraft(order)])))
+        const orders = treatmentPlanOrders(ep, report)
+        setDrafts(Object.fromEntries(orders.map((order) => [order.id, initialDraft(order)])))
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Could not load the treatment plan.'))
       .finally(() => setLoading(false))
   }, [id])
 
-  const orders = useMemo(() => episode?.orders.filter((order) => order.generic) ?? [], [episode])
+  const orders = useMemo(
+    () => (episode && evaluation ? treatmentPlanOrders(episode, evaluation) : []),
+    [episode, evaluation]
+  )
   const update = (orderId: string, patch: Partial<Draft>) => setDrafts((current) => ({ ...current, [orderId]: { ...current[orderId], ...patch } }))
 
   const sign = async () => {
@@ -91,6 +94,15 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
       )}
     </div>
   )
+}
+
+function treatmentPlanOrders(episode: Episode, evaluation: EvaluationReport): DrugOrder[] {
+  const evaluatedOrderIds = new Set(
+    evaluation.findings.flatMap((finding) =>
+      finding.order_id && finding.rule_id !== 'R0_IDENTIFIED' ? [finding.order_id] : []
+    )
+  )
+  return episode.orders.filter((order) => order.generic && evaluatedOrderIds.has(order.id))
 }
 
 function initialDraft(order: DrugOrder): Draft {
