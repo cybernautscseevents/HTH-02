@@ -102,8 +102,73 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
           </div>
         </div>
 
-        {/* What to do */}
-        {view?.action && (
+        {/* DDI Details Panel */}
+        {view?.ddi && (
+          <div className="mt-4 ml-7 px-4 py-3 rounded-lg bg-[#141724] border border-[#2d3148] space-y-2">
+            {view.ddi.status === 'INTERACTION_FOUND' && (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-semibold text-rose-400 uppercase tracking-wide">
+                    DDI detected
+                  </span>
+                  <span className="text-xs font-mono text-slate-200">
+                    {view.ddi.drug_a} + {view.ddi.drug_b}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                    Severity: {view.ddi.severity}
+                  </span>
+                </div>
+                {(view.ddi.mechanism || view.ddi.description) && (
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase">Why / Mechanism: </span>
+                    <span className="text-xs text-slate-300">{view.ddi.mechanism || view.ddi.description}</span>
+                  </div>
+                )}
+                <div className="text-[11px] text-slate-400">
+                  <span className="font-semibold uppercase text-[10px]">Source: </span>
+                  {view.ddi.source}{view.ddi.source_version ? ` (${view.ddi.source_version})` : ''}
+                </div>
+                <div className="text-xs text-indigo-300 font-medium">
+                  Action: Review by pharmacist/clinician
+                </div>
+              </>
+            )}
+
+            {view.ddi.status === 'CANNOT_ASSESS' && (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wide">
+                    DDI could not be assessed
+                  </span>
+                  {view.ddi.drug_a && (
+                    <span className="text-xs font-mono text-slate-200">
+                      {view.ddi.drug_b ? `${view.ddi.drug_a} + ${view.ddi.drug_b}` : view.ddi.drug_a}
+                    </span>
+                  )}
+                </div>
+                {view.ddi.reason && (
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase">Reason: </span>
+                    <span className="text-xs text-slate-300">{view.ddi.reason}</span>
+                  </div>
+                )}
+                <div className="text-xs text-amber-300 font-medium">
+                  Manual clinical review required
+                </div>
+              </>
+            )}
+
+            {view.ddi.status === 'NO_INTERACTION_REPORTED_BY_SOURCE' && (
+              <div className="text-xs text-slate-400">
+                <span className="text-emerald-400 font-medium">No interaction reported</span> by {view.ddi.source} for{' '}
+                <span className="font-mono text-slate-300">{view.ddi.drug_a} + {view.ddi.drug_b}</span> (not guaranteed safe).
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* What to do (for non-DDI findings) */}
+        {view?.action && !view?.ddi && (
           <div className="mt-4 ml-7 px-4 py-3 rounded-lg bg-indigo-500/10 border border-indigo-500/30">
             <span className="text-[11px] font-semibold text-indigo-300 uppercase tracking-wide">
               Action
@@ -112,8 +177,8 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
           </div>
         )}
 
-        {/* Why (rule result worded with its guideline source; the rule decides, text explains) */}
-        {view?.explanation && (
+        {/* Why */}
+        {view?.explanation && !view?.ddi && (
           <p className="mt-3 ml-7 text-xs text-slate-400 leading-relaxed">{view.explanation}</p>
         )}
 

@@ -2,9 +2,11 @@
 
 This is orchestration only. Every clinical result comes from evaluate_episode(); the service
 builds its inputs (intake), attaches an action and a guideline explanation to each finding
-(advice, evidence), and records reviews through apply_review into the audit log.
+(advice, evidence), records reviews through apply_review into the audit log, and adds the
+deterministic DrugBank drug-drug interaction lookup for the episode's medication pairs (ddi).
 """
 
+import logging
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -13,8 +15,9 @@ from pydantic import BaseModel
 
 from .advice import CultureSummary, action_for, culture_summary
 from .audit import AuditLog
+from .ddi import DDIFinding, DDIProvider, DDIResult, check_pairs
 from .drugs import Catalog
-from .episode import evaluate_episode
+from .episode import _sort_key, evaluate_episode
 from .evidence import EvidenceRetriever, Explainer, Passage, TemplateExplainer
 from .intake import EpisodeRequest, build_episode
 from .ports import RenalChecker
@@ -24,6 +27,7 @@ from .schemas import (
     AuditEntry,
     Episode,
     Evaluation,
+    EvaluationStatus,
     Evidence,
     Finding,
     NormStatus,
@@ -33,6 +37,8 @@ from .schemas import (
     Trigger,
 )
 from .timeout import first_antibiotic_start, is_timeout_due
+
+logger = logging.getLogger(__name__)
 
 
 class OrderView(BaseModel):
@@ -64,6 +70,8 @@ class FindingView(BaseModel):
     evidence: tuple[Evidence, ...]
     explanation: str
     guideline_passages: tuple[Passage, ...] = ()
+    # Structured DrugBank pair result behind a DDI_* finding; None for every other rule.
+    ddi: DDIResult | None = None
 
 
 class SyndromeView(BaseModel):
@@ -107,6 +115,7 @@ class StewardshipService:
         audit: AuditLog,
         retriever: EvidenceRetriever | None = None,
         explainer: Explainer | None = None,
+        ddi: DDIProvider | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self.catalog = catalog
@@ -115,6 +124,7 @@ class StewardshipService:
         self.audit = audit
         self.retriever = retriever
         self.explainer = explainer or TemplateExplainer()
+        self.ddi = ddi
         self.clock = clock
         self._episodes: dict[str, Episode] = {}
         self._extras: dict[str, tuple[tuple[OrderView, ...], str, tuple[str, ...]]] = {}
@@ -157,14 +167,34 @@ class StewardshipService:
             catalog=self.catalog,
             renal=self.renal,
         )
+        ddi_findings, ddi_crashed = self._ddi_checks(episode)
+        ddi_by_rule = {df.finding.rule_id: df.result for df in ddi_findings}
+        findings = tuple(sorted([*result.findings, *(df.finding for df in ddi_findings)], key=_sort_key))
+        status = result.status
+        if ddi_crashed:
+            # Same contract as a failed engine check: a partial run is INCOMPLETE, never OK.
+            status = EvaluationStatus.INCOMPLETE
+        elif status is EvaluationStatus.OK and any(
+            f.outcome is not Outcome.PASS for f in findings
+        ):
+            status = EvaluationStatus.FLAGGED
         syndrome = self.rulepack.syndrome(episode.syndrome_code) if episode.syndrome_code else None
         names = {o.id: o.generic for o in episode.orders}
         items = tuple(
-            self._view(f, names.get(f.order_id), syndrome, episode.syndrome_code)
-            for f in result.findings
+            self._view(
+                f,
+                names.get(f.order_id) or _ddi_label(ddi_by_rule.get(f.rule_id)),
+                syndrome,
+                episode.syndrome_code,
+                ddi=ddi_by_rule.get(f.rule_id),
+            )
+            for f in findings
         )
+        dumped = result.model_dump()
+        dumped["status"] = status
+        dumped["findings"] = findings
         report = EvaluationReport(
-            **result.model_dump(),
+            **dumped,
             syndrome=SyndromeView(
                 code=episode.syndrome_code, name=syndrome.name if syndrome else None, resolution=how
             ),
@@ -176,6 +206,18 @@ class StewardshipService:
         self._evaluations[report.id] = report
         return report
 
+    def _ddi_checks(self, episode: Episode) -> tuple[tuple[DDIFinding, ...], bool]:
+        """Medication-pair interaction lookup. No provider means no DDI check at all; any
+        failure is reported as a crashed check (evaluation INCOMPLETE), never swallowed."""
+        if self.ddi is None:
+            return (), False
+        try:
+            checks = check_pairs(episode, self.ddi)
+        except Exception as exc:  # noqa: BLE001 - defensive; check_pairs catches per pair
+            logger.exception("Drug-drug interaction checks failed for episode %s", episode.id)
+            return (), True
+        return checks.findings, checks.crashed
+
     def evaluate_request(self, request: EpisodeRequest) -> EvaluationReport:
         return self.evaluate(self.create_episode(request).id)
 
@@ -185,9 +227,18 @@ class StewardshipService:
         except KeyError:
             raise NotFoundError(f"Unknown evaluation {evaluation_id}") from None
 
-    def _view(self, finding: Finding, drug, syndrome, syndrome_code) -> FindingView:
+    def _view(
+        self,
+        finding: Finding,
+        drug,
+        syndrome,
+        syndrome_code,
+        ddi: DDIResult | None = None,
+    ) -> FindingView:
         passages: list[Passage] = []
-        if self.retriever is not None and finding.outcome is not Outcome.PASS:
+        # A DDI finding is explained by DrugBank itself; guideline passages from the
+        # retrieval corpus are unrelated to it and must not be cited alongside it.
+        if self.retriever is not None and ddi is None and finding.outcome is not Outcome.PASS:
             query = " ".join(
                 filter(None, [syndrome.name if syndrome else None, drug, finding.message])
             )
@@ -205,6 +256,7 @@ class StewardshipService:
             evidence=finding.evidence,
             explanation=self.explainer.explain(finding, passages),
             guideline_passages=tuple(passages),
+            ddi=ddi,
         )
 
     # --- review, audit, time-out --------------------------------------------------------
@@ -241,6 +293,15 @@ class StewardshipService:
                     }
                 )
         return due
+
+
+def _ddi_label(result: DDIResult | None) -> str | None:
+    """Drug shown for a DDI finding: "a + b" for a pair, the raw text for an unreadable order."""
+    if result is None:
+        return None
+    if result.drug_a and result.drug_b:
+        return f"{result.drug_a} + {result.drug_b}"
+    return result.drug_a
 
 
 def _order_view(order, reason: str) -> OrderView:

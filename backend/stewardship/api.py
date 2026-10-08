@@ -9,6 +9,7 @@ from pydantic import BaseModel, ValidationError
 
 from . import config
 from .audit import JsonlAuditLog
+from .ddi import DrugBankDDIProvider
 from .drugs import Catalog
 from .evidence import build_store
 from .intake import EpisodeRequest, IntakeError, parse_prescription_text
@@ -36,7 +37,9 @@ class ParseResponse(BaseModel):
 
 
 def default_service() -> StewardshipService:
-    """Production wiring: real Catalog, real NCDC rule pack, real renal table, JSONL audit log."""
+    """Production wiring: real Catalog, real NCDC rule pack, real renal table, JSONL audit log,
+    and the DrugBank pair index for drug-drug interaction lookups (lazy; built once from the
+    local XML export on first use, and degraded to CANNOT_ASSESS if the source is absent)."""
     pack = YamlRulePack()
     path = str(config.CHROMA_DIR) if config.CHROMA_DIR.exists() else None
     return StewardshipService(
@@ -45,6 +48,7 @@ def default_service() -> StewardshipService:
         renal=RenalDosing.load(),
         audit=JsonlAuditLog(config.AUDIT_LOG_PATH),
         retriever=build_store(pack, path=path),
+        ddi=DrugBankDDIProvider(),
     )
 
 

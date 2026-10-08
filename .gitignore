@@ -58,3 +58,10 @@ data/ocr_test/*/adjudication.csv
 data/typed_rx_test/mimic/
 data/typed_rx_test/eicu/
 data/typed_rx_test/results/
+
+# DrugBank XML export (licensed; never committed) and the pair index built from it
+drugbank.xml
+drugbank_full_database.xml
+drugbank*.xml.gz
+*drugbank*.sqlite
+

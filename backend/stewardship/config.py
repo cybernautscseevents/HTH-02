@@ -49,3 +49,25 @@ ADULT_AGE_YEARS = int(os.getenv("HC03_ADULT_AGE_YEARS", "18"))
 RUNTIME_DIR = Path(os.getenv("HC03_RUNTIME_DIR", str(REPO_ROOT / "runtime")))
 AUDIT_LOG_PATH = RUNTIME_DIR / "audit.jsonl"
 CHROMA_DIR = Path(os.getenv("HC03_CHROMA_DIR", str(RUNTIME_DIR / "chroma")))
+
+# Drug-drug interaction source: the local DrugBank XML export (licensed, never committed)
+# and the pair index built from it once into the gitignored runtime directory.
+def _resolve_drugbank_xml() -> Path:
+    env = os.getenv("HC03_DRUGBANK_XML_PATH") or os.getenv("DRUGBANK_XML_PATH")
+    if env:
+        return Path(env)
+    for name in ("drugbank.xml", "drugbank_full_database.xml"):
+        p = REPO_ROOT / name
+        if p.exists():
+            return p
+    return REPO_ROOT / "drugbank.xml"
+
+
+DRUGBANK_XML_PATH = _resolve_drugbank_xml()
+DDI_INDEX_PATH = Path(
+    os.getenv(
+        "HC03_DDI_INDEX_PATH",
+        os.getenv("DDI_INDEX_PATH", str(RUNTIME_DIR / "drugbank_ddi_index.sqlite")),
+    )
+)
+

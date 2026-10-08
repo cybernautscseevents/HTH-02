@@ -39,6 +39,10 @@ _ACTIONS: dict[tuple[str, Outcome], str] = {
     ("C8_NOT_TESTED", Outcome.CANNOT_ASSESS): "Ask the laboratory whether this antibiotic was "
     "tested.",
     ("C9_ORGANISM_UNKNOWN", Outcome.CANNOT_ASSESS): "Record the organism's full scientific name.",
+    ("DDI_INTERACTION", Outcome.FLAG): "Review the reported interaction with the pharmacist "
+    "before the drugs are co-administered.",
+    ("DDI_CANNOT_ASSESS", Outcome.CANNOT_ASSESS): "Confirm the drug identity, or review the "
+    "drug's interactions manually; DrugBank could not answer this pair.",
 }
 
 
@@ -46,7 +50,9 @@ def action_for(finding: Finding) -> str | None:
     """What the clinician should do about a finding; None for a pass."""
     if finding.outcome is Outcome.PASS:
         return None
-    text = _ACTIONS.get((finding.rule_id, finding.outcome))
+    # DDI rule ids carry the pair after a colon ("DDI_INTERACTION:amoxicillin+clarithromycin");
+    # the action table is keyed by the rule family.
+    text = _ACTIONS.get((finding.rule_id.split(":", 1)[0], finding.outcome))
     if text is None and finding.outcome is Outcome.CANNOT_ASSESS and finding.missing_inputs:
         text = "Supply the missing input (" + ", ".join(finding.missing_inputs) + ")."
     elif text is None and finding.rule_id in ("R3_DOSE", "R5_DURATION"):
