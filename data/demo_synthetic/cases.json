@@ -1,10 +1,11 @@
 {
-  "_label": "SYNTHETIC / DEMO DATA. Invented patients for manual entry through the frontend. Not real patient data. Not used by the engine, tests or any loader.",
-  "_format": "Each case's 'request' is the exact body of POST /api/episodes (and POST /api/evaluate). 'expected' lists the rule findings the current engine returns for it.",
+  "_label": "SYNTHETIC / DEMO DATA. Invented patients, fictional hospital and doctor. Not real patient data. Not used by the engine or the tests.",
+  "_format": "request: the exact body of POST /api/episodes. prescription_text: what to paste as the typed prescription. expected: the non-PASS findings the engine returned when build_cases.py was run; every other check passed.",
   "cases": [
     {
       "case_id": "SYN-DEMO-01",
-      "demonstrates": "Guideline-concordant prescription: first-line drug, guideline dose and duration",
+      "demonstrates": "Guideline-concordant: first-line drug, dose and duration",
+      "prescription_text": "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities\nRx\nCap Amoxicillin 1 g PO TDS x 5 days\nTab Paracetamol 650 mg PO TDS x 3 days",
       "request": {
         "patient": {
           "id": "SYN-DEMO-01",
@@ -16,28 +17,20 @@
           "allergies": []
         },
         "setting": "OPD",
-        "syndrome_code": "cap_opd_no_comorbidity",
-        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
-        "prescription": "Tab Amoxicillin 1 g PO TDS x 5 days",
+        "diagnosis_text": "Community-acquired pneumonia, OPD, without comorbidities",
+        "prescription": "Cap Amoxicillin 1 g PO TDS x 5 days\nTab Paracetamol 650 mg PO TDS x 3 days",
         "cultures": []
       },
       "expected": {
         "status": "OK",
-        "findings": {
-          "R0_IDENTIFIED": "PASS",
-          "R1_INDICATION": "PASS (amoxicillin is first-line)",
-          "R2_AWARE": "PASS (Access tier)",
-          "R3_DOSE": "PASS (3000 mg/day within 3000-3000)",
-          "R4_RENAL": "PASS (no adjustment at this kidney function)",
-          "R5_DURATION": "PASS (5 days within 5-7)",
-          "R6_ALLERGY": "PASS"
-        },
-        "actions": []
+        "syndrome": "cap_opd_no_comorbidity",
+        "findings": []
       }
     },
     {
       "case_id": "SYN-DEMO-02",
-      "demonstrates": "Antibiotic not listed for the syndrome (R1) and a Watch drug where an Access first-line exists (R2)",
+      "demonstrates": "Drug not listed for the syndrome (R1) and a Watch drug where Access exists (R2)",
+      "prescription_text": "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities\nRx\nTab Ciprofloxacin 500 mg PO BD x 5 days\nTab Paracetamol 650 mg PO TDS x 3 days\nTab Ambroxol 30 mg PO TDS x 5 days",
       "request": {
         "patient": {
           "id": "SYN-DEMO-02",
@@ -49,31 +42,45 @@
           "allergies": []
         },
         "setting": "OPD",
-        "syndrome_code": "cap_opd_no_comorbidity",
-        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
-        "prescription": "Tab Ciprofloxacin 500 mg PO BD x 5 days",
+        "diagnosis_text": "Community-acquired pneumonia, OPD, without comorbidities",
+        "prescription": "Tab Ciprofloxacin 500 mg PO BD x 5 days\nTab Paracetamol 650 mg PO TDS x 3 days\nTab Ambroxol 30 mg PO TDS x 5 days",
         "cultures": []
       },
       "expected": {
         "status": "FLAGGED",
-        "findings": {
-          "R0_IDENTIFIED": "PASS",
-          "R1_INDICATION": "FLAG (ciprofloxacin is not listed; suggests switch to amoxicillin)",
-          "R2_AWARE": "FLAG (Watch tier; Access first-line amoxicillin exists)",
-          "R3_DOSE": "CANNOT_ASSESS (no guideline dose for ciprofloxacin in this syndrome)",
-          "R5_DURATION": "CANNOT_ASSESS (no guideline duration for ciprofloxacin in this syndrome)",
-          "R6_ALLERGY": "PASS"
-        },
-        "actions": [
-          "R1: Review antibiotic selection against the NCDC guideline. Guideline option: amoxicillin.",
-          "R2: Review whether a lower-tier (Access) antibiotic can be used ... Guideline option: amoxicillin.",
-          "R3/R5: no matching guideline dose/duration for this drug; check manually."
+        "syndrome": "cap_opd_no_comorbidity",
+        "findings": [
+          {
+            "rule": "R1_INDICATION",
+            "drug": "ciprofloxacin",
+            "outcome": "FLAG",
+            "message": "ciprofloxacin is not listed for community-acquired pneumonia, opd, without comorbidities."
+          },
+          {
+            "rule": "R2_AWARE",
+            "drug": "ciprofloxacin",
+            "outcome": "FLAG",
+            "message": "ciprofloxacin is a Watch antibiotic; an Access first-line option exists."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "ciprofloxacin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline dose for ciprofloxacin by this route."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "ciprofloxacin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline duration for ciprofloxacin by this route."
+          }
         ]
       }
     },
     {
       "case_id": "SYN-DEMO-03",
-      "demonstrates": "Right drug, wrong dose and duration: daily dose below range (R3) and course too long (R5)",
+      "demonstrates": "Dose below the guideline (R3) and course too long (R5)",
+      "prescription_text": "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities\nRx\nCap Amoxicillin 500 mg PO TDS x 10 days\nTab Paracetamol 650 mg PO TDS x 3 days",
       "request": {
         "patient": {
           "id": "SYN-DEMO-03",
@@ -85,30 +92,33 @@
           "allergies": []
         },
         "setting": "OPD",
-        "syndrome_code": "cap_opd_no_comorbidity",
-        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
-        "prescription": "Tab Amoxicillin 500 mg PO TDS x 10 days",
+        "diagnosis_text": "Community-acquired pneumonia, OPD, without comorbidities",
+        "prescription": "Cap Amoxicillin 500 mg PO TDS x 10 days\nTab Paracetamol 650 mg PO TDS x 3 days",
         "cultures": []
       },
       "expected": {
         "status": "FLAGGED",
-        "findings": {
-          "R0_IDENTIFIED": "PASS",
-          "R1_INDICATION": "PASS (first-line)",
-          "R2_AWARE": "PASS (Access tier)",
-          "R3_DOSE": "FLAG (1500 mg/day below the guideline range 3000-3000 mg/day)",
-          "R5_DURATION": "FLAG (10 days longer than the guideline 5-7 days)",
-          "R6_ALLERGY": "PASS"
-        },
-        "actions": [
-          "R3: Review dose before administration against the guideline range.",
-          "R5: Review the planned duration against the guideline."
+        "syndrome": "cap_opd_no_comorbidity",
+        "findings": [
+          {
+            "rule": "R3_DOSE",
+            "drug": "amoxicillin",
+            "outcome": "FLAG",
+            "message": "Daily dose 1500 mg is below the guideline range 3000-3000 mg/day."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "amoxicillin",
+            "outcome": "FLAG",
+            "message": "Duration 10 days is longer than the guideline (5-7 days)."
+          }
         ]
       }
     },
     {
       "case_id": "SYN-DEMO-04",
-      "demonstrates": "Culture result contradicts therapy: urine isolate tested resistant to the prescribed drug (C3)",
+      "demonstrates": "Culture shows the organism is resistant (C3)",
+      "prescription_text": "Diagnosis: Uncomplicated cystitis\nRx\nTab Nitrofurantoin 100 mg PO BD x 5 days\nTab Paracetamol 500 mg PO TDS x 3 days",
       "request": {
         "patient": {
           "id": "SYN-DEMO-04",
@@ -120,9 +130,8 @@
           "allergies": []
         },
         "setting": "OPD",
-        "syndrome_code": "cystitis",
-        "diagnosis_text": "SYNTHETIC: uncomplicated cystitis",
-        "prescription": "Tab Nitrofurantoin 100 mg PO BD x 5 days",
+        "diagnosis_text": "Uncomplicated cystitis",
+        "prescription": "Tab Nitrofurantoin 100 mg PO BD x 5 days\nTab Paracetamol 500 mg PO TDS x 3 days",
         "cultures": [
           {
             "specimen_type": "urine",
@@ -141,23 +150,21 @@
       },
       "expected": {
         "status": "FLAGGED",
-        "findings": {
-          "R0_IDENTIFIED": "PASS",
-          "R1_INDICATION": "PASS (first-line)",
-          "R2_AWARE": "PASS (Access tier)",
-          "R3_DOSE": "PASS (200 mg/day)",
-          "R5_DURATION": "PASS (5 days)",
-          "R6_ALLERGY": "PASS",
-          "C3_BUG_DRUG_MISMATCH": "FLAG (escherichia coli tested resistant to nitrofurantoin)"
-        },
-        "actions": [
-          "C3: Review antibiotic selection and consider an alternative the organism is susceptible to."
+        "syndrome": "cystitis",
+        "findings": [
+          {
+            "rule": "C3_BUG_DRUG_MISMATCH",
+            "drug": "nitrofurantoin",
+            "outcome": "FLAG",
+            "message": "escherichia coli tested resistant to nitrofurantoin; therapy is likely inactive."
+          }
         ]
       }
     },
     {
       "case_id": "SYN-DEMO-05",
-      "demonstrates": "Incomplete prescription and patient data: the engine names what is missing instead of passing",
+      "demonstrates": "Missing frequency, duration, weight, creatinine and allergy status",
+      "prescription_text": "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities\nRx\nAmoxicillin 1 g",
       "request": {
         "patient": {
           "id": "SYN-DEMO-05",
@@ -169,31 +176,641 @@
           "allergies": []
         },
         "setting": "OPD",
-        "syndrome_code": "cap_opd_no_comorbidity",
-        "diagnosis_text": "SYNTHETIC: community-acquired pneumonia, OPD, no comorbidities",
+        "diagnosis_text": "Community-acquired pneumonia, OPD, without comorbidities",
         "prescription": "Amoxicillin 1 g",
         "cultures": []
       },
       "expected": {
         "status": "FLAGGED",
-        "findings": {
-          "R0_IDENTIFIED": "PASS",
-          "R1_INDICATION": "PASS (first-line)",
-          "R3_DOSE": "CANNOT_ASSESS (missing freq_per_day)",
-          "R4_RENAL": "CANNOT_ASSESS (missing weight_kg, serum_creatinine_mg_dl)",
-          "R5_DURATION": "CANNOT_ASSESS (missing duration_days)",
-          "R6_ALLERGY": "CANNOT_ASSESS (missing allergy_status; beta-lactam)",
-          "R2_AWARE": "PASS (Access tier)"
+        "syndrome": "cap_opd_no_comorbidity",
+        "findings": [
+          {
+            "rule": "R3_DOSE",
+            "drug": "amoxicillin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "Dose or frequency missing; dose was not checked."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "amoxicillin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "Kidney function unknown; amoxicillin needs dose changes in renal impairment."
+          },
+          {
+            "rule": "R6_ALLERGY",
+            "drug": "amoxicillin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "Allergy status unknown; this is a beta-lactam."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "amoxicillin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No planned duration recorded."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-06",
+      "demonstrates": "Dose too high for the kidney function (R4)",
+      "prescription_text": "Diagnosis: Acute pyelonephritis\nRx\nInj Piperacillin-tazobactam 4.5 g IV q6h x 7 days\nInj Paracetamol 1 g IV TDS x 3 days\nInj Pantoprazole 40 mg IV OD x 5 days\nInj Ondansetron 4 mg IV TDS x 3 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-06",
+          "age_years": 72,
+          "sex": "M",
+          "weight_kg": 60,
+          "serum_creatinine_mg_dl": 2.4,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
         },
-        "actions": [
-          "Supply the missing input (freq_per_day).",
-          "Provide age, weight and serum creatinine so renal dosing can be checked.",
-          "Document the patient's allergy status.",
-          "Supply the missing input (duration_days)."
-        ],
-        "note": "Status is FLAGGED, not INCOMPLETE: INCOMPLETE is reserved for a check that crashed. CANNOT_ASSESS findings make the evaluation FLAGGED so the gaps are not mistaken for a pass."
+        "setting": "WARD",
+        "diagnosis_text": "Acute pyelonephritis",
+        "prescription": "Inj Piperacillin-tazobactam 4.5 g IV q6h x 7 days\nInj Paracetamol 1 g IV TDS x 3 days\nInj Pantoprazole 40 mg IV OD x 5 days\nInj Ondansetron 4 mg IV TDS x 3 days",
+        "cultures": [
+          {
+            "specimen_type": "urine",
+            "status": "PENDING",
+            "isolates": []
+          }
+        ]
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "pyelonephritis",
+        "findings": [
+          {
+            "rule": "R4_RENAL",
+            "drug": "piperacillin/tazobactam",
+            "outcome": "FLAG",
+            "message": "Daily dose 18000 mg exceeds the renal limit of 13500 mg/day at estimated creatinine clearance 24 mL/min."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-07",
+      "demonstrates": "Penicillin given to a patient with a penicillin allergy (R6)",
+      "prescription_text": "Diagnosis: Cellulitis, non-purulent\nRx\nCap Amoxicillin 500 mg PO TDS x 5 days\nTab Ibuprofen 400 mg PO TDS x 3 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-07",
+          "age_years": 31,
+          "sex": "F",
+          "weight_kg": 58,
+          "serum_creatinine_mg_dl": 0.7,
+          "allergy_status": "KNOWN",
+          "allergies": [
+            "penicillin"
+          ]
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Cellulitis, non-purulent",
+        "prescription": "Cap Amoxicillin 500 mg PO TDS x 5 days\nTab Ibuprofen 400 mg PO TDS x 3 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "cellulitis_nonpurulent",
+        "findings": [
+          {
+            "rule": "R6_ALLERGY",
+            "drug": "amoxicillin",
+            "outcome": "FLAG",
+            "message": "Documented allergy to penicillin; amoxicillin may be contraindicated."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-08",
+      "demonstrates": "Antibiotic for a viral infection (R1)",
+      "prescription_text": "Diagnosis: Viral URTI\nRx\nTab Azithromycin 500 mg PO OD x 3 days\nTab Paracetamol 650 mg PO TDS x 3 days\nTab Cetirizine 10 mg PO OD x 5 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-08",
+          "age_years": 24,
+          "sex": "M",
+          "weight_kg": 68,
+          "serum_creatinine_mg_dl": 0.9,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Viral URTI",
+        "prescription": "Tab Azithromycin 500 mg PO OD x 3 days\nTab Paracetamol 650 mg PO TDS x 3 days\nTab Cetirizine 10 mg PO OD x 5 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "viral_uri",
+        "findings": [
+          {
+            "rule": "R1_INDICATION",
+            "drug": "azithromycin",
+            "outcome": "FLAG",
+            "message": "Antibiotics are not indicated for uncomplicated viral laryngitis/urti."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline dose for azithromycin by this route."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No renal dosing data for azithromycin by the PO route; kidney dosing not checked."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline duration for azithromycin by this route."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-09",
+      "demonstrates": "Inpatient pneumonia on the guideline regimen; both drugs are Watch tier, so R2 asks for a stewardship look",
+      "prescription_text": "Diagnosis: Community-acquired pneumonia, inpatient ward\nRx\nInj Ceftriaxone 2 g IV OD x 5 days\nTab Azithromycin 500 mg PO OD x 5 days\nTab Paracetamol 650 mg PO TDS x 3 days\nInj Pantoprazole 40 mg IV OD x 5 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-09",
+          "age_years": 64,
+          "sex": "F",
+          "weight_kg": 58,
+          "serum_creatinine_mg_dl": 1.0,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "WARD",
+        "diagnosis_text": "Community-acquired pneumonia, inpatient ward",
+        "prescription": "Inj Ceftriaxone 2 g IV OD x 5 days\nTab Azithromycin 500 mg PO OD x 5 days\nTab Paracetamol 650 mg PO TDS x 3 days\nInj Pantoprazole 40 mg IV OD x 5 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "cap_ward",
+        "findings": [
+          {
+            "rule": "R2_AWARE",
+            "drug": "ceftriaxone",
+            "outcome": "FLAG",
+            "message": "ceftriaxone is a Watch antibiotic; an Access first-line option exists."
+          },
+          {
+            "rule": "R2_AWARE",
+            "drug": "azithromycin",
+            "outcome": "FLAG",
+            "message": "azithromycin is a Watch antibiotic; an Access first-line option exists."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No renal dosing data for azithromycin by the PO route; kidney dosing not checked."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-10",
+      "demonstrates": "Carbapenem and vancomycin where the guideline gives ceftriaxone + azithromycin",
+      "prescription_text": "Diagnosis: Community-acquired pneumonia, inpatient ICU\nRx\nInj Meropenem 1 g IV TDS x 7 days\nInj Vancomycin 1 g IV BD x 7 days\nInj Pantoprazole 40 mg IV OD x 7 days\nInj Paracetamol 1 g IV TDS x 3 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-10",
+          "age_years": 69,
+          "sex": "M",
+          "weight_kg": 72,
+          "serum_creatinine_mg_dl": 1.1,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "ICU",
+        "diagnosis_text": "Community-acquired pneumonia, inpatient ICU",
+        "prescription": "Inj Meropenem 1 g IV TDS x 7 days\nInj Vancomycin 1 g IV BD x 7 days\nInj Pantoprazole 40 mg IV OD x 7 days\nInj Paracetamol 1 g IV TDS x 3 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "cap_icu",
+        "findings": [
+          {
+            "rule": "R1_INDICATION",
+            "drug": "meropenem",
+            "outcome": "FLAG",
+            "message": "meropenem is not listed for community-acquired pneumonia, inpatient icu."
+          },
+          {
+            "rule": "R1_INDICATION",
+            "drug": "vancomycin",
+            "outcome": "FLAG",
+            "message": "vancomycin is not listed for community-acquired pneumonia, inpatient icu."
+          },
+          {
+            "rule": "R2_AWARE",
+            "drug": "meropenem",
+            "outcome": "FLAG",
+            "message": "meropenem is a Watch antibiotic; an Access first-line option exists."
+          },
+          {
+            "rule": "R2_AWARE",
+            "drug": "vancomycin",
+            "outcome": "FLAG",
+            "message": "vancomycin is a Watch antibiotic; an Access first-line option exists."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "meropenem",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline dose for meropenem by this route."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "vancomycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline dose for vancomycin by this route."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "vancomycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No renal dosing data for vancomycin by the IV route; kidney dosing not checked."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "meropenem",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline duration for meropenem by this route."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "vancomycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline duration for vancomycin by this route."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-11",
+      "demonstrates": "Brand name read (Augmentin); daily dose below guideline (R3)",
+      "prescription_text": "Diagnosis: Infective exacerbation of COPD\nRx\nTab Augmentin 625 mg PO BD x 5 days\nNeb Salbutamol 2.5 mg QID x 5 days\nTab Prednisolone 40 mg PO OD x 5 days\nTab Montelukast 10 mg PO OD x 14 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-11",
+          "age_years": 61,
+          "sex": "M",
+          "weight_kg": 66,
+          "serum_creatinine_mg_dl": 1.0,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Infective exacerbation of COPD",
+        "prescription": "Tab Augmentin 625 mg PO BD x 5 days\nNeb Salbutamol 2.5 mg QID x 5 days\nTab Prednisolone 40 mg PO OD x 5 days\nTab Montelukast 10 mg PO OD x 14 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "copd_exacerbation",
+        "findings": [
+          {
+            "rule": "R3_DOSE",
+            "drug": "amoxicillin/clavulanic acid",
+            "outcome": "FLAG",
+            "message": "Daily dose 1250 mg is below the guideline range 2000-2000 mg/day."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-12",
+      "demonstrates": "Culture back: step down from piperacillin-tazobactam to a narrower drug (C4)",
+      "prescription_text": "Diagnosis: Acute pyelonephritis\nRx\nInj Piperacillin-tazobactam 4.5 g IV q6h x 7 days\nInj Paracetamol 1 g IV TDS x 3 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-12",
+          "age_years": 45,
+          "sex": "F",
+          "weight_kg": 64,
+          "serum_creatinine_mg_dl": 0.8,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "WARD",
+        "diagnosis_text": "Acute pyelonephritis",
+        "prescription": "Inj Piperacillin-tazobactam 4.5 g IV q6h x 7 days\nInj Paracetamol 1 g IV TDS x 3 days",
+        "cultures": [
+          {
+            "specimen_type": "urine",
+            "status": "FINAL",
+            "isolates": [
+              {
+                "organism": "Escherichia coli",
+                "susceptibilities": {
+                  "Piperacillin-tazobactam": "S",
+                  "Amikacin": "S",
+                  "Ceftriaxone": "S",
+                  "Ciprofloxacin": "R"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "pyelonephritis",
+        "findings": [
+          {
+            "rule": "C4_DE_ESCALATE",
+            "drug": "piperacillin/tazobactam",
+            "outcome": "FLAG",
+            "message": "Culture shows susceptibility to Access-tier amikacin; consider stepping down from piperacillin/tazobactam."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-13",
+      "demonstrates": "Two antibiotics for gastroenteritis that needs none (R1)",
+      "prescription_text": "Diagnosis: Acute gastroenteritis without danger signs\nRx\nTab Ciprofloxacin 500 mg PO BD x 5 days\nTab Metronidazole 400 mg PO TDS x 5 days\nOral rehydration salts 200 ml PO after each loose stool\nTab Ondansetron 4 mg PO TDS x 2 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-13",
+          "age_years": 27,
+          "sex": "M",
+          "weight_kg": 70,
+          "serum_creatinine_mg_dl": 0.9,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Acute gastroenteritis without danger signs",
+        "prescription": "Tab Ciprofloxacin 500 mg PO BD x 5 days\nTab Metronidazole 400 mg PO TDS x 5 days\nOral rehydration salts 200 ml PO after each loose stool\nTab Ondansetron 4 mg PO TDS x 2 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "acute_gastroenteritis_no_danger_signs",
+        "findings": [
+          {
+            "rule": "R1_INDICATION",
+            "drug": "ciprofloxacin",
+            "outcome": "FLAG",
+            "message": "Antibiotics are not indicated for acute gastroenteritis without danger signs."
+          },
+          {
+            "rule": "R1_INDICATION",
+            "drug": "metronidazole",
+            "outcome": "FLAG",
+            "message": "Antibiotics are not indicated for acute gastroenteritis without danger signs."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "ciprofloxacin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline dose for ciprofloxacin by this route."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "metronidazole",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline dose for metronidazole by this route."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "metronidazole",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No renal dosing data for metronidazole by the PO route; kidney dosing not checked."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "ciprofloxacin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline duration for ciprofloxacin by this route."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "metronidazole",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline duration for metronidazole by this route."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-14",
+      "demonstrates": "Diabetic foot infection treated as the guideline says",
+      "prescription_text": "Diagnosis: Diabetic foot infection, moderate\nRx\nTab Amoxicillin-clavulanate 625 mg PO TDS x 10 days\nTab Metformin 500 mg PO BD x 30 days\nTab Glimepiride 1 mg PO OD x 30 days\nTab Paracetamol 650 mg PO TDS x 3 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-14",
+          "age_years": 56,
+          "sex": "M",
+          "weight_kg": 78,
+          "serum_creatinine_mg_dl": 1.1,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Diabetic foot infection, moderate",
+        "prescription": "Tab Amoxicillin-clavulanate 625 mg PO TDS x 10 days\nTab Metformin 500 mg PO BD x 30 days\nTab Glimepiride 1 mg PO OD x 30 days\nTab Paracetamol 650 mg PO TDS x 3 days",
+        "cultures": [
+          {
+            "specimen_type": "pus",
+            "status": "PENDING",
+            "isolates": []
+          }
+        ]
+      },
+      "expected": {
+        "status": "OK",
+        "syndrome": "diabetic_foot_moderate",
+        "findings": []
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-15",
+      "demonstrates": "No diagnosis written: the indication is undocumented",
+      "prescription_text": "Rx\nTab Azithromycin 500 mg PO OD x 3 days\nTab Paracetamol 650 mg PO TDS x 3 days\nTab Levocetirizine 5 mg PO OD x 5 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-15",
+          "age_years": 38,
+          "sex": "F",
+          "weight_kg": 60,
+          "serum_creatinine_mg_dl": 0.8,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": null,
+        "prescription": "Tab Azithromycin 500 mg PO OD x 3 days\nTab Paracetamol 650 mg PO TDS x 3 days\nTab Levocetirizine 5 mg PO OD x 5 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": null,
+        "findings": [
+          {
+            "rule": "R1_INDICATION",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No indication documented by the prescriber; guideline checks cannot run."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No indication documented by the prescriber; guideline checks cannot run."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No indication documented by the prescriber; guideline checks cannot run."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "azithromycin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No renal dosing data for azithromycin by the PO route; kidney dosing not checked."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-16",
+      "demonstrates": "Uncertain diagnosis ('UTI?'): not mapped, the reviewer must choose",
+      "prescription_text": "Diagnosis: UTI?\nRx\nTab Cefixime 200 mg PO BD x 7 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-16",
+          "age_years": 50,
+          "sex": "F",
+          "weight_kg": 66,
+          "serum_creatinine_mg_dl": 0.9,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "UTI?",
+        "prescription": "Tab Cefixime 200 mg PO BD x 7 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": null,
+        "findings": [
+          {
+            "rule": "R1_INDICATION",
+            "drug": "cefixime",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No infection syndrome recorded; guideline checks cannot run."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "cefixime",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No infection syndrome recorded; guideline checks cannot run."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "cefixime",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No infection syndrome recorded; guideline checks cannot run."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "cefixime",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No renal dosing data for cefixime by the PO route; kidney dosing not checked."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-17",
+      "demonstrates": "Nitrofurantoin in an older patient with poor kidney function (R4)",
+      "prescription_text": "Diagnosis: Uncomplicated cystitis\nRx\nTab Nitrofurantoin 100 mg PO BD x 5 days\nTab Amlodipine 5 mg PO OD x 30 days\nTab Atorvastatin 10 mg PO OD x 30 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-17",
+          "age_years": 78,
+          "sex": "F",
+          "weight_kg": 50,
+          "serum_creatinine_mg_dl": 1.6,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Uncomplicated cystitis",
+        "prescription": "Tab Nitrofurantoin 100 mg PO BD x 5 days\nTab Amlodipine 5 mg PO OD x 30 days\nTab Atorvastatin 10 mg PO OD x 30 days",
+        "cultures": [
+          {
+            "specimen_type": "urine",
+            "status": "PENDING",
+            "isolates": []
+          }
+        ]
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "cystitis",
+        "findings": [
+          {
+            "rule": "R4_RENAL",
+            "drug": "nitrofurantoin",
+            "outcome": "FLAG",
+            "message": "nitrofurantoin is not recommended at estimated creatinine clearance 23 mL/min."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-18",
+      "demonstrates": "Child: adult dose rules do not apply, so the dose is not judged",
+      "prescription_text": "Diagnosis: Acute pharyngitis, Centor score 3 or more\nRx\nCap Amoxicillin 250 mg PO TDS x 7 days\nTab Paracetamol 250 mg PO TDS x 3 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-18",
+          "age_years": 8,
+          "sex": "M",
+          "weight_kg": 24,
+          "serum_creatinine_mg_dl": 0.4,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Acute pharyngitis, Centor score 3 or more",
+        "prescription": "Cap Amoxicillin 250 mg PO TDS x 7 days\nTab Paracetamol 250 mg PO TDS x 3 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "pharyngitis_high_centor",
+        "findings": [
+          {
+            "rule": "R3_DOSE",
+            "drug": "amoxicillin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "Dose rules cover adults only; paediatric dosing was not checked."
+          },
+          {
+            "rule": "R4_RENAL",
+            "drug": "amoxicillin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "Renal dosing rules cover adults only; kidney dosing was not checked."
+          }
+        ]
       }
     }
-  ],
-  "_verified": "All 5 requests parsed and evaluated with HTTP 200 against the real catalog, NCDC rule pack and renal table on 2026-10-08 (branch typed-rx-mvp). Findings above are the observed results."
+  ]
 }

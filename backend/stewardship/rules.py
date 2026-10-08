@@ -116,7 +116,9 @@ def _finding(
 
 
 def _syndrome_missing(rule_id: str, ctx: RuleContext, order: DrugOrder) -> Finding:
-    if ctx.episode.syndrome_code is None:
+    if ctx.episode.syndrome_code is None and not ctx.episode.diagnosis_text:
+        message = "No indication documented by the prescriber; guideline checks cannot run."
+    elif ctx.episode.syndrome_code is None:
         message = "No infection syndrome recorded; guideline checks cannot run."
     else:
         message = f"No guideline entry for syndrome '{ctx.episode.syndrome_code}'."

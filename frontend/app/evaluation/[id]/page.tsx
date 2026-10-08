@@ -28,6 +28,13 @@ import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
 
 type Tab = 'findings' | 'culture' | 'patient'
 
+// How the syndrome was decided (backend SyndromeView.resolution).
+const RESOLUTION_LABEL: Record<string, string> = {
+  mapped_from_text: "from the prescriber's diagnosis",
+  confirmed_from_diagnosis: "prescriber's diagnosis, confirmed by the reviewer",
+  selected: 'selected by the reviewer',
+}
+
 export default function EvaluationPage({
   params,
 }: {
@@ -175,6 +182,9 @@ export default function EvaluationPage({
       {evaluation.syndrome && (
         <p className="text-xs text-[#6B6A65]">
           Guideline syndrome: <span className="font-medium text-[#1A1A1A]">{evaluation.syndrome.name ?? 'Not recognised; syndrome-specific checks could not run'}</span>
+          {RESOLUTION_LABEL[evaluation.syndrome.resolution] && (
+            <span> · {RESOLUTION_LABEL[evaluation.syndrome.resolution]}</span>
+          )}
         </p>
       )}
 
@@ -187,6 +197,37 @@ export default function EvaluationPage({
           <span className="text-[#6B6A65]">Culture: </span>
           <span className="text-[#1A1A1A]">{evaluation.culture.message}</span>
           {evaluation.culture.action && <span className="text-[#3730A3]"> {evaluation.culture.action}</span>}
+        </div>
+      )}
+
+      {/* Summary: explains the results below; the rules decide, this text does not */}
+      {evaluation.summary && (
+        <div className="p-4 rounded-lg border border-[#2d3148] bg-[#141724] text-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wide">
+              Summary
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+              {evaluation.summary.generated_by === 'AI_WORDED'
+                ? `AI-worded${evaluation.summary.model ? ` (${evaluation.summary.model})` : ''}`
+                : 'Rule-based'}
+            </span>
+          </div>
+          <p className="mb-2 text-xs text-amber-300/80">{evaluation.summary.notice}</p>
+          <p className="text-slate-200 leading-relaxed whitespace-pre-line">
+            {evaluation.summary.text}
+          </p>
+          {evaluation.summary.sources.length > 0 && (
+            <p className="mt-2 text-xs text-slate-400">
+              Sources: {evaluation.summary.sources.join('; ')}
+            </p>
+          )}
+          {evaluation.summary.fallback_reason && (
+            <p className="mt-2 text-xs text-slate-500">
+              AI wording was not used ({evaluation.summary.fallback_reason}); the rule-based summary
+              is shown.
+            </p>
+          )}
         </div>
       )}
 

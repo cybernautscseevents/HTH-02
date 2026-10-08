@@ -35,6 +35,8 @@ test_results/
 
 # Test scenario fixtures are source files, not generated output
 !backend/tests/scenarios/*.json
+# Synthetic demo data, including the stand-in patient records behind "Fetch record"
+!data/demo_synthetic/*.json
 
 # Real prescription OCR test images: no redistribution licence, keep local only
 data/ocr_test/*/images/
@@ -58,3 +60,9 @@ data/ocr_test/*/adjudication.csv
 data/typed_rx_test/mimic/
 data/typed_rx_test/eicu/
 data/typed_rx_test/results/
+
+# Local LLM API keys: never commit
+/api
+/api.txt
+.env
+.env.local

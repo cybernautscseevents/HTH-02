@@ -21,6 +21,8 @@ from .audit import JsonlAuditLog
 from .drugs import Catalog
 from .evidence import build_store
 from .intake import EpisodeRequest, IntakeError, medicine_text, parse_prescription_text
+from .ports import PatientRecordSource
+from .records import JsonPatientRecords, PatientRecord
 from .renal import RenalDosing
 from .review import ReviewError
 from .rulepack import YamlRulePack
@@ -30,10 +32,12 @@ from .service import (
     EvaluationReport,
     NotFoundError,
     OrderView,
+    PrescriptionDiagnosis,
     ReviewRequest,
     StewardshipService,
     _order_view,
 )
+from .summary import summarizer_from_env
 
 
 class ParseRequest(BaseModel):
@@ -43,6 +47,7 @@ class ParseRequest(BaseModel):
 class ParseResponse(BaseModel):
     orders: tuple[OrderView, ...]
     warnings: tuple[str, ...]
+    diagnosis: PrescriptionDiagnosis
 
 
 class OcrDrug(BaseModel):
@@ -64,10 +69,12 @@ class OcrResponse(BaseModel):
     processing_time_ms: int
     model: str
     warnings: tuple[str, ...] = ()
+    diagnosis: PrescriptionDiagnosis | None = None
 
 
 def default_service() -> StewardshipService:
-    """Production wiring: real Catalog, real NCDC rule pack, real renal table, JSONL audit log."""
+    """Production wiring: real Catalog, real NCDC rule pack, real renal table, JSONL audit log,
+    and the LLM summary when HC03_LLM_* is configured (deterministic summary otherwise)."""
     pack = YamlRulePack()
     path = str(config.CHROMA_DIR) if config.CHROMA_DIR.exists() else None
     return StewardshipService(
@@ -76,6 +83,7 @@ def default_service() -> StewardshipService:
         renal=RenalDosing.load(),
         audit=JsonlAuditLog(config.AUDIT_LOG_PATH),
         retriever=build_store(pack, path=path),
+        summarizer=summarizer_from_env(),
     )
 
 
@@ -83,8 +91,10 @@ def create_app(
     service: StewardshipService | None = None,
     *,
     ocr_engines: dict[str, OcrEngine] | None = None,
+    records: PatientRecordSource | None = None,
 ) -> FastAPI:
     svc = service or default_service()
+    patient_records = records or JsonPatientRecords.load(config.PATIENT_RECORDS_JSON)
     loaded_engines = dict(ocr_engines or {})
     ocr_lock = Lock()
     app = FastAPI(title="Antibiotic Stewardship Copilot")
@@ -189,6 +199,7 @@ def create_app(
             processing_time_ms=round(result.elapsed_seconds * 1000),
             model=f"{result.model_id}@{result.model_revision}",
             warnings=reading.warnings,
+            diagnosis=svc.prescription_diagnosis(result.text),
         )
 
     @app.get("/api/syndromes")
@@ -209,13 +220,26 @@ def create_app(
             )
         return out
 
+    @app.get("/api/patients/{patient_id}")
+    def get_patient_record(patient_id: str) -> PatientRecord:
+        """Pre-fill data for the review form. The reviewer checks and can change every value."""
+        record = patient_records.get(patient_id)
+        if record is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No hospital record for patient '{patient_id}'. Enter the details by hand.",
+            )
+        return record
+
     @app.post("/api/parse-prescription")
     def parse_prescription(body: ParseRequest) -> ParseResponse:
         readings, warnings = parse_prescription_text(
             body.text, svc.catalog, started_at=datetime.now(UTC)
         )
         return ParseResponse(
-            orders=tuple(_order_view(r.order, r.reason) for r in readings), warnings=warnings
+            orders=tuple(_order_view(r.order, r.reason) for r in readings),
+            warnings=warnings,
+            diagnosis=svc.prescription_diagnosis(body.text),
         )
 
     @app.post("/api/evaluate")

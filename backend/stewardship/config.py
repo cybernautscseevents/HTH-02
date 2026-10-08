@@ -25,6 +25,12 @@ BRANDS_CSV = DATA_DIR / "brands_india.csv"
 INTRINSIC_RESISTANCE_CSV = DATA_DIR / "intrinsic_resistance.csv"
 ORGANISMS_TXT = DATA_DIR / "reference" / "amrie" / "Organisms.txt"
 RENAL_DOSING_CSV = DATA_DIR / "renal_dosing.csv"
+# Common non-antibiotic drugs (WHO ATC codes), identified so they are not left unresolved.
+NON_ANTIBIOTICS_CSV = DATA_DIR / "non_antibiotics.csv"
+# Patient records the review form can be pre-filled from (records.py). Synthetic in the demo.
+PATIENT_RECORDS_JSON = Path(
+    os.getenv("HC03_PATIENT_RECORDS_JSON", str(DATA_DIR / "demo_synthetic" / "patients.json"))
+)
 
 # Similarity (0-1) above which a misspelt drug name is offered as a candidate. Candidates are
 # never accepted automatically; a person confirms them.
@@ -49,3 +55,14 @@ ADULT_AGE_YEARS = int(os.getenv("HC03_ADULT_AGE_YEARS", "18"))
 RUNTIME_DIR = Path(os.getenv("HC03_RUNTIME_DIR", str(REPO_ROOT / "runtime")))
 AUDIT_LOG_PATH = RUNTIME_DIR / "audit.jsonl"
 CHROMA_DIR = Path(os.getenv("HC03_CHROMA_DIR", str(RUNTIME_DIR / "chroma")))
+
+# Optional language-model summary of an evaluation (summary.py). Explanation only; it never
+# changes a result. Off unless configured: HC03_LLM_PROVIDER=groq|gemini with HC03_LLM_API_KEY
+# (base URL and model have defaults), or HC03_LLM_BASE_URL and HC03_LLM_MODEL for any other
+# OpenAI-compatible API (e.g. http://localhost:11434/v1 for Ollama). Set the key in the
+# environment only, never in a file in the repository.
+LLM_PROVIDER = os.getenv("HC03_LLM_PROVIDER") or None
+LLM_BASE_URL = os.getenv("HC03_LLM_BASE_URL") or None
+LLM_MODEL = os.getenv("HC03_LLM_MODEL") or None
+LLM_API_KEY = os.getenv("HC03_LLM_API_KEY") or None
+LLM_TIMEOUT_S = float(os.getenv("HC03_LLM_TIMEOUT_S", "20"))

@@ -1,14 +1,14 @@
 """SYNTHETIC DEMO DATA: verify the demo prescription texts, then render them as typed images.
 
-Run from the repository root:
+Run from the repository root, after build_cases.py has written the JSON files:
     python data/demo_synthetic/make_images.py              # verify text, then render images/
     python data/demo_synthetic/make_images.py --ocr glm    # also OCR the rendered images (glm|qwen)
 
 1. The exact page text in prescriptions.json goes through read_orders (transcript -> parser ->
    Catalog) and must give the expected DrugOrder fields, with the two columns of a row read either
-   on one line or on two.
-2. The orders' raw text, with the patient, syndrome and culture of cases.json, goes through
-   POST /api/evaluate and must give the findings listed in cases.json.
+   on one line or on two. Its diagnosis line must be the diagnosis of cases.json.
+2. The orders' raw text, with the patient, diagnosis and culture of cases.json, goes through
+   POST /api/evaluate and must give exactly the non-PASS findings listed in cases.json.
 3. Only then are the images drawn. Nothing here changes or loads anything into the application.
 """
 
@@ -25,6 +25,7 @@ sys.path.insert(0, str(HERE.parents[1]))
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from backend.stewardship.drugs import Catalog  # noqa: E402
+from backend.stewardship.intake import diagnosis_line  # noqa: E402
 from prescription_ocr.orders import read_orders  # noqa: E402
 from prescription_ocr.types import OcrResult  # noqa: E402
 
@@ -47,11 +48,15 @@ def order_fields(reading) -> list[dict]:
     return [{f: plain(getattr(r.order, f)) for f in FIELDS} for r in reading.readings]
 
 
-def check_parse(catalog: Catalog, page: dict, case: dict) -> list[str]:
+def check_parse(catalog: Catalog, page: dict, case: dict, request: dict) -> list[str]:
     errors = []
+    if diagnosis_line(page_text(page, case, False)) != request["diagnosis_text"]:
+        errors.append("diagnosis line does not match cases.json")
     for split in (False, True):
         text = page_text(page, case, split)
-        reading = read_orders(OcrResult(text, text, "typed-text", "-", "cpu", "-", 0.0), catalog, started_at=T0)
+        reading = read_orders(
+            OcrResult(text, text, "typed-text", "-", "cpu", "-", 0.0), catalog, started_at=T0
+        )
         got = order_fields(reading)
         if got != case["expected_orders"]:
             errors.append(f"parse ({'split' if split else 'joined'} columns): got {got}")
@@ -60,22 +65,28 @@ def check_parse(catalog: Catalog, page: dict, case: dict) -> list[str]:
     return errors
 
 
-def check_rules(client, catalog: Catalog, page: dict, case: dict, request: dict, expected: dict) -> list[str]:
+def check_rules(
+    client, catalog: Catalog, page: dict, case: dict, request: dict, expected: dict
+) -> list[str]:
     text = page_text(page, case, False)
-    reading = read_orders(OcrResult(text, text, "typed-text", "-", "cpu", "-", 0.0), catalog, started_at=T0)
+    reading = read_orders(
+        OcrResult(text, text, "typed-text", "-", "cpu", "-", 0.0), catalog, started_at=T0
+    )
     body = {**request, "prescription": "\n".join(r.order.raw_text for r in reading.readings)}
     resp = client.post("/api/evaluate", json=body)
     if resp.status_code != 200:
         return [f"evaluate: HTTP {resp.status_code} {resp.text}"]
     report = resp.json()
     errors = [] if report["status"] == expected["status"] else [f"status {report['status']}"]
-    outcomes = {f["rule_id"]: f["outcome"] for f in report["findings"]}
-    for rule, want in expected["findings"].items():
-        if outcomes.get(rule) != want.split()[0]:
-            errors.append(f"{rule}: expected {want.split()[0]}, got {outcomes.get(rule)}")
-    for rule, outcome in outcomes.items():
-        if rule not in expected["findings"] and outcome != "PASS":
-            errors.append(f"unexpected {rule} {outcome}")
+    drugs = {o["id"]: o["generic"] for o in report["orders"]}
+    got = sorted(
+        (i["rule_id"], drugs.get(i["order_id"]) or "", i["outcome"])
+        for i in report["items"]
+        if i["outcome"] != "PASS"
+    )
+    want = sorted((f["rule"], f["drug"] or "", f["outcome"]) for f in expected["findings"])
+    if got != want:
+        errors.append(f"findings: expected {want}, got {got}")
     return errors
 
 
@@ -87,8 +98,20 @@ def render(page: dict, case: dict, out: Path) -> None:
     d = ImageDraw.Draw(img)
     ink, muted, accent = (20, 24, 32), (110, 116, 128), (24, 70, 130)
 
-    d.text((width / 2, 110), page["header"][0], font=font("NotoSans-Bold.ttf", 38), fill=accent, anchor="mm")
-    d.text((width / 2, 165), page["header"][1], font=font("NotoSans-Regular.ttf", 26), fill=muted, anchor="mm")
+    d.text(
+        (width / 2, 110),
+        page["header"][0],
+        font=font("NotoSans-Bold.ttf", 38),
+        fill=accent,
+        anchor="mm",
+    )
+    d.text(
+        (width / 2, 165),
+        page["header"][1],
+        font=font("NotoSans-Regular.ttf", 26),
+        fill=muted,
+        anchor="mm",
+    )
     d.line((margin, 210, width - margin, 210), fill=accent, width=3)
 
     def labelled(x: int, y: int, text: str, size_font=(regular, bold)) -> None:
@@ -97,7 +120,12 @@ def render(page: dict, case: dict, out: Path) -> None:
             d.text((x, y), text, font=size_font[0], fill=ink)
             return
         d.text((x, y), label + ":", font=size_font[1], fill=ink)
-        d.text((x + d.textlength(label + ": ", font=size_font[1]), y), value.strip(), font=size_font[0], fill=ink)
+        d.text(
+            (x + d.textlength(label + ": ", font=size_font[1]), y),
+            value.strip(),
+            font=size_font[0],
+            fill=ink,
+        )
 
     y = 250
     for style, *cols in case["rows"]:
@@ -118,7 +146,13 @@ def render(page: dict, case: dict, out: Path) -> None:
 
     d.text((width - margin, height - 260), page["footer"][0], font=regular, fill=ink, anchor="ra")
     d.line((margin, height - 110, width - margin, height - 110), fill=(210, 214, 222), width=2)
-    d.text((width / 2, height - 75), page["footer"][1], font=font("NotoSans-Regular.ttf", 20), fill=muted, anchor="mm")
+    d.text(
+        (width / 2, height - 75),
+        page["footer"][1],
+        font=font("NotoSans-Regular.ttf", 20),
+        fill=muted,
+        anchor="mm",
+    )
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(out)
 
@@ -165,7 +199,7 @@ def main() -> int:
         failed = False
         for case in data["cases"]:
             ref = known[case["case_id"]]
-            errors = check_parse(catalog, data["page"], case) + check_rules(
+            errors = check_parse(catalog, data["page"], case, ref["request"]) + check_rules(
                 client, catalog, data["page"], case, ref["request"], ref["expected"]
             )
             print(f"{case['case_id']} text: {'OK' if not errors else '; '.join(errors)}")

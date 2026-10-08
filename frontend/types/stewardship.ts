@@ -235,12 +235,26 @@ export interface SyndromeInfo {
   page?: string | null
 }
 
+/** Plain-language summary of a finished evaluation (backend/stewardship/summary.py).
+ *  Explanation only: written after the rules decided, never changes a result. */
+export interface EvaluationSummary {
+  text: string
+  /** AI_WORDED: model wording that passed every check. RULE_BASED: the deterministic text. */
+  generated_by: 'AI_WORDED' | 'RULE_BASED'
+  model?: string | null
+  /** Why the model's wording was not used (fixed phrase, never a provider error text). */
+  fallback_reason?: string | null
+  sources: string[]
+  notice: string
+}
+
 /** The engine's Evaluation plus the extra fields the application layer adds. */
 export interface EvaluationReport extends Evaluation {
   syndrome?: { code: string | null; name: string | null; resolution: string }
   culture?: CultureSummary
   items?: FindingView[]
   warnings?: string[]
+  summary?: EvaluationSummary | null
 }
 
 export interface CultureInput {
@@ -251,6 +265,13 @@ export interface CultureInput {
     probable_contaminant?: boolean
     susceptibilities: Record<string, SIR>
   }[]
+}
+
+/** GET /api/patients/{id}: what the hospital record holds, used only to pre-fill the form. */
+export interface PatientRecord {
+  patient: Patient
+  cultures: CultureInput[]
+  source: string
 }
 
 /** Body of POST /api/episodes and POST /api/evaluate. */
@@ -312,11 +333,21 @@ export interface OCRResult {
   processing_time_ms: number
   model?: string
   warnings?: string[]
+  diagnosis?: PrescriptionDiagnosis | null
+}
+
+/** The diagnosis written on the prescription, and the syndrome it reads as if unambiguous. */
+export interface PrescriptionDiagnosis {
+  text: string | null
+  syndrome_code: string | null
+  syndrome_name: string | null
+  note: string | null
 }
 
 export interface ParsePrescriptionResult {
   orders: ExtractedDrug[]
   warnings: string[]
+  diagnosis?: PrescriptionDiagnosis
 }
 
 // ─── Dashboard KPIs (frontend-specific) ───────────────────────────────────────

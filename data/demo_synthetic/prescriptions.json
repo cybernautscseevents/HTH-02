@@ -1,6 +1,16 @@
 {
-  "_label": "SYNTHETIC / DEMO DATA. Exact text printed on each demo prescription image. Fictional hospital, doctor and patients. Not real patient data.",
-  "_format": "rows: printed top to bottom. A row is [style, text] or [style, left column, right column]. expected_orders: the DrugOrder fields read_orders must produce from the whole page text. case_id links to cases.json (patient, syndrome and culture as entered in the form).",
+  "_label": "SYNTHETIC / DEMO DATA. Invented patients, fictional hospital and doctor. Not real patient data. Exact text printed on each demo prescription image.",
+  "_format": "rows: printed top to bottom. A row is [style, text] or [style, left column, right column]. expected_orders: the DrugOrder fields read_orders must produce from the whole page text. case_id links to cases.json.",
+  "page": {
+    "header": [
+      "SYNTHETIC DEMO TEACHING HOSPITAL (FICTIONAL)",
+      "Department of General Medicine - Prescription"
+    ],
+    "footer": [
+      "Signature: Dr. Demo Physician (fictional)",
+      "SYNTHETIC DEMO DATA - not a real patient, doctor or prescription"
+    ]
+  },
   "cases": [
     {
       "case_id": "SYN-DEMO-01",
@@ -33,10 +43,6 @@
           "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
         ],
         [
-          "field",
-          "Investigations: serum creatinine 0.8 mg/dL"
-        ],
-        [
           "gap"
         ],
         [
@@ -45,7 +51,18 @@
         ],
         [
           "med",
-          "1. Tab Amoxicillin 1 g PO TDS x 5 days"
+          "1. Cap Amoxicillin 1 g PO TDS x 5 days"
+        ],
+        [
+          "med",
+          "2. Tab Paracetamol 650 mg PO TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.8 mg/dL"
         ]
       ],
       "expected_orders": [
@@ -55,6 +72,13 @@
           "freq_per_day": 3.0,
           "route": "PO",
           "duration_days": 5
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 650.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
         }
       ]
     },
@@ -89,10 +113,6 @@
           "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
         ],
         [
-          "field",
-          "Investigations: serum creatinine 0.9 mg/dL"
-        ],
-        [
           "gap"
         ],
         [
@@ -102,6 +122,21 @@
         [
           "med",
           "1. Tab Ciprofloxacin 500 mg PO BD x 5 days"
+        ],
+        [
+          "med",
+          "2. Tab Paracetamol 650 mg PO TDS x 3 days"
+        ],
+        [
+          "med",
+          "3. Tab Ambroxol 30 mg PO TDS x 5 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.9 mg/dL"
         ]
       ],
       "expected_orders": [
@@ -109,6 +144,20 @@
           "generic": "ciprofloxacin",
           "dose_mg": 500.0,
           "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 650.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        },
+        {
+          "generic": "ambroxol",
+          "dose_mg": 30.0,
+          "freq_per_day": 3.0,
           "route": "PO",
           "duration_days": 5
         }
@@ -145,10 +194,6 @@
           "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
         ],
         [
-          "field",
-          "Investigations: serum creatinine 1.0 mg/dL"
-        ],
-        [
           "gap"
         ],
         [
@@ -157,7 +202,18 @@
         ],
         [
           "med",
-          "1. Tab Amoxicillin 500 mg PO TDS x 10 days"
+          "1. Cap Amoxicillin 500 mg PO TDS x 10 days"
+        ],
+        [
+          "med",
+          "2. Tab Paracetamol 650 mg PO TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 1 mg/dL"
         ]
       ],
       "expected_orders": [
@@ -167,6 +223,13 @@
           "freq_per_day": 3.0,
           "route": "PO",
           "duration_days": 10
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 650.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
         }
       ]
     },
@@ -212,6 +275,10 @@
           "1. Tab Nitrofurantoin 100 mg PO BD x 5 days"
         ],
         [
+          "med",
+          "2. Tab Paracetamol 500 mg PO TDS x 3 days"
+        ],
+        [
           "gap"
         ],
         [
@@ -238,6 +305,13 @@
           "freq_per_day": 2.0,
           "route": "PO",
           "duration_days": 5
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 500.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
         }
       ]
     },
@@ -272,10 +346,6 @@
           "Diagnosis: Community-acquired pneumonia, OPD, without comorbidities"
         ],
         [
-          "field",
-          "Investigations: serum creatinine not available"
-        ],
-        [
           "gap"
         ],
         [
@@ -285,6 +355,13 @@
         [
           "med",
           "1. Amoxicillin 1 g"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine not available"
         ]
       ],
       "expected_orders": [
@@ -296,16 +373,1090 @@
           "duration_days": null
         }
       ]
+    },
+    {
+      "case_id": "SYN-DEMO-06",
+      "image": "images/SYN-DEMO-06_renal_impairment.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 06",
+          "Patient ID: SYN-DEMO-06"
+        ],
+        [
+          "field",
+          "Age: 72 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 60 kg",
+          "Patient setting: Inpatient ward"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Acute pyelonephritis"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Inj Piperacillin-tazobactam 4.5 g IV q6h x 7 days"
+        ],
+        [
+          "med",
+          "2. Inj Paracetamol 1 g IV TDS x 3 days"
+        ],
+        [
+          "med",
+          "3. Inj Pantoprazole 40 mg IV OD x 5 days"
+        ],
+        [
+          "med",
+          "4. Inj Ondansetron 4 mg IV TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 2.4 mg/dL"
+        ],
+        [
+          "field",
+          "Urine culture: sent before the first dose, report pending"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "piperacillin/tazobactam",
+          "dose_mg": 4500.0,
+          "freq_per_day": 4.0,
+          "route": "IV",
+          "duration_days": 7
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 1000.0,
+          "freq_per_day": 3.0,
+          "route": "IV",
+          "duration_days": 3
+        },
+        {
+          "generic": "pantoprazole",
+          "dose_mg": 40.0,
+          "freq_per_day": 1.0,
+          "route": "IV",
+          "duration_days": 5
+        },
+        {
+          "generic": "ondansetron",
+          "dose_mg": 4.0,
+          "freq_per_day": 3.0,
+          "route": "IV",
+          "duration_days": 3
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-07",
+      "image": "images/SYN-DEMO-07_allergy.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 07",
+          "Patient ID: SYN-DEMO-07"
+        ],
+        [
+          "field",
+          "Age: 31 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 58 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: Penicillin (urticaria)"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Cellulitis, non-purulent"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Cap Amoxicillin 500 mg PO TDS x 5 days"
+        ],
+        [
+          "med",
+          "2. Tab Ibuprofen 400 mg PO TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.7 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "amoxicillin",
+          "dose_mg": 500.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "ibuprofen",
+          "dose_mg": 400.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-08",
+      "image": "images/SYN-DEMO-08_antibiotic_not_needed.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 08",
+          "Patient ID: SYN-DEMO-08"
+        ],
+        [
+          "field",
+          "Age: 24 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 68 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Viral URTI"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Azithromycin 500 mg PO OD x 3 days"
+        ],
+        [
+          "med",
+          "2. Tab Paracetamol 650 mg PO TDS x 3 days"
+        ],
+        [
+          "med",
+          "3. Tab Cetirizine 10 mg PO OD x 5 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.9 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "azithromycin",
+          "dose_mg": 500.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 3
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 650.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        },
+        {
+          "generic": "cetirizine",
+          "dose_mg": 10.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 5
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-09",
+      "image": "images/SYN-DEMO-09_inpatient_watch.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 09",
+          "Patient ID: SYN-DEMO-09"
+        ],
+        [
+          "field",
+          "Age: 64 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 58 kg",
+          "Patient setting: Inpatient ward"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Community-acquired pneumonia, inpatient ward"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Inj Ceftriaxone 2 g IV OD x 5 days"
+        ],
+        [
+          "med",
+          "2. Tab Azithromycin 500 mg PO OD x 5 days"
+        ],
+        [
+          "med",
+          "3. Tab Paracetamol 650 mg PO TDS x 3 days"
+        ],
+        [
+          "med",
+          "4. Inj Pantoprazole 40 mg IV OD x 5 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 1 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "ceftriaxone",
+          "dose_mg": 2000.0,
+          "freq_per_day": 1.0,
+          "route": "IV",
+          "duration_days": 5
+        },
+        {
+          "generic": "azithromycin",
+          "dose_mg": 500.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 650.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        },
+        {
+          "generic": "pantoprazole",
+          "dose_mg": 40.0,
+          "freq_per_day": 1.0,
+          "route": "IV",
+          "duration_days": 5
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-10",
+      "image": "images/SYN-DEMO-10_broad_spectrum_icu.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 10",
+          "Patient ID: SYN-DEMO-10"
+        ],
+        [
+          "field",
+          "Age: 69 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 72 kg",
+          "Patient setting: ICU"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Community-acquired pneumonia, inpatient ICU"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Inj Meropenem 1 g IV TDS x 7 days"
+        ],
+        [
+          "med",
+          "2. Inj Vancomycin 1 g IV BD x 7 days"
+        ],
+        [
+          "med",
+          "3. Inj Pantoprazole 40 mg IV OD x 7 days"
+        ],
+        [
+          "med",
+          "4. Inj Paracetamol 1 g IV TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 1.1 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "meropenem",
+          "dose_mg": 1000.0,
+          "freq_per_day": 3.0,
+          "route": "IV",
+          "duration_days": 7
+        },
+        {
+          "generic": "vancomycin",
+          "dose_mg": 1000.0,
+          "freq_per_day": 2.0,
+          "route": "IV",
+          "duration_days": 7
+        },
+        {
+          "generic": "pantoprazole",
+          "dose_mg": 40.0,
+          "freq_per_day": 1.0,
+          "route": "IV",
+          "duration_days": 7
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 1000.0,
+          "freq_per_day": 3.0,
+          "route": "IV",
+          "duration_days": 3
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-11",
+      "image": "images/SYN-DEMO-11_brand_low_dose.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 11",
+          "Patient ID: SYN-DEMO-11"
+        ],
+        [
+          "field",
+          "Age: 61 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 66 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Infective exacerbation of COPD"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Augmentin 625 mg PO BD x 5 days"
+        ],
+        [
+          "med",
+          "2. Neb Salbutamol 2.5 mg QID x 5 days"
+        ],
+        [
+          "med",
+          "3. Tab Prednisolone 40 mg PO OD x 5 days"
+        ],
+        [
+          "med",
+          "4. Tab Montelukast 10 mg PO OD x 14 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 1 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "amoxicillin/clavulanic acid",
+          "dose_mg": 625.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "salbutamol",
+          "dose_mg": 2.5,
+          "freq_per_day": 4.0,
+          "route": null,
+          "duration_days": 5
+        },
+        {
+          "generic": "prednisolone",
+          "dose_mg": 40.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "montelukast",
+          "dose_mg": 10.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 14
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-12",
+      "image": "images/SYN-DEMO-12_de_escalation.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 12",
+          "Patient ID: SYN-DEMO-12"
+        ],
+        [
+          "field",
+          "Age: 45 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 64 kg",
+          "Patient setting: Inpatient ward"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Acute pyelonephritis"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Inj Piperacillin-tazobactam 4.5 g IV q6h x 7 days"
+        ],
+        [
+          "med",
+          "2. Inj Paracetamol 1 g IV TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.8 mg/dL"
+        ],
+        [
+          "field",
+          "Urine culture (final report): Escherichia coli"
+        ],
+        [
+          "field",
+          "Urine culture susceptibility: piperacillin-tazobactam (S), amikacin (S)"
+        ],
+        [
+          "field",
+          "Urine culture susceptibility: ceftriaxone (S), ciprofloxacin (R)"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "piperacillin/tazobactam",
+          "dose_mg": 4500.0,
+          "freq_per_day": 4.0,
+          "route": "IV",
+          "duration_days": 7
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 1000.0,
+          "freq_per_day": 3.0,
+          "route": "IV",
+          "duration_days": 3
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-13",
+      "image": "images/SYN-DEMO-13_gastroenteritis.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 13",
+          "Patient ID: SYN-DEMO-13"
+        ],
+        [
+          "field",
+          "Age: 27 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 70 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Acute gastroenteritis without danger signs"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Ciprofloxacin 500 mg PO BD x 5 days"
+        ],
+        [
+          "med",
+          "2. Tab Metronidazole 400 mg PO TDS x 5 days"
+        ],
+        [
+          "med",
+          "3. Oral rehydration salts 200 ml PO after each loose stool"
+        ],
+        [
+          "med",
+          "4. Tab Ondansetron 4 mg PO TDS x 2 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.9 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "ciprofloxacin",
+          "dose_mg": 500.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "metronidazole",
+          "dose_mg": 400.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "oral rehydration salts",
+          "dose_mg": null,
+          "freq_per_day": null,
+          "route": "PO",
+          "duration_days": null
+        },
+        {
+          "generic": "ondansetron",
+          "dose_mg": 4.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 2
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-14",
+      "image": "images/SYN-DEMO-14_diabetic_foot.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 14",
+          "Patient ID: SYN-DEMO-14"
+        ],
+        [
+          "field",
+          "Age: 56 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 78 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Diabetic foot infection, moderate"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Amoxicillin-clavulanate 625 mg PO TDS x 10 days"
+        ],
+        [
+          "med",
+          "2. Tab Metformin 500 mg PO BD x 30 days"
+        ],
+        [
+          "med",
+          "3. Tab Glimepiride 1 mg PO OD x 30 days"
+        ],
+        [
+          "med",
+          "4. Tab Paracetamol 650 mg PO TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 1.1 mg/dL"
+        ],
+        [
+          "field",
+          "Pus culture: deep tissue sample sent, report pending"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "amoxicillin/clavulanic acid",
+          "dose_mg": 625.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 10
+        },
+        {
+          "generic": "metformin",
+          "dose_mg": 500.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 30
+        },
+        {
+          "generic": "glimepiride",
+          "dose_mg": 1.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 30
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 650.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-15",
+      "image": "images/SYN-DEMO-15_no_diagnosis.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 15",
+          "Patient ID: SYN-DEMO-15"
+        ],
+        [
+          "field",
+          "Age: 38 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 60 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Azithromycin 500 mg PO OD x 3 days"
+        ],
+        [
+          "med",
+          "2. Tab Paracetamol 650 mg PO TDS x 3 days"
+        ],
+        [
+          "med",
+          "3. Tab Levocetirizine 5 mg PO OD x 5 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.8 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "azithromycin",
+          "dose_mg": 500.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 3
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 650.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        },
+        {
+          "generic": "levocetirizine",
+          "dose_mg": 5.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 5
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-16",
+      "image": "images/SYN-DEMO-16_uncertain_diagnosis.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 16",
+          "Patient ID: SYN-DEMO-16"
+        ],
+        [
+          "field",
+          "Age: 50 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 66 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: UTI?"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Cefixime 200 mg PO BD x 7 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.9 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "cefixime",
+          "dose_mg": 200.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 7
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-17",
+      "image": "images/SYN-DEMO-17_nitrofurantoin_renal.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 17",
+          "Patient ID: SYN-DEMO-17"
+        ],
+        [
+          "field",
+          "Age: 78 years",
+          "Sex: Female"
+        ],
+        [
+          "field",
+          "Weight: 50 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Uncomplicated cystitis"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Nitrofurantoin 100 mg PO BD x 5 days"
+        ],
+        [
+          "med",
+          "2. Tab Amlodipine 5 mg PO OD x 30 days"
+        ],
+        [
+          "med",
+          "3. Tab Atorvastatin 10 mg PO OD x 30 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 1.6 mg/dL"
+        ],
+        [
+          "field",
+          "Urine culture: sent, report pending"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "nitrofurantoin",
+          "dose_mg": 100.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "amlodipine",
+          "dose_mg": 5.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 30
+        },
+        {
+          "generic": "atorvastatin",
+          "dose_mg": 10.0,
+          "freq_per_day": 1.0,
+          "route": "PO",
+          "duration_days": 30
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-18",
+      "image": "images/SYN-DEMO-18_paediatric.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 18",
+          "Patient ID: SYN-DEMO-18"
+        ],
+        [
+          "field",
+          "Age: 8 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 24 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Acute pharyngitis, Centor score 3 or more"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Cap Amoxicillin 250 mg PO TDS x 7 days"
+        ],
+        [
+          "med",
+          "2. Tab Paracetamol 250 mg PO TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.4 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "amoxicillin",
+          "dose_mg": 250.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 7
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 250.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        }
+      ]
     }
-  ],
-  "page": {
-    "header": [
-      "SYNTHETIC DEMO TEACHING HOSPITAL (FICTIONAL)",
-      "Department of General Medicine - Outpatient Prescription"
-    ],
-    "footer": [
-      "Signature: Dr. Demo Physician (fictional)",
-      "SYNTHETIC DEMO DATA - not a real patient, doctor or prescription"
-    ]
-  }
+  ]
 }

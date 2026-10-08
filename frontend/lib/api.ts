@@ -16,6 +16,7 @@ import type {
   SyndromeInfo,
   OCRResult,
   ParsePrescriptionResult,
+  PatientRecord,
   Review,
   TimeoutItem,
 } from '@/types/stewardship'
@@ -102,6 +103,17 @@ export async function parsePrescriptionText(text: string): Promise<ParsePrescrip
     method: 'POST',
     body: JSON.stringify({ text }),
   })
+}
+
+// ─── Patient record ────────────────────────────────────────────────────────────
+
+/** Hospital record for a patient ID, to pre-fill the form. Throws when there is none. */
+export async function getPatientRecord(patientId: string): Promise<PatientRecord> {
+  if (USE_MOCK) {
+    await delay(300)
+    return { patient: { ...MOCK_EPISODE.patient, id: patientId }, cultures: [], source: 'mock data' }
+  }
+  return apiFetch<PatientRecord>(`/api/patients/${encodeURIComponent(patientId)}`)
 }
 
 // ─── Episode ───────────────────────────────────────────────────────────────────

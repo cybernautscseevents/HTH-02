@@ -8,6 +8,7 @@ still feed `parse_prescription_text` with a transcript.
 """
 
 import re
+from collections.abc import Mapping
 from datetime import datetime
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
@@ -108,17 +109,29 @@ _NEGATION = re.compile(
 )
 
 
-def read_diagnosis(text: str | None) -> tuple[str | None, str | None]:
+def _normalized(text: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", text.lower()).split())
+
+
+def read_diagnosis(
+    text: str | None, names: Mapping[str, str] | None = None
+) -> tuple[str | None, str | None]:
     """(syndrome code, why none) for a free-text diagnosis.
 
-    A code is returned only when the text is one phrase of the table, or several phrases of the
-    same syndrome, with nothing else but "acute". A negated, uncertain or second diagnosis
-    ("Complicated UTI, not cystitis", "Pneumonia with acute bronchitis", "cystitis?") could
-    change the syndrome, so it is not mapped: a person selects the code.
+    A code is returned only when the text is exactly the name of one rule-pack syndrome
+    (`names`: code -> name, e.g. "Community-acquired pneumonia, OPD, without comorbidities"), or
+    one phrase of the table, or several phrases of the same syndrome, with nothing else but
+    "acute". A negated, uncertain or second diagnosis ("Complicated UTI, not cystitis",
+    "Pneumonia with acute bronchitis", "cystitis?") could change the syndrome, so it is not
+    mapped: a person selects the code.
     """
     if not text or not text.strip():
         return None, None
-    normalized = " ".join(re.sub(r"[^a-z0-9 ]", " ", text.lower()).split())
+    normalized = _normalized(text)
+    if "?" not in text:
+        named = [code for code, name in (names or {}).items() if _normalized(name) == normalized]
+        if len(named) == 1:
+            return named[0], None
     codes = {_PHRASE_CODE[m.group()] for m in _PHRASE.finditer(normalized)}
     if not codes:
         return None, None
@@ -134,20 +147,27 @@ def read_diagnosis(text: str | None) -> tuple[str | None, str | None]:
     return codes.pop(), None
 
 
-def syndrome_from_text(text: str | None) -> str | None:
+def syndrome_from_text(text: str | None, names: Mapping[str, str] | None = None) -> str | None:
     """Syndrome code named by a free-text diagnosis, or None when it is not unambiguous."""
-    return read_diagnosis(text)[0]
+    return read_diagnosis(text, names)[0]
 
 
 def resolve_syndrome(
-    code: str | None, diagnosis_text: str | None, rulepack_codes: tuple[str, ...]
+    code: str | None,
+    diagnosis_text: str | None,
+    rulepack_codes: tuple[str, ...],
+    names: Mapping[str, str] | None = None,
 ) -> tuple[str | None, str]:
-    """Return (syndrome_code, how it was resolved). An unknown explicit code is rejected."""
+    """Return (syndrome_code, how it was resolved). An unknown explicit code is rejected.
+
+    A code the reviewer selected that is also what the prescriber's diagnosis reads as is
+    "confirmed_from_diagnosis"; any other selected code is "selected".
+    """
+    mapped = syndrome_from_text(diagnosis_text, names)
     if code:
         if code not in rulepack_codes:
             raise IntakeError(f"Unknown syndrome code '{code}'.")
-        return code, "selected"
-    mapped = syndrome_from_text(diagnosis_text)
+        return code, "confirmed_from_diagnosis" if mapped == code else "selected"
     if mapped:
         return mapped, "mapped_from_text"
     return None, "unresolved"
@@ -156,12 +176,32 @@ def resolve_syndrome(
 _PRESCRIPTION_MARKER = re.compile(
     r"^\s*(?:prescription|rx|℞|medications?|drug orders?)\s*:?\s*$", re.I
 )
+_DIAGNOSIS_KEY = r"(?:(?:provisional|working|final)\s+)?(?:diagnosis|dx|impression)"
 _HEADER_KEY = re.compile(
-    r"^\s*(?:patient|name|age|sex|gender|weight|height|diagnosis|allerg(?:y|ies)|"
+    r"^\s*(?:patient|name|age|sex|gender|weight|height|" + _DIAGNOSIS_KEY + r"|allerg(?:y|ies)|"
     r"creatinine|serum creatinine)\s*:",
     re.I,
 )
-_HEADER_ONLY = re.compile(r"^\s*(?:patient|diagnosis|allerg(?:y|ies))\s*:\s*$", re.I)
+_HEADER_ONLY = re.compile(r"^\s*(?:patient|" + _DIAGNOSIS_KEY + r"|allerg(?:y|ies))\s*:\s*$", re.I)
+_DIAGNOSIS_LINE = re.compile(r"^\s*" + _DIAGNOSIS_KEY + r"\s*:\s*(?P<text>.*)$", re.I)
+
+
+def diagnosis_line(text: str) -> str | None:
+    """The prescriber's diagnosis as written on the prescription: the value of the first
+    "Diagnosis:" / "Dx:" / "Impression:" line, or of the line after a bare "Diagnosis:". None
+    when the prescription states no diagnosis."""
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        match = _DIAGNOSIS_LINE.match(line)
+        if match is None:
+            continue
+        value = match.group("text").strip()
+        if not value:
+            value = next((rest.strip() for rest in lines[i + 1 :] if rest.strip()), "")
+        if _PRESCRIPTION_MARKER.match(value) or _HEADER_KEY.match(value):
+            return None
+        return value or None
+    return None
 
 
 def medicine_text(text: str) -> str:
@@ -306,29 +346,42 @@ def build_episode(
     catalog: Catalog,
     codes: tuple[str, ...],
     now: datetime,
+    names: Mapping[str, str] | None = None,
 ) -> tuple[Episode, tuple[OrderReading, ...], str, tuple[str, ...]]:
     """Build the Episode the engine evaluates.
 
+    The diagnosis is the one the request states, else the one written on the prescription.
     Returns (episode, order readings, how the syndrome was resolved, warnings).
     """
     started_at = request.started_at or now
-    syndrome, how = resolve_syndrome(request.syndrome_code, request.diagnosis_text, codes)
+    diagnosis = request.diagnosis_text or diagnosis_line(request.prescription)
+    syndrome, how = resolve_syndrome(request.syndrome_code, diagnosis, codes, names)
     readings, warnings = parse_prescription_text(
         request.prescription, catalog, started_at=started_at
     )
     readings = apply_confirmations(readings, request.confirmed_drugs, catalog)
-    if how == "unresolved":
-        _, why = read_diagnosis(request.diagnosis_text)
+    mapped, why = read_diagnosis(diagnosis, names)
+    if how == "unresolved" and not diagnosis:
+        warnings += (
+            "No diagnosis (indication) is documented on the prescription; guideline checks "
+            "(R1, R3, R5) cannot run. Ask the prescriber to record the indication.",
+        )
+    elif how == "unresolved":
         warnings += (
             "No supported syndrome was selected or recognised in the diagnosis; guideline "
             "checks (R1, R3, R5) cannot run." + (f" {why} Select the syndrome." if why else ""),
+        )
+    elif how == "selected" and mapped and names:
+        warnings += (
+            f"The reviewer selected '{names[syndrome]}'; the prescriber's diagnosis "
+            f"'{diagnosis}' reads as '{names[mapped]}'.",
         )
     episode = Episode(
         id=episode_id,
         patient=request.patient,
         setting=request.setting,
         syndrome_code=syndrome,
-        diagnosis_text=request.diagnosis_text,
+        diagnosis_text=diagnosis,
         started_at=started_at,
         orders=tuple(r.order for r in readings),
         specimens=build_specimens(request.cultures, catalog),

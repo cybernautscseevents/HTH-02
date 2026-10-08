@@ -2,7 +2,8 @@
 
 This is orchestration only. Every clinical result comes from evaluate_episode(); the service
 builds its inputs (intake), attaches an action and a guideline explanation to each finding
-(advice, evidence), and records reviews through apply_review into the audit log.
+(advice, evidence), adds a plain-language summary of the finished report (summary), and records
+reviews through apply_review into the audit log.
 """
 
 import uuid
@@ -16,7 +17,7 @@ from .audit import AuditLog
 from .drugs import Catalog
 from .episode import evaluate_episode
 from .evidence import EvidenceRetriever, Explainer, Passage, TemplateExplainer
-from .intake import EpisodeRequest, build_episode
+from .intake import EpisodeRequest, build_episode, diagnosis_line, read_diagnosis
 from .ports import RenalChecker
 from .review import ReviewError, apply_review
 from .rulepack import YamlRulePack
@@ -34,6 +35,7 @@ from .schemas import (
     Severity,
     Trigger,
 )
+from .summary import EvaluationSummary, Summarizer, TemplateSummarizer, evidence_for
 from .timeout import first_antibiotic_start, is_timeout_due
 
 
@@ -74,6 +76,15 @@ class SyndromeView(BaseModel):
     resolution: str  # selected | mapped_from_text | unresolved
 
 
+class PrescriptionDiagnosis(BaseModel):
+    """The diagnosis written on a prescription and the syndrome it reads as, if unambiguous."""
+
+    text: str | None
+    syndrome_code: str | None
+    syndrome_name: str | None
+    note: str | None  # why no syndrome was read from it
+
+
 class EvaluationReport(Evaluation):
     """The engine's Evaluation, unchanged, plus what the clinician needs to act on it."""
 
@@ -82,6 +93,8 @@ class EvaluationReport(Evaluation):
     culture: CultureSummary
     items: tuple[FindingView, ...]
     warnings: tuple[str, ...] = ()
+    # Written after every result above is fixed; explanation only, never read by review.
+    summary: EvaluationSummary | None = None
 
 
 class ReviewRequest(BaseModel):
@@ -128,6 +141,7 @@ class StewardshipService:
         audit: AuditLog,
         retriever: EvidenceRetriever | None = None,
         explainer: Explainer | None = None,
+        summarizer: Summarizer | None = None,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ) -> None:
         self.catalog = catalog
@@ -136,6 +150,7 @@ class StewardshipService:
         self.audit = audit
         self.retriever = retriever
         self.explainer = explainer or TemplateExplainer()
+        self.summarizer = summarizer or TemplateSummarizer()
         self.clock = clock
         self._episodes: dict[str, Episode] = {}
         self._extras: dict[str, tuple[tuple[OrderView, ...], str, tuple[str, ...]]] = {}
@@ -152,11 +167,31 @@ class StewardshipService:
             catalog=self.catalog,
             codes=self.rulepack.codes(),
             now=self.clock(),
+            names=self.syndrome_names(),
         )
         views = tuple(_order_view(r.order, r.reason) for r in readings)
         self._episodes[episode_id] = episode
         self._extras[episode_id] = (views, how, warnings)
         return episode
+
+    def syndrome_names(self) -> dict[str, str]:
+        return {code: self.rulepack.syndrome(code).name for code in self.rulepack.codes()}
+
+    def prescription_diagnosis(self, text: str) -> PrescriptionDiagnosis:
+        """What the prescriber wrote as the diagnosis, for the reviewer to confirm."""
+        diagnosis = diagnosis_line(text)
+        names = self.syndrome_names()
+        code, why = read_diagnosis(diagnosis, names)
+        if diagnosis is None:
+            why = "No diagnosis is written on the prescription."
+        elif code is None and why is None:
+            why = "The diagnosis does not name a syndrome in the guideline rule pack."
+        return PrescriptionDiagnosis(
+            text=diagnosis,
+            syndrome_code=code,
+            syndrome_name=names.get(code) if code else None,
+            note=why,
+        )
 
     def get_episode(self, episode_id: str) -> Episode:
         try:
@@ -197,6 +232,8 @@ class StewardshipService:
             items=items,
             warnings=warnings,
         )
+        summary = self.summarizer.explain(report, evidence_for(report))
+        report = report.model_copy(update={"summary": summary})
         self._evaluations[report.id] = report
         return report
 

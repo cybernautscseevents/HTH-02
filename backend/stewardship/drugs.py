@@ -68,14 +68,17 @@ class Catalog:
         intrinsic: frozenset[tuple[str, str]],
         organisms: frozenset[str],
         product_words: frozenset[str] = frozenset(),
+        non_antibiotics: frozenset[str] = frozenset(),
     ) -> None:
         """tiers: (generic, route or "") -> tier. aliases: alias -> (generic, basis).
         brands: brand -> (generics, source). Organism names are lower case. product_words are
-        the non-numeric words of listed product names ("duo", "dds") allowed beside a brand."""
+        the non-numeric words of listed product names ("duo", "dds") allowed beside a brand.
+        non_antibiotics: other drugs a prescription lists (paracetamol); they are identified so
+        the order is not left unresolved, and no stewardship rule runs on them."""
         self._tiers = tiers
         self._intrinsic = intrinsic
         self._organisms = organisms
-        self._generics = {_key(g): g for g, _ in tiers}
+        self._generics = {_key(g): g for g in non_antibiotics} | {_key(g): g for g, _ in tiers}
         self._aliases = {_key(a): v for a, v in aliases.items()}
         self._brands = {_key(b): v for b, v in brands.items()}
         self._product_words = product_words
@@ -113,7 +116,10 @@ class Catalog:
             for row in _read_csv(config.ORGANISMS_TXT, delimiter="\t")
             if row["ORGANISM"]
         )
-        return cls(tiers, aliases, brands, intrinsic, organisms, frozenset(product_words))
+        non_antibiotics = frozenset(row["generic"] for row in _read_csv(config.NON_ANTIBIOTICS_CSV))
+        return cls(
+            tiers, aliases, brands, intrinsic, organisms, frozenset(product_words), non_antibiotics
+        )
 
     def aware_tier(self, generic: str, route: Route | None = None) -> AwareTier:
         """WHO AWaRe 2025 tier. Route-specific entries (fosfomycin, minocycline) need the route;

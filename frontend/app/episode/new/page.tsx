@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowRight, User, FlaskConical } from 'lucide-react'
-import { createEpisode, evaluateEpisode, getSyndromes } from '@/lib/api'
+import { Loader2, ArrowRight, User, FlaskConical, Search } from 'lucide-react'
+import { createEpisode, evaluateEpisode, getPatientRecord, getSyndromes } from '@/lib/api'
 import type {
   AllergyStatus,
   CultureStatus,
   ExtractedDrug,
+  PrescriptionDiagnosis,
   Sex,
   Setting,
   SIR,
@@ -57,6 +58,9 @@ export default function EpisodeNewPage() {
   const [prescription, setPrescription] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [specimenType, setSpecimenType] = useState('urine')
+  const [lookingUp, setLookingUp] = useState(false)
+  const [recordNote, setRecordNote] = useState<string | null>(null)
+  const [rxDiagnosis, setRxDiagnosis] = useState<PrescriptionDiagnosis | null>(null)
 
   // Form state
   const [patientId, setPatientId] = useState('')
@@ -83,6 +87,13 @@ export default function EpisodeNewPage() {
         setPendingDrugs(drugs)
         setPrescription(drugs.map((d) => d.raw_text).join('\n'))
       }
+      const diagnosis = sessionStorage.getItem('rxDiagnosis')
+      if (diagnosis) {
+        const parsed: PrescriptionDiagnosis = JSON.parse(diagnosis)
+        setRxDiagnosis(parsed)
+        setDiagnosisText(parsed.text ?? '')
+        setSyndromeCode(parsed.syndrome_code ?? '')
+      }
     } catch {
       /* ignore */
     }
@@ -94,6 +105,63 @@ export default function EpisodeNewPage() {
         /* keep the fallback list */
       })
   }, [])
+
+  // Fills the form from the hospital record. Every value stays editable; a value the record
+  // lacks is cleared, never kept from a previous patient. The syndrome is still chosen by hand.
+  const handleLookup = async () => {
+    const id = patientId.trim()
+    if (!id) {
+      setError('Enter a patient ID to fetch the record.')
+      return
+    }
+    setError(null)
+    setRecordNote(null)
+    setLookingUp(true)
+    try {
+      const { patient, cultures, source } = await getPatientRecord(id)
+      setAge(String(patient.age_years))
+      setSex(patient.sex)
+      setWeight(patient.weight_kg != null ? String(patient.weight_kg) : '')
+      setCreatinine(patient.serum_creatinine_mg_dl != null ? String(patient.serum_creatinine_mg_dl) : '')
+      setAllergyStatus(patient.allergy_status)
+      setAllergies(patient.allergies.join(', '))
+      const culture = cultures[0]
+      setCultureStatus(culture?.status ?? 'NOT_SENT')
+      setSpecimenType(culture?.specimen_type ?? 'urine')
+      const isolate = culture?.isolates[0]
+      setOrganism(isolate?.organism ?? '')
+      const rows = Object.entries(isolate?.susceptibilities ?? {}).map(([agent, result]) => ({ agent, result }))
+      setSus(rows.length ? rows : [{ agent: '', result: 'S' }])
+      const missing = [
+        patient.weight_kg == null && 'weight',
+        patient.serum_creatinine_mg_dl == null && 'creatinine',
+        patient.allergy_status === 'UNKNOWN' && 'allergy status',
+      ].filter(Boolean)
+      const extra = cultures.length > 1 ? ` The record has ${cultures.length} cultures; only the first is shown.` : ''
+      setRecordNote(
+        `Filled from ${source}. Check every value before running.` +
+          (missing.length ? ` Not in the record: ${missing.join(', ')}.` : '') +
+          extra
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not fetch the patient record.')
+    } finally {
+      setLookingUp(false)
+    }
+  }
+
+  const syndromeNote = () => {
+    const fromDoctor = rxDiagnosis?.syndrome_code
+    if (fromDoctor && syndromeCode === fromDoctor)
+      return `From the prescriber's diagnosis "${rxDiagnosis?.text}". Change it only if that diagnosis is wrong; the change is recorded.`
+    if (fromDoctor && syndromeCode)
+      return `Changed from the prescriber's diagnosis (${rxDiagnosis?.syndrome_name}). The change is recorded with the evaluation.`
+    if (rxDiagnosis?.text && !syndromeCode)
+      return `The prescriber wrote "${rxDiagnosis.text}". ${rxDiagnosis.note ?? ''} Select the matching syndrome.`
+    if (!syndromeCode)
+      return 'Leave empty to use the diagnosis written on the prescription. With no diagnosis, the review flags the indication as undocumented.'
+    return 'Selected by you.'
+  }
 
   const handleSusChange = (i: number, field: 'agent' | 'result', value: string) => {
     setSus((prev) =>
@@ -107,12 +175,6 @@ export default function EpisodeNewPage() {
     const ageYears = Number(age)
     if (!age.trim() || !Number.isInteger(ageYears) || ageYears < 0 || ageYears > 120) {
       setError('Enter the patient age in whole years (0-120).')
-      return
-    }
-    if (!syndromeCode) {
-      setError(
-        'Select the syndrome. It is never guessed from the diagnosis text, and the guideline checks need it.'
-      )
       return
     }
     if (!prescription.trim()) {
@@ -138,8 +200,10 @@ export default function EpisodeNewPage() {
           allergies: allergyStatus === 'KNOWN' ? allergies.split(',').map((a) => a.trim()).filter(Boolean) : [],
         },
         setting,
-        syndrome_code: syndromeCode,
-        diagnosis_text: diagnosisText || null,
+        // Empty when nobody chose one: the backend then reads the prescriber's diagnosis, and
+        // reports the indication as undocumented if there is none.
+        syndrome_code: syndromeCode || null,
+        diagnosis_text: diagnosisText.trim() || null,
         prescription,
         confirmed_drugs: pendingDrugs
           .filter((drug) => drug.norm_status === 'CONFIRMED' && drug.generic)
@@ -173,6 +237,7 @@ export default function EpisodeNewPage() {
       const evaluation = await evaluateEpisode(episode.id)
       sessionStorage.removeItem('pendingDrugs')
       sessionStorage.removeItem('ocrRawText')
+      sessionStorage.removeItem('rxDiagnosis')
       router.push(`/evaluation/${evaluation.id}`)
     } catch (e) {
       console.error('Episode creation failed:', e)
@@ -221,12 +286,33 @@ export default function EpisodeNewPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <FieldLabel label="Patient ID" required />
-              <input
-                className={inputClass}
-                placeholder="e.g. PT-1024"
-                value={patientId}
-                onChange={(e) => setPatientId(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <input
+                  className={`${inputClass} flex-1`}
+                  placeholder="e.g. SYN-DEMO-04"
+                  value={patientId}
+                  onChange={(e) => {
+                    setPatientId(e.target.value)
+                    setRecordNote(null)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleLookup()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleLookup}
+                  disabled={lookingUp}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-[#C8C7C0] px-3 py-2.5 text-sm text-[#3730A3] hover:bg-[#3730A3]/5 disabled:opacity-50"
+                >
+                  {lookingUp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Fetch record
+                </button>
+              </div>
+              {recordNote && <p className="mt-1 text-xs text-[#3730A3]">{recordNote}</p>}
             </div>
             <div>
               <FieldLabel label="Age (years)" required />
@@ -309,7 +395,7 @@ export default function EpisodeNewPage() {
               </select>
             </div>
             <div>
-              <FieldLabel label="Syndrome / Infection Type" required />
+              <FieldLabel label="Syndrome / Infection Type" />
               <select className={selectClass} value={syndromeCode} onChange={(e) => setSyndromeCode(e.target.value)}>
                 <option value="">Select syndrome...</option>
                 {syndromes.map((s) => (
@@ -318,16 +404,14 @@ export default function EpisodeNewPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-slate-500 mt-1">
-                Chosen by you; the diagnosis text below is never used to pick it.
-              </p>
+              <p className="text-xs text-slate-500 mt-1">{syndromeNote()}</p>
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel label="Diagnosis notes (optional)" />
+              <FieldLabel label="Prescriber's diagnosis" />
               <textarea
                 className={`${inputClass} resize-none`}
-                rows={3}
-                placeholder="Brief clinical diagnosis / impression..."
+                rows={2}
+                placeholder="As written by the doctor, e.g. Uncomplicated cystitis"
                 value={diagnosisText}
                 onChange={(e) => setDiagnosisText(e.target.value)}
               />

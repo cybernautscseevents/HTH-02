@@ -15,8 +15,8 @@ _ACTIONS: dict[tuple[str, Outcome], str] = {
         Outcome.CANNOT_ASSESS,
     ): "Confirm the intended drug; no other check ran for it.",
     ("R1_INDICATION", Outcome.FLAG): "Review antibiotic selection against the NCDC guideline.",
-    ("R1_INDICATION", Outcome.CANNOT_ASSESS): "Select a supported syndrome so the guideline "
-    "check can run.",
+    ("R1_INDICATION", Outcome.CANNOT_ASSESS): "Ask the prescriber to document the indication, "
+    "or select the syndrome it matches, so the guideline check can run.",
     ("R2_AWARE", Outcome.FLAG): "Review whether a lower-tier (Access) antibiotic can be used, "
     "or obtain stewardship approval for Reserve drugs.",
     ("R2_AWARE", Outcome.CANNOT_ASSESS): "Check the WHO AWaRe tier manually.",

@@ -5,7 +5,7 @@ drug catalog, kidney checker, rule pack and coverage estimator are finished.
 """
 
 from collections.abc import Sequence
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from .schemas import (
     AwareTier,
@@ -17,6 +17,9 @@ from .schemas import (
     Setting,
     SyndromeRule,
 )
+
+if TYPE_CHECKING:
+    from .records import PatientRecord
 
 
 class DrugCatalog(Protocol):
@@ -51,3 +54,9 @@ class CoverageEstimator(Protocol):
     def estimate(
         self, syndrome_code: str, setting: Setting, regimens: Sequence[str]
     ) -> tuple[CoverageEstimate, ...]: ...
+
+
+class PatientRecordSource(Protocol):
+    def get(self, patient_id: str) -> "PatientRecord | None":
+        """What the hospital already holds for this patient, or None when it has no record."""
+        ...

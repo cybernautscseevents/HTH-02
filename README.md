@@ -57,6 +57,18 @@ npm run dev                                    # http://localhost:3000
 
 Without `.env.local` the frontend runs on built-in mock data (`NEXT_PUBLIC_USE_MOCK` unset).
 
+AI-worded summary (optional). The evaluation summary is rule-based unless a language model is
+configured; the model only rewords the rule results, its text is checked, and any failure falls
+back to the rule-based summary. Set these in the backend's environment (never in a committed file):
+
+| Variable | Meaning |
+|---|---|
+| `HC03_LLM_PROVIDER` | `groq` or `gemini` (fills in the base URL and a default model) |
+| `HC03_LLM_API_KEY` | the provider's API key; a hosted provider without a key stays off |
+| `HC03_LLM_MODEL` | optional model override (default for `groq`: `qwen/qwen3.8-27b`) |
+| `HC03_LLM_BASE_URL` | optional; any other OpenAI-compatible endpoint, e.g. a local Ollama |
+| `HC03_LLM_TIMEOUT_S` | request timeout in seconds (default 20) |
+
 OCR (optional, needs a GPU-capable `torch`; not needed for the engine or the typed demo):
 
 ```

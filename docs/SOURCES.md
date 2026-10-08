@@ -7,6 +7,7 @@
 | ICMR AMRSN Annual Report 2023 (as tabulated in `data/reference/ncdc/antibiogram_icmr_amrsn_2023.csv`) | Advisory surveillance susceptibility (`backend/stewardship/surveillance.py`); not a rule input |
 | [ICMR AMRSN Annual Report 2024](https://www.icmr.gov.in/icmrobject/uploads/Report/1763981012_icmramrsnannualreport2024.pdf) | Coverage priors. Table 2.14: susceptibility counts for urine Enterobacterales (pp. ~75–77) |
 | [WHO AWaRe classification 2025](https://iris.who.int/items/4fa2de82-388c-46d9-a6cb-41ffbd10677d) (CC BY-NC-SA 3.0 IGO) | `data/aware.csv` AWaRe tiers (built by `scripts/build_aware.py`) |
+| [WHO ATC/DDD Index 2025](https://atcddd.fhi.no/atc_ddd_index/) | `data/non_antibiotics.csv`: common non-antibiotic drugs (paracetamol, pantoprazole...) with their ATC codes, so a full prescription's other lines are identified and skipped by the stewardship rules |
 | [WHONET AMRIE](https://github.com/AClark-WHONET/AMRIE) | `data/reference/amrie/` (non-commercial license) |
 | [GSK India prescribing information](https://india-pharma.gsk.com/en-in/products/prescribing-information-tab/) (Augmentin, Ceftum, Supacef, Fortum) | `data/brands_india.csv`; oral amoxicillin/clavulanate and cefuroxime renal bands |
 | US FDA drug labels via [openFDA](https://open.fda.gov/apis/drug/label/) / DailyMed | Fallback renal bands for oral drugs with no Indian source, labelled per row |

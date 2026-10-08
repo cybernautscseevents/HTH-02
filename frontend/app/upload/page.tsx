@@ -73,6 +73,7 @@ export default function UploadPage() {
         processing_time_ms: 0,
         model: 'Typed input',
         warnings: parsed.warnings,
+        diagnosis: parsed.diagnosis,
       })
       setStep('review')
     } catch (reason) {
@@ -110,6 +111,8 @@ export default function UploadPage() {
     const activeDrugs = drugs.filter((drug) => !drug.excluded)
     sessionStorage.setItem('pendingDrugs', JSON.stringify(activeDrugs))
     sessionStorage.setItem('ocrRawText', result?.raw_text ?? typedText)
+    if (result?.diagnosis) sessionStorage.setItem('rxDiagnosis', JSON.stringify(result.diagnosis))
+    else sessionStorage.removeItem('rxDiagnosis')
     router.push('/episode/new')
   }
 
@@ -205,13 +208,13 @@ export default function UploadPage() {
             </div>
           ) : (
             <div className="p-5">
-              <h2 className="text-sm font-medium text-[#1A1A1A]">Typed medication orders</h2>
-              <p className="mt-0.5 text-xs text-[#6B6A65]">Enter one medicine per line, including dose, route, frequency and duration.</p>
+              <h2 className="text-sm font-medium text-[#1A1A1A]">Typed prescription</h2>
+              <p className="mt-0.5 text-xs text-[#6B6A65]">Paste the prescription as the doctor wrote it: the &quot;Diagnosis:&quot; line, then one medicine per line with dose, route, frequency and duration.</p>
               <textarea
                 value={typedText}
                 onChange={(event) => setTypedText(event.target.value)}
                 rows={7}
-                placeholder={'Tab Nitrofurantoin 100 mg PO BD x 5 days\nInj Ceftriaxone 2 g IV OD x 7 days'}
+                placeholder={'Diagnosis: Uncomplicated cystitis\nRx\nTab Nitrofurantoin 100 mg PO BD x 5 days\nTab Paracetamol 500 mg PO TDS x 3 days'}
                 className="mt-4 w-full resize-y rounded-md border border-[#C8C7C0] bg-white px-3 py-2.5 font-mono text-sm text-[#1A1A1A] outline-none placeholder:text-[#8B8982] focus:border-[#3730A3] focus:ring-2 focus:ring-[#3730A3]/10"
               />
               <div className="mt-4 flex justify-end">
@@ -263,6 +266,21 @@ export default function UploadPage() {
                 <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Source text</p>
                 <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-[#E2E1DC] bg-[#FAFAF8] p-3 font-mono text-xs text-[#1A1A1A]">{result.raw_text}</pre>
                 <p className="mt-2 text-[10px] text-[#6B6A65]">{result.model}{result.processing_time_ms ? ` · ${result.processing_time_ms} ms` : ''}</p>
+                <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Prescriber&apos;s diagnosis</p>
+                {result.diagnosis?.text ? (
+                  <p className="mt-1 text-sm text-[#1A1A1A]">
+                    {result.diagnosis.text}
+                    <span className="block text-xs text-[#6B6A65]">
+                      {result.diagnosis.syndrome_name
+                        ? `Reads as guideline syndrome: ${result.diagnosis.syndrome_name}`
+                        : `${result.diagnosis.note ?? ''} You will select the syndrome on the next step.`}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-[#8B5E00]">
+                    No diagnosis is written on the prescription. The indication will be flagged as undocumented unless you select a syndrome.
+                  </p>
+                )}
               </div>
             </div>
             <div className="p-5">

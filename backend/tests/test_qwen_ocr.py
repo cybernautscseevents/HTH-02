@@ -397,10 +397,12 @@ def test_qwen_reading_through_evaluate_episode(catalog):
     assert findings[("R0_IDENTIFIED", cipro.id)].outcome is Outcome.PASS
     assert findings[("R3_DOSE", cipro.id)].outcome is Outcome.PASS  # 500 mg x 2/day
     assert findings[("R5_DURATION", cipro.id)].outcome is Outcome.PASS  # 3 days
-    # The misread name and the non-antibiotic stop at R0 and are never checked as a guess.
-    for unsure in (nitro, para):
-        only = [f for f in result.findings if f.order_id == unsure.id]
-        assert [(f.rule_id, f.outcome) for f in only] == [("R0_IDENTIFIED", Outcome.CANNOT_ASSESS)]
+    # The misread name stops at R0 and is never checked as a guess.
+    only = [f for f in result.findings if f.order_id == nitro.id]
+    assert [(f.rule_id, f.outcome) for f in only] == [("R0_IDENTIFIED", Outcome.CANNOT_ASSESS)]
+    # The known non-antibiotic is identified and no stewardship rule runs on it.
+    only = [f for f in result.findings if f.order_id == para.id]
+    assert [(f.rule_id, f.outcome) for f in only] == [("R0_IDENTIFIED", Outcome.PASS)]
     assert findings[("R0_IDENTIFIED", nitro.id)].suggestion.action == "confirm_drug"
     assert result.status is EvaluationStatus.FLAGGED
 

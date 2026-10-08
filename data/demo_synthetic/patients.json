@@ -1,0 +1,271 @@
+{
+  "_label": "SYNTHETIC / DEMO DATA. Invented patients, fictional hospital and doctor. Not real patient data. Stand-in for the hospital record system: GET /api/patients/{id} reads it to pre-fill the review form.",
+  "records": [
+    {
+      "patient": {
+        "id": "SYN-DEMO-01",
+        "age_years": 42,
+        "sex": "F",
+        "weight_kg": 62,
+        "serum_creatinine_mg_dl": 0.8,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-02",
+        "age_years": 35,
+        "sex": "M",
+        "weight_kg": 74,
+        "serum_creatinine_mg_dl": 0.9,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-03",
+        "age_years": 58,
+        "sex": "M",
+        "weight_kg": 80,
+        "serum_creatinine_mg_dl": 1.0,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-04",
+        "age_years": 29,
+        "sex": "F",
+        "weight_kg": 55,
+        "serum_creatinine_mg_dl": 0.7,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": [
+        {
+          "specimen_type": "urine",
+          "status": "FINAL",
+          "isolates": [
+            {
+              "organism": "Escherichia coli",
+              "susceptibilities": {
+                "Nitrofurantoin": "R",
+                "Cotrimoxazole": "S"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-05",
+        "age_years": 67,
+        "sex": "M",
+        "weight_kg": null,
+        "serum_creatinine_mg_dl": null,
+        "allergy_status": "UNKNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-06",
+        "age_years": 72,
+        "sex": "M",
+        "weight_kg": 60,
+        "serum_creatinine_mg_dl": 2.4,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": [
+        {
+          "specimen_type": "urine",
+          "status": "PENDING",
+          "isolates": []
+        }
+      ]
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-07",
+        "age_years": 31,
+        "sex": "F",
+        "weight_kg": 58,
+        "serum_creatinine_mg_dl": 0.7,
+        "allergy_status": "KNOWN",
+        "allergies": [
+          "penicillin"
+        ]
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-08",
+        "age_years": 24,
+        "sex": "M",
+        "weight_kg": 68,
+        "serum_creatinine_mg_dl": 0.9,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-09",
+        "age_years": 64,
+        "sex": "F",
+        "weight_kg": 58,
+        "serum_creatinine_mg_dl": 1.0,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-10",
+        "age_years": 69,
+        "sex": "M",
+        "weight_kg": 72,
+        "serum_creatinine_mg_dl": 1.1,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-11",
+        "age_years": 61,
+        "sex": "M",
+        "weight_kg": 66,
+        "serum_creatinine_mg_dl": 1.0,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-12",
+        "age_years": 45,
+        "sex": "F",
+        "weight_kg": 64,
+        "serum_creatinine_mg_dl": 0.8,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": [
+        {
+          "specimen_type": "urine",
+          "status": "FINAL",
+          "isolates": [
+            {
+              "organism": "Escherichia coli",
+              "susceptibilities": {
+                "Piperacillin-tazobactam": "S",
+                "Amikacin": "S",
+                "Ceftriaxone": "S",
+                "Ciprofloxacin": "R"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-13",
+        "age_years": 27,
+        "sex": "M",
+        "weight_kg": 70,
+        "serum_creatinine_mg_dl": 0.9,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-14",
+        "age_years": 56,
+        "sex": "M",
+        "weight_kg": 78,
+        "serum_creatinine_mg_dl": 1.1,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": [
+        {
+          "specimen_type": "pus",
+          "status": "PENDING",
+          "isolates": []
+        }
+      ]
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-15",
+        "age_years": 38,
+        "sex": "F",
+        "weight_kg": 60,
+        "serum_creatinine_mg_dl": 0.8,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-16",
+        "age_years": 50,
+        "sex": "F",
+        "weight_kg": 66,
+        "serum_creatinine_mg_dl": 0.9,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-17",
+        "age_years": 78,
+        "sex": "F",
+        "weight_kg": 50,
+        "serum_creatinine_mg_dl": 1.6,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": [
+        {
+          "specimen_type": "urine",
+          "status": "PENDING",
+          "isolates": []
+        }
+      ]
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-18",
+        "age_years": 8,
+        "sex": "M",
+        "weight_kg": 24,
+        "serum_creatinine_mg_dl": 0.4,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    }
+  ]
+}
