@@ -88,3 +88,24 @@ threshold is eGFR while the engine estimates CrCl (Cockcroft-Gault).
 Not covered (CANNOT_ASSESS): vancomycin, teicoplanin, colistin, polymyxin B and other
 level-guided or mg/kg-only regimens, linezolid, fosfomycin, cefixime, cefpodoxime, and any oral
 drug not listed above.
+
+## `ncdc/` — NCDC 2025 guideline dataset and ICMR AMRSN 2023 surveillance
+
+Both files were contributed on branch `complete-verification-incomplete` (commit `173e92c`,
+`data-1/`) and are copied here byte for byte. Only the data is used; that branch's rule engine is
+not.
+
+- `syndromes_ncdc_2025.yaml` (was `syndromes_updated.yaml`, sha256
+  `7a279538a4247182605311e1019415ad44bdc0a1ac30520205ae66b38a0786c6`): NCDC/ICMR National
+  Treatment Guidelines for Antimicrobial Use in Infectious Disease Syndromes v2.0 (November 2025),
+  87 sections and 496 regimens with page and section of each, raw source text and parsed
+  dose/frequency/route/duration. Consumed only by `scripts/import_ncdc.py`; see
+  `docs/RULEPACK.md` and `docs/NCDC_IMPORT_REPORT.md`.
+- `antibiogram_icmr_amrsn_2023.csv` (was `antibiogram.csv`, sha256
+  `233f8ce377031051a723c2af875e7367b5212ba706d92dbc37f2dd66220d1bff`): 1,414 susceptibility rows
+  from the ICMR AMR Research & Surveillance Network annual report 2023, with susceptible and
+  tested counts, table and page. Network data from tertiary-care hospitals: not this hospital's
+  antibiogram and not community-representative. Loaded by `backend/stewardship/surveillance.py`
+  as advisory context only; it is not an input to any rule. Rows whose drug name does not match
+  the catalog exactly (antifungals, truncated names, "Gentamicin HL"), rows without counts, and
+  3 rows whose printed percentage disagrees with their own counts are not loaded.

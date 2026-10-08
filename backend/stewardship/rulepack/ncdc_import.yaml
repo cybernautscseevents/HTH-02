@@ -1,0 +1,306 @@
+# Which rows of the NCDC 2025 dataset become which syndrome codes.
+#
+# The dataset (data/reference/ncdc/syndromes_ncdc_2025.yaml) lists every regimen of a guideline
+# section together, each tagged with the sub-group it applies to ("non-purulent", "with sepsis",
+# "ICU with Pseudomonas risk"). Our engine has no sub-groups: one syndrome code is one table the
+# clinician selects. So each code below names exactly the dataset regimens that belong to it.
+# The grouping is decided here, by hand, from the dataset's own sub-group labels; nothing is
+# grouped automatically. The dataset's structured `applies_when.predicate` is NOT used: it is
+# wrong in places (e.g. "uncomplicated" rows tagged severity=complicated).
+#
+# scripts/import_ncdc.py converts the regimens named here into rulepack/syndromes_ncdc.yaml and
+# writes docs/NCDC_IMPORT_REPORT.md listing every dataset row that was not imported and why.
+#
+# Fields
+#   code, name        our syndrome code and display name
+#   ncdc              dataset syndrome id (the guideline section number)
+#   regimens          dataset regimen ids (first_line / alternative rows only)
+#   no_antibiotic     dataset regimen id of a "no antibiotic" row; the code then has
+#                     antibiotics_indicated: false and no regimens
+#   culture_basis     set only when the section itself says to collect a culture before
+#                     antibiotics; the text is copied from the dataset and makes the code
+#                     culture_required. The dataset's per-regimen culture flag is not used: it
+#                     comes from one general instruction (GUIDE-001) applied to every row.
+#   covered_by        the section is already in the hand-checked rulepack/syndromes.yaml under
+#                     that code. It is compared, never imported, and the hand-checked row wins.
+
+source_file: data/reference/ncdc/syndromes_ncdc_2025.yaml
+
+syndromes:
+  # ------------------------------------------------------------ already hand-checked (compared)
+  - {covered_by: cystitis, ncdc: "5.1", regimens: [FL1, ALT]}
+  - {covered_by: pyelonephritis, ncdc: "5.2", regimens: [FL, ALT1, ALT2, ALT3]}
+  - {covered_by: cellulitis_nonpurulent, ncdc: "9.3",
+     regimens: [NONPUR-1, NONPUR-2, NONPUR-3, NONPUR-4, NONPUR-5, NONPUR-ALT]}
+  - {covered_by: cellulitis_moderate_severe, ncdc: "9.3",
+     regimens: [MOD, MOD-ALT1, SEV-ALT1, SEV-ALT2]}
+  - {covered_by: cap_opd_no_comorbidity, ncdc: "12.5",
+     regimens: [OPD-NOCOM-FL, OPD-NOCOM-ALT1, OPD-NOCOM-ALT2, OPD-NOCOM-ALT3]}
+  - {covered_by: cap_opd_comorbidity, ncdc: "12.5",
+     regimens: [OPD-COMORB-FL, OPD-COMORB-ALT1, OPD-COMORB-ALT2, OPD-COMORB-ALT3]}
+  - {covered_by: cap_ward, ncdc: "12.5", regimens: [WARD, WARD-DOXY, WARD-ALT1, WARD-ALT2]}
+  - {covered_by: cap_icu, ncdc: "12.5", regimens: [ICU, ICU-DOXY, ICU-ALT]}
+  - {covered_by: copd_exacerbation, ncdc: "12.3", regimens: [FL1, FL2, FL3, ALT]}
+  - {covered_by: acute_bronchitis, ncdc: "12.1", no_antibiotic: NONE}
+  - {covered_by: bronchiolitis, ncdc: "12.2", no_antibiotic: NONE}
+  - {covered_by: viral_uri, ncdc: "7.2", no_antibiotic: VIRAL}
+  - {covered_by: acute_gastroenteritis_no_danger_signs, ncdc: "4.2", no_antibiotic: NO-DANGER}
+
+  # ------------------------------------------------------------ no antibiotic indicated
+  - {code: myocarditis_uncomplicated, name: "Acute myocarditis, uncomplicated", ncdc: "1.2",
+     no_antibiotic: NONE}
+  - {code: aufi_day_1_2, name: "Acute undifferentiated febrile illness, day 1-2 of fever",
+     ncdc: "3.1", no_antibiotic: NONE-D1-2}
+  - {code: puo_no_sepsis, name: "Pyrexia of unknown origin without sepsis features", ncdc: "3.3",
+     no_antibiotic: NONE}
+  - {code: pancreatitis_no_infection, name: "Pancreatitis without infection", ncdc: "4.9",
+     no_antibiotic: NO-INFECT}
+  - {code: viral_rhinitis, name: "Rhinitis / common cold, uncomplicated viral", ncdc: "7.1",
+     no_antibiotic: VIRAL}
+  - {code: sinusitis_no_antibiotic,
+     name: "Sinusitis, symptoms 10 days or less and not systemically unwell", ncdc: "7.3",
+     no_antibiotic: NO-ABX}
+  - {code: otitis_media_mild, name: "Acute otitis media, mild / mostly viral", ncdc: "7.4",
+     no_antibiotic: MILD}
+  - {code: wound_clean_cut, name: "Clean incised wound limited to skin", ncdc: "10.5",
+     no_antibiotic: CLEAN}
+  - {code: botulism_foodborne, name: "Botulism, food-borne or intestinal", ncdc: "13.1",
+     no_antibiotic: NONE}
+  - {code: burn_minor, name: "Minor (first-degree) burn", ncdc: "15.1", no_antibiotic: NONE}
+  - {code: gingivitis, name: "Gingivitis", ncdc: "16.1", no_antibiotic: GINGIVITIS}
+
+  # ------------------------------------------------------------ CNS, fever
+  - {code: rheumatic_fever, name: "Rheumatic fever (treatment)", ncdc: "1.4",
+     regimens: [FL-1, FL-2, FL-3, ALT-ALLERGY]}
+  - {code: meningitis_empiric, name: "Meningitis, empiric", ncdc: "2.3", regimens: [FL-1, FL-2]}
+  - {code: enteric_fever_uncomplicated, name: "Enteric fever, uncomplicated", ncdc: "3.2",
+     regimens: [UNCOMP-FL1, UNCOMP-FL2, UNCOMP-ALT]}
+  - {code: enteric_fever_complicated, name: "Enteric fever, complicated / persistent high fever",
+     ncdc: "3.2", regimens: [COMP-FL]}
+  - {code: asplenia_fever, name: "Asplenia, acute undifferentiated fever", ncdc: "17.3",
+     regimens: [FEVER, FEVER-ALT1, FEVER-ALT2]}
+
+  # ------------------------------------------------------------ gastrointestinal
+  - {code: acute_gastroenteritis_danger_signs, name: "Acute gastroenteritis with danger signs",
+     ncdc: "4.2", regimens: [DANGER-FL, DANGER-ALT1, DANGER-ALT2]}
+  - {code: cholecystitis_no_sepsis, name: "Cholecystitis / cholangitis without sepsis",
+     ncdc: "4.4", regimens: [CHOLECYSTITIS, CHOLECYSTITIS-ALT1, CHOLECYSTITIS-ALT2]}
+  - {code: cholecystitis_sepsis, name: "Cholecystitis / cholangitis with sepsis", ncdc: "4.4",
+     regimens: [SEPSIS-BILIARY-1, SEPSIS-BILIARY-2, SEPSIS-BILIARY-ALT1, SEPSIS-BILIARY-ALT2]}
+  - {code: appendicitis_uncomplicated, name: "Appendicitis without abscess", ncdc: "4.5",
+     regimens: [UNCOMP, UNCOMP-ALT]}
+  - {code: appendicitis_complicated, name: "Appendicitis, complicated / abscess", ncdc: "4.5",
+     regimens: [COMP-1, COMP-2, COMP-ALT1, COMP-ALT2]}
+  - {code: diverticulitis_no_sepsis, name: "Diverticulitis without sepsis", ncdc: "4.6",
+     regimens: [NOS-1, NOS-2, NOS-ALT1, NOS-ALT2, NOS-ALT3]}
+  - {code: diverticulitis_sepsis, name: "Diverticulitis with sepsis", ncdc: "4.6",
+     regimens: [SEPSIS, SEPSIS-ALT]}
+  - {code: sbp, name: "Spontaneous bacterial peritonitis", ncdc: "4.7", regimens: [SBP, SBP-ALT]}
+  - {code: secondary_peritonitis, name: "Secondary peritonitis", ncdc: "4.7",
+     regimens: [SEC-1, SEC-2, SEC-3, SEC-ALT1, SEC-ALT2]}
+  - {code: infected_pancreatic_necrosis, name: "Infected pancreatic necrosis / pseudocyst",
+     ncdc: "4.9", regimens: [INFECTED, INFECTED-ALT1, INFECTED-ALT2]}
+  - {code: liver_abscess_amoebic,
+     name: "Liver abscess, presumed amoebic (no predisposing hepatobiliary abnormality)",
+     ncdc: "4.4", regimens: [LA-AMEB, LA-ALT]}
+  - {code: liver_abscess_bacterial,
+     name: "Liver abscess with predisposing hepatobiliary abnormality / immunocompromise",
+     ncdc: "4.4", regimens: [LA-BAC, LA-BAC-ALT1, LA-BAC-ALT2, LA-BAC-ALT3]}
+  - {code: tertiary_peritonitis, name: "Healthcare-associated intra-abdominal infection / tertiary peritonitis",
+     ncdc: "18.7", regimens: [TAI-FL-1, TAI-FL-2]}
+  - {code: c_difficile_diarrhoea, name: "Antibiotic-associated (C. difficile) diarrhoea",
+     ncdc: "18.5", regimens: [AAD-CDI]}
+
+  # ------------------------------------------------------------ genitourinary, obstetric
+  - {code: septic_abortion, name: "Septic abortion without organ dysfunction", ncdc: "6.3",
+     regimens: [UNCOMP-1, UNCOMP-2]}
+  - {code: septic_abortion_organ_dysfunction, name: "Septic abortion with organ dysfunction",
+     ncdc: "6.3", regimens: [SEPSIS, SEPSIS-ALT]}
+  - {code: epididymo_orchitis_elderly,
+     name: "Epididymo-orchitis, elderly / structural urinary tract abnormality", ncdc: "6.5",
+     regimens: [ELDERLY-FL, ELDERLY-ALT1, ELDERLY-ALT2]}
+  - {code: epididymo_orchitis_young, name: "Epididymo-orchitis, young sexually active",
+     ncdc: "6.5", regimens: [YOUNG-FL, YOUNG-ALT1, YOUNG-ALT2]}
+  - {code: prostatitis_young,
+     name: "Prostatitis, young sexually active / no structural abnormality", ncdc: "6.7",
+     regimens: [YOUNG, YOUNG-ALT],
+     culture_basis: "Urine and prostatic massage specimen for cultures before antibiotics."}
+  - {code: prostatitis_elderly,
+     name: "Prostatitis, elderly / structural urinary tract abnormality", ncdc: "6.7",
+     regimens: [ELDERLY-1, ELDERLY-2, ELDERLY-ALT],
+     culture_basis: "Urine and prostatic massage specimen for cultures before antibiotics."}
+  - {code: puerperal_sepsis, name: "Puerperal sepsis", ncdc: "6.8", regimens: [FL, PEN-ALLERGY]}
+  - {code: puerperal_sepsis_septic_shock, name: "Puerperal sepsis with septic shock",
+     ncdc: "6.8", regimens: [SHOCK, SHOCK-ALT]}
+  - {code: chorioamnionitis, name: "Chorio-amnionitis", ncdc: "6.10",
+     regimens: [FL, FL-ALT, ALT-PEN-ALLERGY]}
+  - {code: chorioamnionitis_sepsis, name: "Chorio-amnionitis with sepsis", ncdc: "6.10",
+     regimens: [SEPSIS, SEPSIS-ALT1, SEPSIS-ALT2]}
+  - {code: cauti_not_severely_ill, name: "Catheter-associated UTI, not severely ill",
+     ncdc: "18.6", regimens: [CAUTI-NOT-ILL-1, CAUTI-NOT-ILL-2]}
+  - {code: cauti_severely_ill, name: "Catheter-associated UTI, severely ill", ncdc: "18.6",
+     regimens: [CAUTI-ILL-1, CAUTI-ILL-2]}
+
+  # ------------------------------------------------------------ ear, nose, throat, dental
+  - {code: urti_persistent, name: "URTI with persistent / non-improving symptoms", ncdc: "7.2",
+     regimens: [COMP-FL, COMP-ALT]}
+  - {code: pharyngitis_high_centor, name: "Acute pharyngitis, Centor score 3 or more",
+     ncdc: "7.2", regimens: [PHARYNGITIS-HIGH-CENTOR, PHARYNGITIS-HIGH-ALT]}
+  - {code: membranous_pharyngitis, name: "Membranous pharyngitis", ncdc: "7.2",
+     regimens: [MEMBRANOUS-ERY, MEMBRANOUS-AZI, MEMBRANOUS-PEN]}
+  - {code: sinusitis_complicated, name: "Sinusitis, complicated", ncdc: "7.3",
+     regimens: [COMP-FL1, COMP-FL2, COMP-FL3, COMP-ALT1, COMP-ALT2]}
+  - {code: otitis_media_severe, name: "Acute otitis media, severe", ncdc: "7.4",
+     regimens: [SEVERE, SEVERE-ALT1]}
+  - {code: otitis_externa_uncomplicated, name: "Otitis externa, uncomplicated", ncdc: "7.5",
+     regimens: [UNCOMPLICATED]}
+  - {code: otitis_externa_malignant, name: "Malignant otitis externa", ncdc: "7.5",
+     regimens: [MALIGNANT, MALIGNANT-ALT1, MALIGNANT-ALT2, MALIGNANT-ALT3]}
+  - {code: deep_neck_abscess_stable,
+     name: "Head and neck abscess, haemodynamically stable and immunocompetent", ncdc: "7.6",
+     regimens: [STABLE, STABLE-ALT]}
+  - {code: deep_neck_abscess_unstable,
+     name: "Head and neck abscess, unstable or immunocompromised", ncdc: "7.6",
+     regimens: [UNSTABLE, UNSTABLE-ALT1, UNSTABLE-ALT2]}
+  - {code: periodontitis, name: "Periodontitis", ncdc: "16.1",
+     regimens: [PERIODONTITIS, PERIODONTITIS-ALT]}
+  - {code: odontogenic_complicated, name: "Odontogenic infection, severe / complicated",
+     ncdc: "16.1", regimens: [COMPLICATED, COMPLICATED-ALT]}
+
+  # ------------------------------------------------------------ skin, soft tissue, bone
+  - {code: paronychia_acute, name: "Acute paronychia", ncdc: "9.1",
+     regimens: [TOPICAL, ORAL1, ORAL2, ALT]}
+  - {code: impetigo_extensive, name: "Impetigo, extensive / bullous / with lymphadenopathy",
+     ncdc: "9.2", regimens: [EXT, EXT-ALT]}
+  - {code: cellulitis_mrsa_mild, name: "Cellulitis, mild, with MRSA risk factors", ncdc: "9.3",
+     regimens: [MRSA-MILD, MRSA-MILD-ALT]}
+  - {code: cellulitis_mrsa_moderate_severe,
+     name: "Cellulitis, moderate to severe, with MRSA risk factors", ncdc: "9.3",
+     regimens: [MRSA-SEV, MRSA-SEV-ALT]}
+  - {code: cellulitis_comorbid,
+     name: "Cellulitis with comorbidities / poor response to oral antibiotics", ncdc: "9.3",
+     regimens: [COMORBID]}
+  - {code: necrotizing_fasciitis, name: "Necrotizing fasciitis", ncdc: "9.4", regimens: [FL, ALT]}
+  - {code: pyomyositis, name: "Primary pyomyositis", ncdc: "9.5",
+     regimens: [FL-1, FL-2, FL-3, FL-4, FL-5]}
+  - {code: folliculitis_multiple_lesions, name: "Superficial folliculitis, multiple lesions",
+     ncdc: "9.6",
+     regimens: [SUPERFICIAL-ORAL1, SUPERFICIAL-ORAL2, SUPERFICIAL-ORAL3, SUPERFICIAL-ORAL4,
+                SUPERFICIAL-ORAL5]}
+  - {code: furuncle, name: "Furuncle", ncdc: "9.6",
+     regimens: [FURUNCLE, FURUNCLE-2, FURUNCLE-3, FURUNCLE-4]}
+  - {code: carbuncle_severe, name: "Carbuncle, severe", ncdc: "9.6",
+     regimens: [CARBUNCLE-SEV, CARBUNCLE-SEV-2, CARBUNCLE-SEV-ALT]}
+  - {code: diabetic_foot_mild, name: "Diabetic foot infection, mild", ncdc: "9.7",
+     regimens: [MILD-1, MILD-2, MILD-3, MILD-ALT1, MILD-ALT2],
+     culture_basis: "Take samples for microbiological testing before or as close as possible to treatment start."}
+  - {code: diabetic_foot_moderate, name: "Diabetic foot infection, moderate", ncdc: "9.7",
+     regimens: [MOD-1, MOD-2, MOD-ALT1, MOD-ALT2],
+     culture_basis: "Take samples for microbiological testing before or as close as possible to treatment start."}
+  - {code: diabetic_foot_moderate_pseudomonas_risk,
+     name: "Diabetic foot infection, moderate, recent antibiotics or Pseudomonas risk",
+     ncdc: "9.7", regimens: [MOD-3],
+     culture_basis: "Take samples for microbiological testing before or as close as possible to treatment start."}
+  - {code: diabetic_foot_severe, name: "Diabetic foot infection, severe", ncdc: "9.7",
+     regimens: [SEV-1, SEV-2],
+     culture_basis: "Take samples for microbiological testing before or as close as possible to treatment start."}
+  - {code: osteomyelitis_non_hematogenous, name: "Acute osteomyelitis, non-hematogenous",
+     ncdc: "10.1",
+     regimens: [NONHEMAT-FL, NONHEMAT-ALT1, NONHEMAT-ALT2, NONHEMAT-ALT3],
+     culture_basis: "Blood culture before antimicrobial therapy."}
+  - {code: osteomyelitis_hematogenous, name: "Acute osteomyelitis, hematogenous", ncdc: "10.1",
+     regimens: [HEMAT-FL, HEMAT-ALT1, HEMAT-ALT2, HEMAT-ALT3],
+     culture_basis: "Blood culture before antimicrobial therapy."}
+  - {code: osteomyelitis_complicated,
+     name: "Acute osteomyelitis, complicated / diabetic foot / diminished blood supply",
+     ncdc: "10.1", regimens: [COMP, COMP-VAN, COMP-ALT],
+     culture_basis: "Blood culture before antimicrobial therapy."}
+  - {code: gas_gangrene_traumatic, name: "Gas gangrene, traumatic", ncdc: "10.3",
+     regimens: [TRAUMATIC, TRAUMATIC-ALLERGY]}
+  - {code: gas_gangrene_spontaneous, name: "Gas gangrene, spontaneous", ncdc: "10.3",
+     regimens: [SPONT]}
+  - {code: wound_contaminated, name: "Contused / lacerated / contaminated wound", ncdc: "10.5",
+     regimens: [CONTAM, CONTAM-ALT1, CONTAM-ALT2]}
+  - {code: wound_sepsis, name: "Soft tissue injury with features of sepsis", ncdc: "10.5",
+     regimens: [SEPSIS]}
+  - {code: bite_animal, name: "Cat / dog / bat / raccoon / horse / pig / rat bite", ncdc: "14.1",
+     regimens: [DOG-CAT-1, DOG-CAT-ALT1, DOG-CAT-ALT2]}
+  - {code: bite_camel_bear_alligator, name: "Camel / bear / alligator bite", ncdc: "14.1",
+     regimens: [CAMEL-BEAR-ALLIGATOR]}
+  - {code: bite_human_early, name: "Human bite, early, without infection", ncdc: "14.1",
+     regimens: [HUMAN-EARLY]}
+  - {code: bite_human_late_infected, name: "Human bite, late, with infection", ncdc: "14.1",
+     regimens: [HUMAN-LATE-1, HUMAN-LATE-2]}
+  - {code: insect_bite_secondary_infection, name: "Insect bite with secondary infection",
+     ncdc: "14.2", regimens: [FL, ALT]}
+  - {code: tetanus, name: "Tetanus", ncdc: "13.3", regimens: [FL-1, FL-2, ALT]}
+  - {code: diphtheria, name: "Diphtheria (case)", ncdc: "13.2",
+     regimens: [CASE-PEN, CASE-ERY, ADULT-ERY, ALT-AZI]}
+
+  # ------------------------------------------------------------ respiratory
+  - {code: cap_icu_pseudomonas_risk, name: "Community-acquired pneumonia, ICU, Pseudomonas risk",
+     ncdc: "12.5", regimens: [ICU-PSEUDO, ICU-PSEUDO-ALT1, ICU-PSEUDO-ALT2, ICU-PSEUDO-DOXY]}
+  - {code: bronchiectasis_exacerbation_opd, name: "Infective exacerbation of bronchiectasis, OPD",
+     ncdc: "12.4", regimens: [OPD-FL, OPD-ALT]}
+  - {code: bronchiectasis_exacerbation_ipd,
+     name: "Infective exacerbation of bronchiectasis, inpatient", ncdc: "12.4",
+     regimens: [IPD-FL1, IPD-FL2, IPD-ALT1, IPD-ALT2]}
+  - {code: lung_abscess_primary, name: "Primary lung abscess", ncdc: "12.6",
+     regimens: [PRIMARY-FL1, PRIMARY-FL2, PRIMARY-ALT1, PRIMARY-ALT2]}
+  - {code: lung_abscess_secondary, name: "Secondary lung abscess", ncdc: "12.6",
+     regimens: [SECONDARY-FL1, SECONDARY-FL2, SECONDARY-ALT1, SECONDARY-ALT2]}
+  - {code: empyema, name: "Parapneumonic pleural effusion / empyema", ncdc: "12.7",
+     regimens: [FL1, FL2, ALT]}
+
+  # ------------------------------------------------------------ hospital-acquired, neutropenia
+  - {code: vap, name: "Ventilator-associated pneumonia", ncdc: "18.3",
+     regimens: [VAP-FL-1, VAP-FL-2, VAP-ALT-1, VAP-ALT-2]}
+  - {code: vap_recent_bl_bli_carbapenem,
+     name: "Ventilator-associated pneumonia, recent BL-BLI / carbapenem exposure", ncdc: "18.3",
+     regimens: [VAP-RECENT-1, VAP-RECENT-2]}
+  - {code: clabsi_stable, name: "CLABSI, stable, no previous antibiotic exposure", ncdc: "18.4",
+     regimens: [CLABSI-STABLE-BL, CLABSI-STABLE-BL-TEICO, CLABSI-STABLE-CARB,
+                CLABSI-STABLE-CARB-TEICO],
+     culture_basis: "Obtain blood cultures before antibiotic therapy."}
+  - {code: clabsi_carbapenem_risk,
+     name: "CLABSI, recent carbapenem / BL-BLI exposure and/or unstable", ncdc: "18.4",
+     regimens: [CLABSI-CR-FL-1, CLABSI-CR-FL-2],
+     culture_basis: "Obtain blood cultures before antibiotic therapy."}
+  - {code: febrile_neutropenia_stable, name: "Febrile neutropenia, haemodynamically stable",
+     ncdc: "17.1", regimens: [STABLE-FL1, STABLE-FL2, STABLE-ALT1, STABLE-ALT2]}
+  - {code: febrile_neutropenia_unstable, name: "Febrile neutropenia, haemodynamically unstable",
+     ncdc: "17.1", regimens: [UNSTABLE]}
+
+# Sections not imported at all. Each reason is printed against every row in the report.
+excluded:
+  - {ncdc: "1.1", reason: "Infective endocarditis: the dataset does not say which sub-group the first-line rows (FL-NV-1/2) belong to, and most doses are weight-based or phased; needs checking against the PDF"}
+  - {ncdc: "1.3", reason: "Pericarditis: dataset marks the section partial_ambiguous"}
+  - {ncdc: "2.1", reason: "Brain abscess: no executable regimen; durations depend on lesion response"}
+  - {ncdc: "2.2", reason: "Encephalitis: no executable regimen; antiviral-led"}
+  - {ncdc: "2.4", reason: "CSF shunt infection: no executable regimen; loading-dose and intraventricular regimens"}
+  - {ncdc: "2.5", reason: "Ventriculitis: no executable regimen; loading-dose and intraventricular regimens"}
+  - {ncdc: "3.4", reason: "Sepsis syndrome: no executable regimen; dataset marks the section partial_ambiguous"}
+  - {ncdc: "4.1", reason: "Oesophagitis: antifungal treatment, outside the antibiotic engine"}
+  - {ncdc: "4.3", reason: "Hepatitis: guideline refers to an external guideline"}
+  - {ncdc: "4.8", reason: "Splenic abscess: only one executable regimen; stable patients defer treatment"}
+  - {ncdc: "6.1", reason: "Genital ulcers: guideline refers to the national STI guideline"}
+  - {ncdc: "6.2", reason: "Anogenital warts: guideline refers to the national STI guideline"}
+  - {ncdc: "6.4", reason: "Vaginal discharge: guideline refers to the national STI guideline"}
+  - {ncdc: "6.6", reason: "Pelvic inflammatory disease: guideline refers to the national STI guideline"}
+  - {ncdc: "6.9", reason: "Urethral discharge: guideline refers to the national STI guideline"}
+  - {ncdc: "8.1", reason: "Oropharyngeal candidiasis: antifungal treatment, outside the antibiotic engine"}
+  - {ncdc: "10.2", reason: "Chronic osteomyelitis: cross-reference to 10.1 only"}
+  - {ncdc: "10.4", reason: "Septic arthritis: cross-reference to 10.1; only the gonococcal row is concrete"}
+  - {ncdc: "10.6", reason: "Orthopaedic implant infection: cross-reference to 10.1 and culture-targeted therapy"}
+  - {ncdc: "10.7", reason: "Surgical prophylaxis: single pre-incision doses; the engine's dose and duration rules are written for treatment courses"}
+  - {ncdc: "11.1", reason: "Conjunctivitis/keratitis: ophthalmic routes the engine does not model"}
+  - {ncdc: "11.2", reason: "Endophthalmitis: intravitreal routes; dataset preserves a conflicting amikacin dose"}
+  - {ncdc: "11.3", reason: "Periocular infection: paediatric weight-based or unspecified doses"}
+  - {ncdc: "11.4", reason: "Retinitis: antiviral treatment, outside the antibiotic engine"}
+  - {ncdc: "13.4", reason: "Toxic shock syndrome: dataset reproduces a source error (cefazolin 1-2 mg) and marks it executable; importing it would flag every normal dose"}
+  - {ncdc: "15.2", reason: "Major burns: topical agents only"}
+  - {ncdc: "17.2", reason: "Transplant/BMT tables: specialist protocols mixing antivirals, antifungals and prophylaxis"}
+  - {ncdc: "17.4", reason: "Invasive fungal infections: antifungal treatment, outside the antibiotic engine"}
+  - {ncdc: "18.1", reason: "Fever in ICU: refers to other syndrome tables"}
+  - {ncdc: "18.2", reason: "Invasive candidiasis: antifungal treatment, outside the antibiotic engine"}
+  - {ncdc: "19.1", reason: "Neonatal infections: weight-based neonatal doses; the engine's dose rules cover adults only"}

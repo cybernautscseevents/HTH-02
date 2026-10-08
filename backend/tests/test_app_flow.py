@@ -53,6 +53,12 @@ def renal():
     return RenalDosing.load()
 
 
+@pytest.fixture(scope="module")
+def store(pack):
+    """Read-only guideline index, built once: indexing the whole pack per test is slow."""
+    return build_store(pack, name="app-flow")
+
+
 @pytest.fixture
 def clock():
     state = {"now": T0}
@@ -61,13 +67,13 @@ def clock():
 
 
 @pytest.fixture
-def service(catalog, pack, renal, clock, tmp_path):
+def service(catalog, pack, renal, store, clock, tmp_path):
     return StewardshipService(
         catalog=catalog,
         rulepack=pack,
         renal=renal,
         audit=JsonlAuditLog(tmp_path / "audit.jsonl"),
-        retriever=build_store(pack, name=f"t{id(clock)}"),
+        retriever=store,
         clock=clock["tick"],
     )
 
@@ -411,7 +417,9 @@ def test_unknown_ids_are_404(client):
 
 def test_syndromes_endpoint_lists_exactly_the_rule_pack(client, pack):
     codes = [s["code"] for s in client.get("/api/syndromes").json()]
-    assert codes == list(pack.codes()) and len(codes) == 13
+    hand_checked = YamlRulePack(imported=None).codes()
+    assert codes == list(pack.codes()) and len(codes) == len(set(codes))
+    assert len(hand_checked) == 13 and tuple(codes[:13]) == hand_checked
 
 
 def test_same_episode_gives_same_findings(client):

@@ -1,10 +1,17 @@
 # Guideline rule pack (R1, R3, R5)
 
-`backend/stewardship/rulepack.py` loads `backend/stewardship/rulepack/syndromes.yaml` and implements
-the `RulePack` port. Every regimen in the file carries the guideline section, the printed page and
-a quote of the row it was read from. There is no model, retrieval or inference in this path: the
-same episode and the same file always give the same findings. `version` is a hash of the file, so
-each stored evaluation names the exact guideline data it ran against.
+`backend/stewardship/rulepack.py` loads two files in one format and implements the `RulePack`
+port:
+
+- `rulepack/syndromes.yaml`: 13 syndromes read from the guideline PDF by hand.
+- `rulepack/syndromes_ncdc.yaml`: 93 syndromes generated from the NCDC 2025 dataset by
+  `scripts/import_ncdc.py` (see "Imported NCDC dataset" below). Never edited by hand.
+
+A syndrome code may appear in only one file; loading fails otherwise, so an imported row can never
+replace a hand-checked one. Every regimen carries the guideline section, the printed page and a
+quote of the row it was read from. There is no model, retrieval or inference in this path: the
+same episode and the same files always give the same findings. `version` is a hash of both files,
+so each stored evaluation names the exact guideline data it ran against.
 
 ## Source
 
@@ -71,16 +78,49 @@ the gap instead of treating it as safe:
   (cystitis, pyelonephritis). It is false elsewhere because the table is silent, not because
   cultures are unnecessary.
 
+## Imported NCDC dataset
+
+Source: `data/reference/ncdc/syndromes_ncdc_2025.yaml`, a machine-readable conversion of the
+same NCDC 2025 guideline (87 sections, 496 regimens) contributed on branch
+`complete-verification-incomplete` (commit 173e92c). Only its data is used; the engine is ours.
+
+- **Grouping is by hand.** The dataset lists all regimens of a section together, tagged with the
+  sub-group they apply to. `rulepack/ncdc_import.yaml` names, for each of our syndrome codes,
+  exactly which dataset regimens belong to it. The dataset's structured `applies_when.predicate`
+  is not used: it is wrong in places (rows labelled "uncomplicated" carry
+  `severity: complicated`; "uncomplicated superficial folliculitis" carries `setting: ICU`).
+- **Numbers convert only when exact.** mg/g/mcg dose x a fixed number of doses per day (or a
+  range of doses per day), whole-day duration ranges, and only for regimens the dataset marks
+  executable and checkable. Weight-based doses, units ("4 million units"), combination strengths
+  ("800/160 mg"), route-dependent doses, loading schedules, single doses and phased durations are
+  not converted: the drug stays (R1 sees it), R3/R5 return CANNOT_ASSESS.
+- **Same drug and route twice** in one code: a dose or duration that differs between the copies
+  is dropped rather than choosing one.
+- **Culture before antibiotics** is set only where the section's own diagnostics text says so;
+  the dataset's per-regimen culture flag is one general instruction applied to every row.
+- **Overlap**: the 13 hand-checked sections are converted the same way and compared, not
+  imported. All doses and durations agree; the remaining differences are listed in
+  `docs/NCDC_IMPORT_REPORT.md` and pinned by a test. The hand-checked row is kept in every case.
+- **Accounting**: every dataset regimen is either imported, compared, or listed in
+  `docs/NCDC_IMPORT_REPORT.md` with the reason it was not imported. A test checks the generated
+  files are up to date (`python scripts/import_ncdc.py --check`).
+
+To change the import, edit `rulepack/ncdc_import.yaml` and run `python scripts/import_ncdc.py`.
+
 ## Not covered (all CANNOT_ASSESS)
 
-Every NCDC syndrome not in the table above, including: sinusitis, pharyngitis, otitis media,
-bronchiectasis, lung abscess, CAP with *Pseudomonas* risk factors, cellulitis with MRSA risk or
-comorbidities, septic abortion, genital and sexually transmitted infections, intra-abdominal,
-bone and joint, CNS, bloodstream and eye infections, and all paediatric dosing. Cefoperazone-sulbactam
-is listed in the guideline but is not a drug in the catalog, so it is omitted.
+Every syndrome not in either file. The sections deliberately left out of the import, with
+reasons, are in `rulepack/ncdc_import.yaml` (`excluded`) and the import report: infective
+endocarditis, CNS infections other than empiric meningitis, sepsis without a source, STI
+syndromes (referred to the national STI guideline), surgical prophylaxis, eye infections,
+toxic shock syndrome (the dataset reproduces a source dose error), transplant/BMT tables,
+antifungal and antiviral treatment, and all neonatal and paediatric dosing.
+Cefoperazone-sulbactam and benzathine penicillin are listed in the guideline but are not drugs in
+the catalog, so they are omitted (R1 flags them as not listed).
 
 ## Adding a syndrome
 
-Add an entry to `syndromes.yaml` copying the guideline row verbatim into `quote`, with section and
+Prefer the dataset: add an entry to `rulepack/ncdc_import.yaml` and re-run the import. For a
+section the dataset gets wrong, add a hand-checked entry to `syndromes.yaml` copying the guideline row verbatim into `quote`, with section and
 page. The loader rejects a duplicate drug+route, a missing `route_basis`, an invalid range, or
 regimens on a "no antibiotic" syndrome. Run `pytest backend/tests/test_rulepack.py`.

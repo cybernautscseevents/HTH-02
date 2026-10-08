@@ -12,6 +12,12 @@ REPO_ROOT = _PACKAGE_DIR.parents[1]
 DATA_DIR = Path(os.getenv("HC03_DATA_DIR", str(REPO_ROOT / "data")))
 RULEPACK_DIR = Path(os.getenv("HC03_RULEPACK_DIR", str(_PACKAGE_DIR / "rulepack")))
 SYNDROMES_YAML = RULEPACK_DIR / "syndromes.yaml"
+# Syndromes converted from the NCDC dataset by scripts/import_ncdc.py (generated, not edited).
+NCDC_SYNDROMES_YAML = RULEPACK_DIR / "syndromes_ncdc.yaml"
+NCDC_MANIFEST_YAML = RULEPACK_DIR / "ncdc_import.yaml"
+NCDC_DATASET_YAML = DATA_DIR / "reference" / "ncdc" / "syndromes_ncdc_2025.yaml"
+# ICMR AMRSN 2023 surveillance susceptibility table; advisory context only, never a rule input.
+SURVEILLANCE_CSV = DATA_DIR / "reference" / "ncdc" / "antibiogram_icmr_amrsn_2023.csv"
 
 AWARE_CSV = DATA_DIR / "aware.csv"
 DRUG_ALIASES_CSV = DATA_DIR / "drug_aliases.csv"
@@ -23,6 +29,11 @@ RENAL_DOSING_CSV = DATA_DIR / "renal_dosing.csv"
 # Similarity (0-1) above which a misspelt drug name is offered as a candidate. Candidates are
 # never accepted automatically; a person confirms them.
 FUZZY_CUTOFF = float(os.getenv("HC03_FUZZY_CUTOFF", "0.8"))
+
+# A surveillance susceptibility from fewer isolates than this is marked as limited evidence
+# (NCDC antibiogram guidance, "Influence of Small Numbers of Isolates", as cited by the dataset
+# schema on branch complete-verification-incomplete).
+SURVEILLANCE_MIN_ISOLATES = int(os.getenv("HC03_SURVEILLANCE_MIN_ISOLATES", "30"))
 
 # Hours after the first antibiotic dose when the antibiotic time-out becomes due.
 TIMEOUT_HOURS = float(os.getenv("HC03_TIMEOUT_HOURS", "48"))

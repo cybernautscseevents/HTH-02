@@ -2,8 +2,9 @@
 
 | Source | Used for |
 |---|---|
-| [NCDC National Treatment Guidelines for Antimicrobial Use, v2.0 (November 2025)](https://ncdc.mohfw.gov.in/uploads/pdf/amr17.pdf) | Rule pack (`backend/stewardship/rulepack/syndromes.yaml`): every regimen, dose and duration for R1/R3/R5, with section and printed page. 13 syndromes, listed in `docs/RULEPACK.md` |
+| [NCDC National Treatment Guidelines for Antimicrobial Use, v2.0 (November 2025)](https://ncdc.mohfw.gov.in/uploads/pdf/amr17.pdf) | Rule pack: every regimen, dose and duration for R1/R3/R5, with section and printed page. 13 syndromes read by hand (`rulepack/syndromes.yaml`) and 93 converted from a machine-readable copy of the guideline (`data/reference/ncdc/syndromes_ncdc_2025.yaml` -> `rulepack/syndromes_ncdc.yaml`), both described in `docs/RULEPACK.md` |
 | [ICMR Treatment Guidelines for Antimicrobial Use in Common Syndromes (2019)](https://www.icmr.gov.in/icmrobject/custom_data/pdf/resource-guidelines/Treatment_Guidelines_2019_Final.pdf) | Not encoded in the rule pack (NCDC v2.0 is the single source of every rule-pack row). Table 14.1 renal dose modification for parenteral antimicrobials (`data/renal_dosing.csv`) |
+| ICMR AMRSN Annual Report 2023 (as tabulated in `data/reference/ncdc/antibiogram_icmr_amrsn_2023.csv`) | Advisory surveillance susceptibility (`backend/stewardship/surveillance.py`); not a rule input |
 | [ICMR AMRSN Annual Report 2024](https://www.icmr.gov.in/icmrobject/uploads/Report/1763981012_icmramrsnannualreport2024.pdf) | Coverage priors. Table 2.14: susceptibility counts for urine Enterobacterales (pp. ~75–77) |
 | [WHO AWaRe classification 2025](https://iris.who.int/items/4fa2de82-388c-46d9-a6cb-41ffbd10677d) (CC BY-NC-SA 3.0 IGO) | `data/aware.csv` AWaRe tiers (built by `scripts/build_aware.py`) |
 | [WHONET AMRIE](https://github.com/AClark-WHONET/AMRIE) | `data/reference/amrie/` (non-commercial license) |
