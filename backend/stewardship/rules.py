@@ -92,12 +92,13 @@ def matching_allergy(patient: Patient, generic: str) -> str | None:
 def regimen_for(syndrome: SyndromeRule, order: DrugOrder) -> DrugRegimen | None:
     """Guideline regimen matching the order's drug and route.
 
-    Without a route, a regimen is returned only when the drug has exactly one listed route.
+    The route is never assumed: oral and parenteral regimens of one drug differ in dose and
+    duration, so an order without a route matches nothing.
     """
+    if order.route is None:
+        return None
     regimens = (*syndrome.first_line, *syndrome.alternatives)
-    matches = [r for r in regimens if r.generic == order.generic]
-    if order.route is not None:
-        matches = [r for r in matches if r.route == order.route]
+    matches = [r for r in regimens if r.generic == order.generic and r.route == order.route]
     return matches[0] if len(matches) == 1 else None
 
 
@@ -308,6 +309,16 @@ def check_dose(ctx: RuleContext, order: DrugOrder) -> Finding:
             f"No guideline dose for {order.generic} by this route.",
             missing_inputs=("route",) if order.route is None else (),
         )
+    if regimen.daily_dose_mg_min is None or regimen.daily_dose_mg_max is None:
+        return _finding(
+            rule_id,
+            Outcome.CANNOT_ASSESS,
+            Severity.LOW,
+            order,
+            f"The guideline gives no fixed mg/day dose for {order.generic} (e.g. weight-based); "
+            "dose was not checked.",
+            evidence=(regimen.evidence,),
+        )
     daily = order.dose_mg * order.freq_per_day
     low, high = regimen.daily_dose_mg_min, regimen.daily_dose_mg_max
     range_text = f"{low:g}-{high:g} mg/day"
@@ -366,6 +377,17 @@ def check_duration(ctx: RuleContext, order: DrugOrder) -> Finding:
             Severity.LOW,
             order,
             f"No guideline duration for {order.generic} by this route.",
+            missing_inputs=("route",) if order.route is None else (),
+        )
+    if regimen.duration_days_min is None or regimen.duration_days_max is None:
+        return _finding(
+            rule_id,
+            Outcome.CANNOT_ASSESS,
+            Severity.LOW,
+            order,
+            f"The guideline gives no duration specific to {order.generic}; duration was not "
+            "checked.",
+            evidence=(regimen.evidence,),
         )
     low, high = regimen.duration_days_min, regimen.duration_days_max
     range_text = f"{low}-{high} days" if low != high else f"{low} days"

@@ -1,0 +1,254 @@
+# Guideline rule pack: syndromes, regimens, doses and durations, each traced to its source page.
+#
+# Source of every row: NCDC National Treatment Guidelines for Antimicrobial Use in Infectious
+# Diseases, v2.0, November 2025 (page numbers are the printed page numbers).
+#
+# Conventions (see docs/RULEPACK.md):
+# - daily_dose_mg = [min, max] total mg per day, worked out from the dose and interval the
+#   guideline prints (e.g. "100 mg q12h" -> [200, 200]; "250-500 mg q6h" -> [1000, 2000]).
+#   Combination products use the combined strength the guideline prints (e.g. 4.5 g
+#   piperacillin-tazobactam). null = the guideline gives no fixed mg/day (weight-based), so R3
+#   returns CANNOT_ASSESS.
+# - duration_days = [min, max] printed against that regimen or its row. null = the guideline does
+#   not state a duration for that regimen, so R5 returns CANNOT_ASSESS.
+# - route: "stated" = the guideline prints the route (IV/IM/Inj). "inferred" = the guideline
+#   prints none; NCDC marks every parenteral drug IV/IM/Inj, so an unmarked drug is read as oral.
+# - Combination regimens ("amoxicillin-clavulanate + doxycycline") are listed as one entry per
+#   component; R1/R3/R5 check each drug on its own and cannot confirm the partner is also given.
+# - A drug listed twice for one syndrome with the same route would be ambiguous and is rejected
+#   at load time.
+# - Anything the guideline does not give is omitted. An omitted syndrome, drug or route is
+#   CANNOT_ASSESS in the engine, never PASS.
+
+sources:
+  ncdc-ntg-2025:
+    title: >-
+      NCDC National Treatment Guidelines for Antimicrobial Use in Infectious Diseases,
+      v2.0 (November 2025)
+    url: https://ncdc.mohfw.gov.in/uploads/pdf/amr17.pdf
+
+syndromes:
+  # ---------------------------------------------------------------- Urinary tract
+  - code: cystitis
+    name: Uncomplicated cystitis
+    antibiotics_indicated: true
+    culture_required: true
+    culture_basis: "Comments column: 'Collect urine for culture before antibiotics.'"
+    source: {id: ncdc-ntg-2025, section: "5.1 Cystitis", page: "39"}
+    regimens:
+      - {role: first_line, generic: nitrofurantoin, route: PO, route_basis: inferred,
+         daily_dose_mg: [200, 200], duration_days: [5, 5],
+         quote: "Nitrofurantoin 100 mg q12h for 5 days"}
+      - {role: alternative, generic: sulfamethoxazole/trimethoprim, route: PO, route_basis: inferred,
+         daily_dose_mg: [1920, 1920], duration_days: [5, 5],
+         quote: "Cotrimoxazole 960 mg BD for 5 days"}
+
+  - code: pyelonephritis
+    name: Acute pyelonephritis
+    antibiotics_indicated: true
+    culture_required: true
+    culture_basis: "Comments column: 'Collect urine and blood specimens prior to the administration of antibiotics.'"
+    source: {id: ncdc-ntg-2025, section: "5.2 Pyelonephritis", page: "39"}
+    regimens:
+      - {role: first_line, generic: piperacillin/tazobactam, route: IV, route_basis: stated,
+         daily_dose_mg: [18000, 18000], duration_days: [7, 10],
+         quote: "Piperacillin-tazobactam 4.5g IV q6h for 7-10 days"}
+      - {role: alternative, generic: ertapenem, route: IV, route_basis: stated,
+         daily_dose_mg: [1000, 1000], duration_days: [7, 10],
+         quote: "Ertapenem 1g IV/IM q24h for 7-10 days"}
+      - {role: alternative, generic: ertapenem, route: IM, route_basis: stated,
+         daily_dose_mg: [1000, 1000], duration_days: [7, 10],
+         quote: "Ertapenem 1g IV/IM q24h for 7-10 days"}
+      # Duration is printed only against piperacillin-tazobactam and ertapenem; the amikacin
+      # line sits below it in the same cell and is not read as inheriting 7-10 days.
+      - {role: alternative, generic: amikacin, route: IV, route_basis: stated,
+         daily_dose_mg: null, duration_days: null,
+         quote: "Inj Amikacin 15mg/kg IV OD"}
+      # Cefoperazone-sulbactam 3 g IV BD is also listed but is not a drug in the catalog.
+
+  # ---------------------------------------------------------------- Skin and soft tissue
+  - code: cellulitis_nonpurulent
+    name: Cellulitis, non-purulent
+    antibiotics_indicated: true
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "9.3 Cellulitis", page: "53"}
+    regimens:
+      - {role: first_line, generic: phenoxymethylpenicillin, route: PO, route_basis: inferred,
+         daily_dose_mg: [1000, 2000], duration_days: [5, 7],
+         quote: "Penicillin V 250-500 q6h ... Duration of therapy is 5 to 7 days based on clinical response."}
+      - {role: first_line, generic: amoxicillin, route: PO, route_basis: inferred,
+         daily_dose_mg: [1500, 1500], duration_days: [5, 7],
+         quote: "Amoxicillin 500mg TDS (25-50 mg/kg/day)"}
+      - {role: first_line, generic: cloxacillin, route: PO, route_basis: inferred,
+         daily_dose_mg: [2000, 2000], duration_days: [5, 7],
+         quote: "Cloxacillin 500mg QID (50mg/kg/day)"}
+      - {role: first_line, generic: cefalexin, route: PO, route_basis: inferred,
+         daily_dose_mg: [1000, 2000], duration_days: [5, 7],
+         quote: "Cephalexin 250-500mg QID (25-50 mg/kg/day)"}
+      - {role: first_line, generic: cefadroxil, route: PO, route_basis: inferred,
+         daily_dose_mg: [1000, 1000], duration_days: [5, 7],
+         quote: "Cefadroxil 500 mg q12h"}
+      - {role: alternative, generic: clindamycin, route: PO, route_basis: inferred,
+         daily_dose_mg: [600, 1800], duration_days: [5, 7],
+         quote: "Clindamycin: 300-600mg BD/TID (20mg/kg/day)"}
+
+  - code: cellulitis_moderate_severe
+    name: Cellulitis, moderate to severe
+    antibiotics_indicated: true
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "9.3 Cellulitis", page: "53"}
+    regimens:
+      - {role: first_line, generic: cefazolin, route: IV, route_basis: stated,
+         daily_dose_mg: [3000, 6000], duration_days: [7, 10],
+         quote: "Inj Cefazolin 1-2g q8h ... Duration of therapy is 7 to 10 days based on clinical response."}
+      - {role: first_line, generic: amoxicillin/clavulanic acid, route: IV, route_basis: stated,
+         daily_dose_mg: [3600, 3600], duration_days: [7, 10],
+         quote: "Inj Amoxicillin-clavulanate 1.2g TDS"}
+      - {role: alternative, generic: cefuroxime, route: IV, route_basis: stated,
+         daily_dose_mg: [4500, 4500], duration_days: [7, 10],
+         quote: "Severe infection: Inj Cefuroxime 1.5g q8h"}
+      - {role: alternative, generic: clindamycin, route: IV, route_basis: stated,
+         daily_dose_mg: [1800, 2700], duration_days: [7, 10],
+         quote: "Inj Clindamycin 600-900mg IV TDS (if allergic to penicillins)"}
+
+  # ---------------------------------------------------------------- Respiratory tract
+  - code: cap_opd_no_comorbidity
+    name: Community-acquired pneumonia, OPD, without comorbidities
+    antibiotics_indicated: true
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "12.5 Community Acquired Pneumonia", page: "83"}
+    regimens:
+      - {role: first_line, generic: amoxicillin, route: PO, route_basis: inferred,
+         daily_dose_mg: [3000, 3000], duration_days: [5, 7],
+         quote: "Amoxicillin 1g q8h for 5-7 days"}
+      - {role: alternative, generic: azithromycin, route: PO, route_basis: inferred,
+         daily_dose_mg: [500, 500], duration_days: [5, 7],
+         quote: "Azithromycin 500mg OD ... Duration: 5-7 days"}
+      - {role: alternative, generic: clarithromycin, route: PO, route_basis: inferred,
+         daily_dose_mg: [1000, 1000], duration_days: [5, 7],
+         quote: "Clarithromycin 500mg BD"}
+      - {role: alternative, generic: doxycycline, route: PO, route_basis: inferred,
+         daily_dose_mg: [200, 200], duration_days: [5, 7],
+         quote: "Doxycycline 100mg BD"}
+
+  - code: cap_opd_comorbidity
+    name: Community-acquired pneumonia, OPD, with comorbidities
+    antibiotics_indicated: true
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "12.5 Community Acquired Pneumonia", page: "83"}
+    regimens:
+      # First line is amoxicillin-clavulanate PLUS doxycycline or azithromycin.
+      - {role: first_line, generic: amoxicillin/clavulanic acid, route: PO, route_basis: inferred,
+         daily_dose_mg: [2000, 2000], duration_days: [5, 7],
+         quote: "Amoxicillin-clavulanate 1g BD + Doxycycline 100mg BD/Azithromycin 500mg daily. Duration: 5-7 days"}
+      - {role: first_line, generic: doxycycline, route: PO, route_basis: inferred,
+         daily_dose_mg: [200, 200], duration_days: [5, 7],
+         quote: "Doxycycline 100mg BD (with amoxicillin-clavulanate)"}
+      - {role: first_line, generic: azithromycin, route: PO, route_basis: inferred,
+         daily_dose_mg: [500, 500], duration_days: [5, 7],
+         quote: "Azithromycin 500mg daily (with amoxicillin-clavulanate)"}
+      - {role: alternative, generic: cefuroxime, route: PO, route_basis: inferred,
+         daily_dose_mg: [1000, 1000], duration_days: [5, 7],
+         quote: "Cefuroxime 500 mg BD ... Duration: 5-7 days"}
+      - {role: alternative, generic: cefpodoxime proxetil, route: PO, route_basis: inferred,
+         daily_dose_mg: [400, 400], duration_days: [5, 7],
+         quote: "Cefpodoxime 200 mg BD"}
+
+  - code: cap_ward
+    name: Community-acquired pneumonia, inpatient ward
+    antibiotics_indicated: true
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "12.5 Community Acquired Pneumonia", page: "83"}
+    regimens:
+      # First line is ceftriaxone PLUS azithromycin or doxycycline.
+      - {role: first_line, generic: ceftriaxone, route: IV, route_basis: stated,
+         daily_dose_mg: [2000, 2000], duration_days: [5, 7],
+         quote: "Ceftriaxone 2g OD IV + Azithromycin 500 mg daily /Doxycycline 100mg q12h Duration: 5-7 days"}
+      - {role: first_line, generic: azithromycin, route: PO, route_basis: inferred,
+         daily_dose_mg: [500, 500], duration_days: [5, 7],
+         quote: "Azithromycin 500 mg daily (with ceftriaxone)"}
+      - {role: first_line, generic: doxycycline, route: PO, route_basis: inferred,
+         daily_dose_mg: [200, 200], duration_days: [5, 7],
+         quote: "Doxycycline 100mg q12h (with ceftriaxone)"}
+      - {role: alternative, generic: cefotaxime, route: IV, route_basis: stated,
+         daily_dose_mg: [3000, 6000], duration_days: [5, 7],
+         quote: "Cefotaxime 1-2 g TDS IV"}
+      - {role: alternative, generic: amoxicillin/clavulanic acid, route: IV, route_basis: stated,
+         daily_dose_mg: [3600, 3600], duration_days: [5, 7],
+         quote: "Amoxicillin-clavulanate 1.2g q8h + Azithromycin 500 mg daily Or Doxycycline 100mg q12h"}
+
+  - code: cap_icu
+    name: Community-acquired pneumonia, inpatient ICU
+    antibiotics_indicated: true
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "12.5 Community Acquired Pneumonia", page: "83"}
+    regimens:
+      # First line is ceftriaxone PLUS azithromycin or doxycycline. The Pseudomonas-risk ICU row
+      # and the MRSA add-on agents are not encoded.
+      - {role: first_line, generic: ceftriaxone, route: IV, route_basis: stated,
+         daily_dose_mg: [2000, 2000], duration_days: [5, 7],
+         quote: "Ceftriaxone 2g OD IV + Azithromycin 500 mg daily Or Doxycycline 100mg q12h Duration: 5-7 days"}
+      - {role: first_line, generic: azithromycin, route: PO, route_basis: inferred,
+         daily_dose_mg: [500, 500], duration_days: [5, 7],
+         quote: "Azithromycin 500 mg daily (with ceftriaxone)"}
+      - {role: first_line, generic: doxycycline, route: PO, route_basis: inferred,
+         daily_dose_mg: [200, 200], duration_days: [5, 7],
+         quote: "Doxycycline 100mg q12h (with ceftriaxone)"}
+      - {role: alternative, generic: cefotaxime, route: IV, route_basis: stated,
+         daily_dose_mg: [6000, 6000], duration_days: [5, 7],
+         quote: "Cefotaxime 2g TDS IV"}
+      - {role: alternative, generic: piperacillin/tazobactam, route: IV, route_basis: stated,
+         daily_dose_mg: [18000, 18000], duration_days: [5, 7],
+         quote: "Piperacillin-tazobactam 4.5g IV q6h + Azithromycin 500 mg daily Or Doxycycline 100mg q12h"}
+
+  - code: copd_exacerbation
+    name: Infective exacerbation of asthma/COPD
+    antibiotics_indicated: true
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "12.3 Infective exacerbation of asthma/COPD", page: "81"}
+    regimens:
+      - {role: first_line, generic: amoxicillin/clavulanic acid, route: PO, route_basis: stated,
+         daily_dose_mg: [2000, 2000], duration_days: [3, 5],
+         quote: "Tab Amoxicillin-clavulanate 1g BD ... Duration of therapy: 3-5 days"}
+      - {role: first_line, generic: cefuroxime, route: PO, route_basis: stated,
+         daily_dose_mg: [1000, 1000], duration_days: [3, 5],
+         quote: "Tab Cefuroxime 500 mg BD"}
+      - {role: first_line, generic: cefpodoxime proxetil, route: PO, route_basis: stated,
+         daily_dose_mg: [400, 400], duration_days: [3, 5],
+         quote: "Tab Cefpodoxime 200 mg BD"}
+      - {role: alternative, generic: ceftriaxone, route: IV, route_basis: stated,
+         daily_dose_mg: [2000, 2000], duration_days: [3, 5],
+         quote: "Inj Ceftriaxone 2g IV OD"}
+
+  # ---------------------------------------------------------------- No antibiotic indicated
+  - code: acute_bronchitis
+    name: Acute bronchitis
+    antibiotics_indicated: false
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "12.1 Bronchitis", page: "81"}
+    regimens: []
+    quote: "Acute bronchitis: No antibiotics"
+
+  - code: bronchiolitis
+    name: Bronchiolitis
+    antibiotics_indicated: false
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "12.2 Bronchiolitis", page: "81"}
+    regimens: []
+    quote: "Bronchiolitis: Antibiotics not recommended."
+
+  - code: viral_uri
+    name: Uncomplicated viral laryngitis/URTI
+    antibiotics_indicated: false
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "7.2 Laryngitis/Laryngopharyngitis/URTI", page: "47"}
+    regimens: []
+    quote: "Uncomplicated viral infection: No antibiotics needed, only symptomatic management"
+
+  - code: acute_gastroenteritis_no_danger_signs
+    name: Acute gastroenteritis without danger signs
+    antibiotics_indicated: false
+    culture_required: false
+    source: {id: ncdc-ntg-2025, section: "4.2 Acute Gastroenteritis", page: "33"}
+    regimens: []
+    quote: "Acute onset diarrhoea with no danger signs: No antibiotic required"

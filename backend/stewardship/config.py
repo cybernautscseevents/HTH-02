@@ -11,6 +11,7 @@ REPO_ROOT = _PACKAGE_DIR.parents[1]
 
 DATA_DIR = Path(os.getenv("HC03_DATA_DIR", str(REPO_ROOT / "data")))
 RULEPACK_DIR = Path(os.getenv("HC03_RULEPACK_DIR", str(_PACKAGE_DIR / "rulepack")))
+SYNDROMES_YAML = RULEPACK_DIR / "syndromes.yaml"
 
 AWARE_CSV = DATA_DIR / "aware.csv"
 DRUG_ALIASES_CSV = DATA_DIR / "drug_aliases.csv"
@@ -31,3 +32,9 @@ HIGH_DOSE_FACTOR = float(os.getenv("HC03_HIGH_DOSE_FACTOR", "1.5"))
 
 # Dose rules are written for adults; younger patients get CANNOT_ASSESS.
 ADULT_AGE_YEARS = int(os.getenv("HC03_ADULT_AGE_YEARS", "18"))
+
+# Where the application keeps its append-only audit log and the optional persisted guideline
+# index built by scripts/ingest_guidelines.py.
+RUNTIME_DIR = Path(os.getenv("HC03_RUNTIME_DIR", str(REPO_ROOT / "runtime")))
+AUDIT_LOG_PATH = RUNTIME_DIR / "audit.jsonl"
+CHROMA_DIR = Path(os.getenv("HC03_CHROMA_DIR", str(RUNTIME_DIR / "chroma")))

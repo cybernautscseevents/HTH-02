@@ -35,3 +35,13 @@ test_results/
 
 # Test scenario fixtures are source files, not generated output
 !backend/tests/scenarios/*.json
+
+# Real prescription OCR test images: no redistribution licence, keep local only
+data/ocr_test/*/images/
+data/ocr_test/*/results/
+runtime/
+
+# Frontend build artifacts
+node_modules/
+.next/
+*.tsbuildinfo

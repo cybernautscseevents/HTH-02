@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f1117;
+  --bg-secondary: #1a1d2e;
+  --bg-card: #1e2235;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --text-primary: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: #2d3148;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #2d3148;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3e4465;
+}
+
+/* Glassmorphism cards */
+.card-glow {
+  background: #1e2235;
+  border: 1px solid #2d3148;
+  transition: all 0.2s ease-in-out;
+}
+.card-glow:hover {
+  border-color: #3b4263;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e2235 0%,
+    #2d3148 50%,
+    #1e2235 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
