@@ -98,6 +98,30 @@ class ReviewAction(StrEnum):
     ESCALATE = "ESCALATE"
 
 
+class ReviewPhase(StrEnum):
+    INITIAL = "INITIAL"
+    ANTIBIOTIC_TIMEOUT_48H = "ANTIBIOTIC_TIMEOUT_48H"
+
+
+class MedicationDisposition(StrEnum):
+    CONTINUE = "CONTINUE"
+    MODIFY = "MODIFY"
+    SWITCH = "SWITCH"
+    STOP = "STOP"
+    REQUEST_INFO = "REQUEST_INFO"
+    ESCALATE = "ESCALATE"
+
+
+class TreatmentPlanStatus(StrEnum):
+    READY = "READY"
+    ACTION_REQUIRED = "ACTION_REQUIRED"
+
+
+class NarrativeSource(StrEnum):
+    TEMPLATE = "TEMPLATE"
+    LLM = "LLM"
+
+
 class SuggestedAction(StrEnum):
     SWITCH = "switch"
     STOP = "stop"
@@ -259,6 +283,58 @@ class Review(_Frozen):
     reason_code: str | None = None
     note: str | None = None
     at: AwareDatetime
+
+
+class RegimenSnapshot(_Frozen):
+    source_order_id: str | None = None
+    generic: str = Field(min_length=1)
+    dose_mg: float | None = Field(default=None, gt=0)
+    freq_per_day: float | None = Field(default=None, gt=0)
+    route: Route | None = None
+    total_duration_days: int | None = Field(default=None, gt=0)
+    course_started_at: AwareDatetime
+    planned_stop_at: AwareDatetime | None = None
+
+
+class MedicationPlanItem(_Frozen):
+    source_order_id: str
+    disposition: MedicationDisposition
+    before: RegimenSnapshot
+    final_regimen: RegimenSnapshot | None = None
+    reason_code: str | None = None
+    rationale: str | None = None
+    linked_findings: tuple[str, ...] = ()
+    requested_inputs: tuple[str, ...] = ()
+    requested_from: str | None = None
+    due_at: AwareDatetime | None = None
+    escalation_destination: str | None = None
+    escalation_urgency: str | None = None
+
+
+class PlanNarrative(_Frozen):
+    text: str
+    source: NarrativeSource
+    generator: str
+    generated_at: AwareDatetime
+    disclaimer: str
+
+
+class TreatmentPlanSignOff(_Frozen):
+    id: str
+    episode_id: str
+    evaluation_id: str
+    evaluation_inputs_hash: str
+    ruleset_version: str
+    phase: ReviewPhase
+    status: TreatmentPlanStatus
+    items: tuple[MedicationPlanItem, ...]
+    reviewer: str
+    reviewer_role: str
+    signed_at: AwareDatetime
+    version: int = Field(ge=1)
+    supersedes_id: str | None = None
+    idempotency_key: str
+    narrative: PlanNarrative
 
 
 class AuditEntry(_Frozen):

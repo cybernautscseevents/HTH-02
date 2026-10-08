@@ -191,7 +191,7 @@ export default function EpisodeNewPage() {
             Complete the patient, syndrome, renal, allergy, and culture information needed by the rules.
           </p>
         </div>
-        <span className="text-xs text-[#6B6A65]">Step 2 of 4</span>
+        <span className="text-xs text-[#6B6A65]">Step 2 of 5</span>
       </div>
 
       <WorkflowStepper current={2} />

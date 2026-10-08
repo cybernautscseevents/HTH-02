@@ -368,6 +368,60 @@ def review(client, report, rule_id, order_id, action, **extra):
     )
 
 
+def _review_all(client, report):
+    for item in report["findings"]:
+        if item["outcome"] == "PASS":
+            continue
+        action = "MODIFY" if item["outcome"] == "CANNOT_ASSESS" else "ACCEPT"
+        extra = {"reason_code": "CLINICAL_JUDGEMENT"} if action == "MODIFY" else {}
+        response = review(
+            client,
+            report,
+            item["rule_id"],
+            item["order_id"],
+            action,
+            **extra,
+        )
+        assert response.status_code == 200, response.text
+
+
+def _plan_request(client, report, phase="INITIAL", key="plan-test-key"):
+    episode = client.get(f"/api/episodes/{report['episode_id']}").json()
+    items = []
+    for order in episode["orders"]:
+        if not order["generic"]:
+            continue
+        complete = all(
+            order[field] is not None
+            for field in ("dose_mg", "freq_per_day", "route", "duration_days")
+        )
+        disposition = "CONTINUE" if complete else "MODIFY"
+        final = {
+            "generic": order["generic"],
+            "dose_mg": order["dose_mg"] or 100,
+            "freq_per_day": order["freq_per_day"] or 2,
+            "route": order["route"] or "PO",
+            "total_duration_days": order["duration_days"] or 5,
+            "course_started_at": order["started_at"],
+        }
+        items.append(
+            {
+                "source_order_id": order["id"],
+                "disposition": disposition,
+                "final_regimen": final,
+                "reason_code": "CLINICAL_JUDGEMENT" if not complete else None,
+                "rationale": "Completed the structured regimen." if not complete else None,
+            }
+        )
+    return {
+        "phase": phase,
+        "items": items,
+        "reviewer": "pharmacist-1",
+        "reviewer_role": "PHARMACIST",
+        "idempotency_key": key,
+    }
+
+
 def test_review_is_validated_and_appended_to_audit_log(client, service):
     report = evaluate(client, "Tab Ciprofloxacin 500 mg BD x 3 days")
     # CANNOT_ASSESS cannot be accepted
@@ -387,24 +441,56 @@ def test_review_is_validated_and_appended_to_audit_log(client, service):
     assert client.get("/api/audit", params={"entity_id": "nope"}).json() == []
 
 
+def test_signed_treatment_plan_is_structured_idempotent_and_audited(client):
+    report = evaluate(client, CEFTRIAXONE, syndrome="pyelonephritis")
+    _review_all(client, report)
+    body = _plan_request(client, report)
+    first = client.post(f"/api/evaluations/{report['id']}/treatment-plans", json=body)
+    assert first.status_code == 201, first.text
+    plan = first.json()
+    assert plan["status"] == "READY"
+    assert plan["items"][0]["final_regimen"]["generic"] == "ceftriaxone"
+    assert plan["narrative"]["source"] == "TEMPLATE"
+
+    retry = client.post(f"/api/evaluations/{report['id']}/treatment-plans", json=body)
+    assert retry.status_code == 201
+    assert retry.json()["id"] == plan["id"]
+    assert client.get(f"/api/evaluations/{report['id']}/treatment-plan").json()["id"] == plan["id"]
+
+
+def test_plan_rejects_missing_finding_reviews_and_invalid_continue(client):
+    report = evaluate(client, CEFTRIAXONE, syndrome="pyelonephritis")
+    body = _plan_request(client, report, key="missing-review-key")
+    rejected = client.post(f"/api/evaluations/{report['id']}/treatment-plans", json=body)
+    assert rejected.status_code == 422
+
+    _review_all(client, report)
+    body["idempotency_key"] = "changed-continue-key"
+    body["items"][0]["final_regimen"]["dose_mg"] = 1000
+    rejected = client.post(f"/api/evaluations/{report['id']}/treatment-plans", json=body)
+    assert rejected.status_code == 422
+    assert "CONTINUE" in rejected.json()["detail"]
+
+
 def test_timeout_flow(client, clock):
-    report = evaluate(client, NITRO)
+    initial = evaluate(client, NITRO)
     assert client.get("/api/timeout-due").json() == []
     clock["now"] = T0 + timedelta(hours=50)
     (due,) = client.get("/api/timeout-due").json()
-    assert due["episode_id"] == report["episode_id"] and due["hours_elapsed"] == 50.0
-    done = client.post(
-        "/api/reviews",
-        json={
-            "episode_id": report["episode_id"],
-            "evaluation_id": report["id"],
-            "reviewer": "pharmacist-1",
-            "action": "ACCEPT",
-            "reason_code": "TIMEOUT_DONE",
-        },
+    assert due["episode_id"] == initial["episode_id"] and due["hours_elapsed"] == 50.0
+
+    timeout = client.post(
+        f"/api/episodes/{initial['episode_id']}/evaluate?trigger=TIMEOUT_DUE"
+    ).json()
+    _review_all(client, timeout)
+    signed = client.post(
+        f"/api/evaluations/{timeout['id']}/treatment-plans",
+        json=_plan_request(client, timeout, phase="ANTIBIOTIC_TIMEOUT_48H"),
     )
-    assert done.status_code == 200
+    assert signed.status_code == 201, signed.text
     assert client.get("/api/timeout-due").json() == []
+    (completed,) = client.get("/api/timeouts?status=completed").json()
+    assert completed["plan_id"] == signed.json()["id"]
 
 
 def test_unknown_ids_are_404(client):

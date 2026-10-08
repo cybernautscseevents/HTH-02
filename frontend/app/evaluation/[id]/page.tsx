@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { use } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
 import {
@@ -8,6 +9,7 @@ import {
   getEpisode,
   getEvaluation,
   getEvaluationReviews,
+  getLatestTreatmentPlan,
   submitReview,
 } from '@/lib/api'
 import type {
@@ -17,6 +19,7 @@ import type {
   ReasonCode,
   Review,
   ReviewAction,
+  TreatmentPlan,
 } from '@/types/stewardship'
 import { EvaluationBanner } from '@/components/stewardship/EvaluationBanner'
 import { FindingCard } from '@/components/stewardship/FindingCard'
@@ -37,6 +40,7 @@ export default function EvaluationPage({
   const [episode, setEpisode] = useState<Episode | null>(null)
   const [evaluation, setEvaluation] = useState<EvaluationReport | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
+  const [treatmentPlan, setTreatmentPlan] = useState<TreatmentPlan | null>(null)
   const [loading, setLoading] = useState(true)
   const [rerunning, setRerunning] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('findings')
@@ -47,13 +51,15 @@ export default function EvaluationPage({
   const loadData = useCallback(async () => {
     try {
       const ev = await getEvaluation(evaluationId)
-      const [ep, recordedReviews] = await Promise.all([
+      const [ep, recordedReviews, recordedPlan] = await Promise.all([
         getEpisode(ev.episode_id),
         getEvaluationReviews(evaluationId),
+        getLatestTreatmentPlan(evaluationId),
       ])
       setEpisode(ep)
       setEvaluation(ev)
       setReviews(recordedReviews)
+      setTreatmentPlan(recordedPlan)
     } catch (e) {
       console.error('Failed to load evaluation:', e)
     } finally {
@@ -162,14 +168,23 @@ export default function EvaluationPage({
 
       <WorkflowStepper current={4} />
 
-      <div className={`rounded-md border px-3 py-2 text-xs ${
+      <div className={`flex flex-col gap-3 rounded-md border px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between ${
         remaining === 0
           ? 'border-[#A9CFB7] bg-[#F0FBF4] text-[#1A6B3C]'
           : 'border-[#E8D5A7] bg-[#FFF9EB] text-[#8B5E00]'
       }`}>
-        {remaining === 0
-          ? 'Review complete. Decisions are preserved in the audit log.'
-          : `${remaining} finding${remaining === 1 ? '' : 's'} still ${remaining === 1 ? 'requires' : 'require'} a pharmacist decision.`}
+        <span>{remaining === 0
+          ? treatmentPlan
+            ? `Treatment plan signed by ${treatmentPlan.reviewer}.`
+            : 'Finding review complete. Reconcile the final antibiotic regimen before sign-off.'
+          : `${remaining} finding${remaining === 1 ? '' : 's'} still ${remaining === 1 ? 'requires' : 'require'} a pharmacist decision.`}</span>
+        {remaining === 0 && (
+          <Link href={`/evaluation/${evaluation.id}/plan`}>
+            <Button size="sm" variant={treatmentPlan ? 'outline' : 'success'}>
+              {treatmentPlan ? 'View signed plan' : 'Review final treatment plan'}
+            </Button>
+          </Link>
+        )}
       </div>
 
       {evaluation.syndrome && (

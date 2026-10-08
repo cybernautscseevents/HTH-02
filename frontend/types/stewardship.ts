@@ -281,6 +281,100 @@ export interface Review {
   at: string
 }
 
+export type ReviewPhase = 'INITIAL' | 'ANTIBIOTIC_TIMEOUT_48H'
+export type MedicationDisposition =
+  | 'CONTINUE'
+  | 'MODIFY'
+  | 'SWITCH'
+  | 'STOP'
+  | 'REQUEST_INFO'
+  | 'ESCALATE'
+export type TreatmentPlanStatus = 'READY' | 'ACTION_REQUIRED'
+
+export interface RegimenSnapshot {
+  source_order_id?: string | null
+  generic: string
+  dose_mg?: number | null
+  freq_per_day?: number | null
+  route?: Route | null
+  total_duration_days?: number | null
+  course_started_at: string
+  planned_stop_at?: string | null
+}
+
+export interface MedicationPlanItem {
+  source_order_id: string
+  disposition: MedicationDisposition
+  before: RegimenSnapshot
+  final_regimen?: RegimenSnapshot | null
+  reason_code?: string | null
+  rationale?: string | null
+  linked_findings: string[]
+  requested_inputs: string[]
+  requested_from?: string | null
+  due_at?: string | null
+  escalation_destination?: string | null
+  escalation_urgency?: string | null
+}
+
+export interface PlanNarrative {
+  text: string
+  source: 'TEMPLATE' | 'LLM'
+  generator: string
+  generated_at: string
+  disclaimer: string
+}
+
+export interface TreatmentPlan {
+  id: string
+  episode_id: string
+  evaluation_id: string
+  evaluation_inputs_hash: string
+  ruleset_version: string
+  phase: ReviewPhase
+  status: TreatmentPlanStatus
+  items: MedicationPlanItem[]
+  reviewer: string
+  reviewer_role: string
+  signed_at: string
+  version: number
+  supersedes_id?: string | null
+  idempotency_key: string
+  narrative: PlanNarrative
+}
+
+export interface RegimenRequest {
+  generic: string
+  dose_mg: number
+  freq_per_day: number
+  route: Route
+  total_duration_days: number
+  course_started_at: string
+}
+
+export interface PlanItemRequest {
+  source_order_id: string
+  disposition: MedicationDisposition
+  final_regimen?: RegimenRequest | null
+  reason_code?: string | null
+  rationale?: string | null
+  linked_findings?: string[]
+  requested_inputs?: string[]
+  requested_from?: string | null
+  due_at?: string | null
+  escalation_destination?: string | null
+  escalation_urgency?: 'ROUTINE' | 'URGENT' | null
+}
+
+export interface TreatmentPlanRequest {
+  phase: ReviewPhase
+  items: PlanItemRequest[]
+  reviewer: string
+  reviewer_role: string
+  idempotency_key: string
+  supersedes_id?: string | null
+}
+
 export interface AuditEntry {
   at: string
   actor: string
@@ -350,4 +444,8 @@ export interface TimeoutItem {
   started_at: string
   hours_elapsed: number
   status: 'REVIEW_DUE' | 'REVIEWED'
+  evaluation_id?: string | null
+  plan_id?: string | null
+  reviewed_at?: string | null
+  reviewed_by?: string | null
 }

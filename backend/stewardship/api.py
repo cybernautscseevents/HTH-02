@@ -24,16 +24,19 @@ from .intake import EpisodeRequest, IntakeError, medicine_text, parse_prescripti
 from .renal import RenalDosing
 from .review import ReviewError
 from .rulepack import YamlRulePack
-from .schemas import Episode, Review, Trigger
+from .schemas import Episode, Review, TreatmentPlanSignOff, Trigger
 from .service import (
+    ConflictError,
     DashboardStats,
     EvaluationReport,
     NotFoundError,
     OrderView,
     ReviewRequest,
     StewardshipService,
+    TimeoutItem,
     _order_view,
 )
+from .treatment_plan import PlanError, TreatmentPlanRequest
 
 
 class ParseRequest(BaseModel):
@@ -97,6 +100,7 @@ def create_app(
 
     @app.exception_handler(IntakeError)
     @app.exception_handler(ReviewError)
+    @app.exception_handler(PlanError)
     async def _rejected(request, exc):
         from fastapi.responses import JSONResponse
 
@@ -113,6 +117,12 @@ def create_app(
             status_code=422, content={"detail": f"Input could not be read: {errors}"}
         )
 
+    @app.exception_handler(ConflictError)
+    async def _conflict(request, exc):
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
+
     @app.exception_handler(NotFoundError)
     async def _missing(request, exc):
         from fastapi.responses import JSONResponse
@@ -128,17 +138,13 @@ def create_app(
         return svc.dashboard_stats()
 
     @app.post("/api/ocr", response_model=OcrResponse)
-    async def ocr(
-        file: Annotated[UploadFile, File()], engine: str = "glm"
-    ) -> OcrResponse:
+    async def ocr(file: Annotated[UploadFile, File()], engine: str = "glm") -> OcrResponse:
         if engine not in ENGINES:
             raise HTTPException(
                 status_code=422, detail=f"Unknown OCR engine '{engine}'. Choose glm or qwen."
             )
         if file.content_type not in {"image/jpeg", "image/png", "image/tiff", "image/webp"}:
-            raise HTTPException(
-                status_code=415, detail="Upload a JPEG, PNG, TIFF, or WebP image."
-            )
+            raise HTTPException(status_code=415, detail="Upload a JPEG, PNG, TIFF, or WebP image.")
         content = await file.read(15 * 1024 * 1024 + 1)
         if len(content) > 15 * 1024 * 1024:
             raise HTTPException(
@@ -251,6 +257,28 @@ def create_app(
     def get_evaluation_reviews(evaluation_id: str) -> tuple[Review, ...]:
         return svc.reviews_for_evaluation(evaluation_id)
 
+    @app.get(
+        "/api/evaluations/{evaluation_id}/treatment-plans",
+        response_model=tuple[TreatmentPlanSignOff, ...],
+    )
+    def treatment_plans(evaluation_id: str) -> tuple[TreatmentPlanSignOff, ...]:
+        return svc.treatment_plans_for_evaluation(evaluation_id)
+
+    @app.get(
+        "/api/evaluations/{evaluation_id}/treatment-plan",
+        response_model=TreatmentPlanSignOff,
+    )
+    def latest_treatment_plan(evaluation_id: str) -> TreatmentPlanSignOff:
+        return svc.latest_treatment_plan(evaluation_id)
+
+    @app.post(
+        "/api/evaluations/{evaluation_id}/treatment-plans",
+        response_model=TreatmentPlanSignOff,
+        status_code=201,
+    )
+    def sign_treatment_plan(evaluation_id: str, body: TreatmentPlanRequest) -> TreatmentPlanSignOff:
+        return svc.sign_treatment_plan(evaluation_id, body)
+
     @app.post("/api/reviews")
     def review(body: ReviewRequest):
         return svc.review(body)
@@ -259,8 +287,18 @@ def create_app(
     def audit(entity_id: str | None = None):
         return svc.audit.list(entity_id)
 
-    @app.get("/api/timeout-due")
-    def timeout_due() -> list[dict]:
-        return svc.timeout_due()
+    @app.get("/api/timeouts", response_model=tuple[TimeoutItem, ...])
+    def timeouts(status: str = "all") -> tuple[TimeoutItem, ...]:
+        items = svc.timeout_items()
+        if status == "all":
+            return items
+        wanted = {"due": "REVIEW_DUE", "completed": "REVIEWED"}.get(status)
+        if wanted is None:
+            raise HTTPException(status_code=422, detail="status must be all, due, or completed")
+        return tuple(item for item in items if item.status == wanted)
+
+    @app.get("/api/timeout-due", response_model=tuple[TimeoutItem, ...])
+    def timeout_due() -> tuple[TimeoutItem, ...]:
+        return tuple(item for item in svc.timeout_items() if item.status == "REVIEW_DUE")
 
     return app

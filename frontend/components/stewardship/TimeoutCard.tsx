@@ -19,7 +19,7 @@ export const TimeoutCard: React.FC<{ item: TimeoutItem }> = ({ item }) => {
     setOpening(true)
     setError(null)
     try {
-      const evaluation = await evaluateEpisode(item.episode_id)
+      const evaluation = await evaluateEpisode(item.episode_id, 'TIMEOUT_DUE')
       router.push(`/evaluation/${evaluation.id}`)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not start the review.')
@@ -38,7 +38,11 @@ export const TimeoutCard: React.FC<{ item: TimeoutItem }> = ({ item }) => {
           {overdue && due && <p className="mt-2 flex items-center gap-1.5 text-xs text-[#8B1A1A]"><AlertTriangle className="h-3.5 w-3.5" />Outside the recommended 48–72 hour review window.</p>}
           {error && <p className="mt-2 text-xs text-[#8B1A1A]">{error}</p>}
         </div>
-        {due && <Button variant="warning" size="sm" isLoading={opening} onClick={openReview}>Run review</Button>}
+        {due ? (
+          <Button variant="warning" size="sm" isLoading={opening} onClick={openReview}>Start 48-hour review</Button>
+        ) : item.evaluation_id ? (
+          <Button variant="outline" size="sm" onClick={() => router.push(`/evaluation/${item.evaluation_id}/plan`)}>View signed plan</Button>
+        ) : null}
       </div>
     </article>
   )

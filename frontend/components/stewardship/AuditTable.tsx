@@ -12,10 +12,12 @@ const ACTION_STYLES: Record<string, string> = {
   'review.OVERRIDE': 'text-[#8B1A1A]',
   'review.ESCALATE': 'text-[#934B13]',
   'evaluation.created': 'text-[#3730A3]',
+  'treatment_plan.signed': 'text-[#1A6B3C]',
+  'treatment_plan.superseded': 'text-[#8B5E00]',
 }
 
 const LABELS: Record<string, string> = {
-  ACCEPT: 'Approved', MODIFY: 'Modified', REMOVE: 'Removed', OVERRIDE: 'Overridden', ESCALATE: 'Escalated', created: 'Evaluation created',
+  ACCEPT: 'Approved', MODIFY: 'Modified', REMOVE: 'Removed', OVERRIDE: 'Overridden', ESCALATE: 'Escalated', created: 'Evaluation created', signed: 'Treatment plan signed', superseded: 'Treatment plan revised',
 }
 
 function formatAction(action: string) {
