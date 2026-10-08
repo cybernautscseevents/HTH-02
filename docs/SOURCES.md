@@ -13,4 +13,5 @@
 | Cockcroft & Gault 1976, Nephron 16:31-41 | Creatinine clearance estimate in `renal.py` |
 | Bielicki et al. 2016, J Antimicrob Chemother, [doi:10.1093/jac/dkv397](https://doi.org/10.1093/jac/dkv397) | WISCA coverage method |
 | [AMR R package, `antibiogram.R`](https://github.com/msberends/AMR) | WISCA priors reference (GPL-2: method only, do not copy code) |
+| [GLM-OCR](https://huggingface.co/zai-org/GLM-OCR), revision `2e85a62840ccac27daa451df36c736c4636b8628` | Prescription image transcription (`prescription_ocr/glm.py`) |
 | RxHandBD v3 (Mendeley Data) | OCR benchmark dataset (not redistributed) |
