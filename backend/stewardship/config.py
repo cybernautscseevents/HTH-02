@@ -12,6 +12,17 @@ REPO_ROOT = _PACKAGE_DIR.parents[1]
 DATA_DIR = Path(os.getenv("HC03_DATA_DIR", str(REPO_ROOT / "data")))
 RULEPACK_DIR = Path(os.getenv("HC03_RULEPACK_DIR", str(_PACKAGE_DIR / "rulepack")))
 
+AWARE_CSV = DATA_DIR / "aware.csv"
+DRUG_ALIASES_CSV = DATA_DIR / "drug_aliases.csv"
+BRANDS_CSV = DATA_DIR / "brands_india.csv"
+INTRINSIC_RESISTANCE_CSV = DATA_DIR / "intrinsic_resistance.csv"
+ORGANISMS_TXT = DATA_DIR / "reference" / "amrie" / "Organisms.txt"
+RENAL_DOSING_CSV = DATA_DIR / "renal_dosing.csv"
+
+# Similarity (0-1) above which a misspelt drug name is offered as a candidate. Candidates are
+# never accepted automatically; a person confirms them.
+FUZZY_CUTOFF = float(os.getenv("HC03_FUZZY_CUTOFF", "0.8"))
+
 # Hours after the first antibiotic dose when the antibiotic time-out becomes due.
 TIMEOUT_HOURS = float(os.getenv("HC03_TIMEOUT_HOURS", "48"))
 

@@ -8,6 +8,7 @@ from backend.stewardship.culture import (
     check_intermediate,
     check_no_growth,
     check_not_tested,
+    check_unknown_organism,
 )
 from backend.stewardship.rules import RuleContext
 from backend.stewardship.schemas import CultureStatus, Outcome, Route, Setting, Severity
@@ -103,3 +104,16 @@ def test_untested_drug_cannot_be_assessed():
 def test_pending_culture_produces_no_susceptibility_findings():
     ep = pyelo(specimen(status=CultureStatus.PENDING))
     assert check_bug_drug_mismatch(ctx(ep)) == check_not_tested(ctx(ep)) == ()
+
+
+def test_unknown_organism_cannot_be_assessed():
+    catalog = FakeCatalog(unknown_organisms={"E. coli"})
+    ep = pyelo(specimen(isolates=(isolate("E. coli", ceftriaxone="S"),)))
+    (f,) = check_unknown_organism(ctx(ep, catalog=catalog))
+    assert (f.outcome, f.severity) == (Outcome.CANNOT_ASSESS, Severity.MODERATE)
+    assert f.missing_inputs == ("organism_name",)
+
+
+def test_known_organism_is_silent():
+    ep = pyelo(specimen(isolates=(isolate(ceftriaxone="S"),)))
+    assert check_unknown_organism(ctx(ep)) == ()

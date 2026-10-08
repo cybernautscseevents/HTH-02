@@ -29,8 +29,8 @@ from .schemas import (
 )
 
 AWARE_EVIDENCE = Evidence(
-    source_id="who-aware",
-    title="WHO AWaRe classification of antibiotics (via WHONET AMRIE antibiotic table)",
+    source_id="who-aware-2025",
+    title="WHO AWaRe (Access, Watch, Reserve) classification of antibiotics, 2025 (B09489)",
 )
 
 
@@ -219,14 +219,14 @@ def check_indication(ctx: RuleContext, order: DrugOrder) -> Finding:
 def check_aware(ctx: RuleContext, order: DrugOrder) -> Finding:
     """R2: Reserve drugs need approval; Watch drugs need a reason when an Access drug fits."""
     rule_id = "R2_AWARE"
-    tier = ctx.catalog.aware_tier(order.generic)
+    tier = ctx.catalog.aware_tier(order.generic, order.route)
     if tier is AwareTier.NOT_CLASSIFIED:
         return _finding(
             rule_id,
             Outcome.CANNOT_ASSESS,
             Severity.LOW,
             order,
-            f"{order.generic} has no AWaRe classification.",
+            f"No AWaRe tier found for {order.generic} (route: {order.route or 'not recorded'}).",
             missing_inputs=("aware_tier",),
         )
     if tier is AwareTier.RESERVE:
@@ -243,7 +243,7 @@ def check_aware(ctx: RuleContext, order: DrugOrder) -> Finding:
             (
                 r
                 for r in ctx.syndrome.first_line
-                if ctx.catalog.aware_tier(r.generic) is AwareTier.ACCESS
+                if ctx.catalog.aware_tier(r.generic, r.route) is AwareTier.ACCESS
             ),
             None,
         )

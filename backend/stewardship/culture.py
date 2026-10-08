@@ -1,4 +1,4 @@
-"""Culture-driven checks (C1-C8) that run on the whole episode.
+"""Culture-driven checks (C1-C9) that run on the whole episode.
 
 Culture rules speak only when they have something to say: a rule that does not apply returns
 no findings. A culture that was never sent is never treated as negative, and nothing here
@@ -30,7 +30,7 @@ CultureRule = Callable[[RuleContext], tuple[Finding, ...]]
 
 INTRINSIC_EVIDENCE = Evidence(
     source_id="amrie-expected-resistance",
-    title="Expected resistant phenotypes (WHONET AMRIE, CLSI/EUCAST)",
+    title="Expected resistant phenotypes, CLSI rules (WHONET AMRIE ExpectedResistancePhenotypes)",
 )
 
 
@@ -67,7 +67,7 @@ def check_culture_sent(ctx: RuleContext) -> tuple[Finding, ...]:
     broad = [
         o
         for o in _active_antibiotics(ctx)
-        if ctx.catalog.aware_tier(o.generic) in (AwareTier.WATCH, AwareTier.RESERVE)
+        if ctx.catalog.aware_tier(o.generic, o.route) in (AwareTier.WATCH, AwareTier.RESERVE)
     ]
     if not broad:
         return ()
@@ -128,13 +128,14 @@ def check_de_escalation(ctx: RuleContext) -> tuple[Finding, ...]:
         return ()
     findings = []
     for order in _active_antibiotics(ctx):
-        if ctx.catalog.aware_tier(order.generic) not in (AwareTier.WATCH, AwareTier.RESERVE):
+        tier = ctx.catalog.aware_tier(order.generic, order.route)
+        if tier not in (AwareTier.WATCH, AwareTier.RESERVE):
             continue
         for regimen in (*ctx.syndrome.first_line, *ctx.syndrome.alternatives):
             candidate = regimen.generic
             if (
                 candidate == order.generic
-                or ctx.catalog.aware_tier(candidate) is not AwareTier.ACCESS
+                or ctx.catalog.aware_tier(candidate, regimen.route) is not AwareTier.ACCESS
                 or (order.route is not None and regimen.route != order.route)
                 or _blocked_by_allergy(ctx, candidate)
                 or not all(
@@ -241,6 +242,27 @@ def check_not_tested(ctx: RuleContext) -> tuple[Finding, ...]:
     )
 
 
+def check_unknown_organism(ctx: RuleContext) -> tuple[Finding, ...]:
+    """C9: an organism missing from the reference list has no intrinsic resistance check.
+
+    The intrinsic resistance lookup answers "no" for organisms it does not know, so C3 and C8
+    would otherwise read an unknown organism as having no intrinsic resistance.
+    """
+    return tuple(
+        Finding(
+            rule_id="C9_ORGANISM_UNKNOWN",
+            outcome=Outcome.CANNOT_ASSESS,
+            severity=Severity.MODERATE,
+            message=f"'{iso.organism}' is not in the organism reference list; intrinsic "
+            "resistance was not checked. Record the full scientific name.",
+            evidence=(_lab_evidence(spec, iso),),
+            missing_inputs=("organism_name",),
+        )
+        for spec, iso in _final_isolates(ctx)
+        if not ctx.catalog.knows_organism(iso.organism)
+    )
+
+
 CULTURE_RULES: tuple[tuple[str, CultureRule], ...] = (
     ("C1_CULTURE_BEFORE_WATCH", check_culture_sent),
     ("C3_BUG_DRUG_MISMATCH", check_bug_drug_mismatch),
@@ -249,4 +271,5 @@ CULTURE_RULES: tuple[tuple[str, CultureRule], ...] = (
     ("C6_CONTAMINANT", check_contaminants),
     ("C7_INTERMEDIATE", check_intermediate),
     ("C8_NOT_TESTED", check_not_tested),
+    ("C9_ORGANISM_UNKNOWN", check_unknown_organism),
 )
