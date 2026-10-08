@@ -287,6 +287,7 @@ def test_openai_compatible_provider_request_and_http_failure(make_client):
 def test_provider_is_configured_by_environment(monkeypatch):
     for name in ("LLM_PROVIDER", "LLM_BASE_URL", "LLM_MODEL", "LLM_API_KEY"):
         monkeypatch.setattr(config, name, None)
+    monkeypatch.setattr(config, "LLM_API_KEYS", ())
     assert isinstance(summarizer_from_env(), TemplateSummarizer)
     monkeypatch.setattr(config, "LLM_BASE_URL", "http://localhost:11434/v1")
     monkeypatch.setattr(config, "LLM_MODEL", "qwen2.5:7b")
@@ -312,6 +313,9 @@ def test_llm_disabled_gives_rule_based_summary_without_a_call(make_client, monke
     for name in ("LLM_PROVIDER", "LLM_BASE_URL", "LLM_MODEL", "LLM_API_KEY"):
         monkeypatch.setattr(config, name, env.get(name))
     monkeypatch.setattr(
+        config, "LLM_API_KEYS", (env["LLM_API_KEY"],) if env.get("LLM_API_KEY") else ()
+    )
+    monkeypatch.setattr(
         summary.OpenAICompatibleProvider,
         "__init__",
         lambda *a, **k: pytest.fail("no provider may be built, so no API call can be made"),
@@ -329,6 +333,7 @@ def test_hosted_provider_preset(monkeypatch):
         monkeypatch.setattr(config, name, None)
     monkeypatch.setattr(config, "LLM_PROVIDER", "Groq")
     monkeypatch.setattr(config, "LLM_API_KEY", "k")
+    monkeypatch.setattr(config, "LLM_API_KEYS", ("k",))
     configured = summarizer_from_env()
     assert isinstance(configured, LlmSummarizer)
     assert configured._model == summary.PROVIDERS["groq"][1]
@@ -420,6 +425,27 @@ def test_provider_failure_is_reported_without_the_key(make_client, caplog, handl
     assert "Traceback" not in caplog.text
 
 
+def test_provider_rotates_to_the_next_key_after_rate_limit():
+    authorizations = []
+
+    def handler(request):
+        authorizations.append(request.headers.get("authorization"))
+        if authorizations[-1] == "Bearer first-key":
+            return httpx.Response(429, text="rate limited")
+        return httpx.Response(200, json={"choices": [{"message": {"content": "summary"}}]})
+
+    provider = OpenAICompatibleProvider(
+        "http://llm.test/v1",
+        "m",
+        api_keys=("first-key", "second-key"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert provider("system", "user") == "summary"
+    assert authorizations == ["Bearer first-key", "Bearer second-key"]
+    assert "first-key" not in repr(provider) and "second-key" not in repr(provider)
+
+
 def test_provider_request_holds_only_results_and_evidence(make_client):
     requests = []
 
@@ -475,7 +501,6 @@ def test_deterministic_summary_names_a_drug_interaction_explicitly():
     from types import SimpleNamespace
 
     from backend.stewardship.schemas import Outcome
-
     from backend.stewardship.summary import TemplateSummarizer
 
     item = SimpleNamespace(
