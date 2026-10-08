@@ -93,10 +93,13 @@ export default function EpisodeNewPage() {
       }
       const printed = sessionStorage.getItem('rxPatient')
       if (printed) {
-        const who: { id: string | null; name: string | null } = JSON.parse(printed)
+        const who: { id: string | null; name: string | null; from?: 'file' | 'prescription' } = JSON.parse(printed)
         if (who.id) setPatientId(who.id)
         setPatientName(who.name)
-        if (who.id) setRecordNote('Patient ID read from the prescription. Check it, then fetch the record.')
+        if (who.id)
+          setRecordNote(
+            `Patient ID taken from the ${who.from === 'file' ? 'file name' : 'prescription'}. Check it, then fetch the record.`
+          )
       }
       const diagnosis = sessionStorage.getItem('rxDiagnosis')
       if (diagnosis) {
@@ -252,6 +255,7 @@ export default function EpisodeNewPage() {
       sessionStorage.removeItem('ocrRawText')
       sessionStorage.removeItem('rxDiagnosis')
       sessionStorage.removeItem('rxPatient')
+      sessionStorage.removeItem('rxReview')
       router.push(`/evaluation/${evaluation.id}`)
     } catch (e) {
       console.error('Episode creation failed:', e)
@@ -273,7 +277,7 @@ export default function EpisodeNewPage() {
         <span className="text-xs text-[#6B6A65]">Step 2 of 5</span>
       </div>
 
-      <WorkflowStepper current={2} />
+      <WorkflowStepper current={2} links={{ 1: '/upload?back=1' }} back={{ href: '/upload?back=1', label: 'Back to prescription' }} />
 
       {/* Drugs summary */}
       {pendingDrugs.length > 0 && (

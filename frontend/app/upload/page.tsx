@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   AlertTriangle,
@@ -20,6 +20,13 @@ import { DrugOrderRow } from '@/components/stewardship/DrugOrderRow'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
 
 type Mode = 'image' | 'typed'
+
+// The demo images are named after the patient, e.g. SYN-DEMO-01_concordant.png -> SYN-DEMO-01.
+// A name with no digit before the first underscore (IMG_1234.jpg) is not treated as an ID.
+function patientIdFromFileName(name: string): string | null {
+  const stem = name.replace(/\.[^.]+$/, '').split(/[_\s]/)[0].trim()
+  return /\d/.test(stem) ? stem : null
+}
 type Step = 'input' | 'processing' | 'review'
 
 export default function UploadPage() {
@@ -35,6 +42,26 @@ export default function UploadPage() {
   const [result, setResult] = useState<OCRResult | null>(null)
   const [drugs, setDrugs] = useState<ExtractedDrug[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [fileId, setFileId] = useState<string | null>(null)
+
+  // Back from the clinical-context step reopens the reviewed prescription instead of an empty
+  // form. A plain visit to this page always starts a new prescription.
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('back')) return
+    try {
+      const saved = sessionStorage.getItem('rxReview')
+      if (!saved) return
+      const review: { mode: Mode; typedText: string; result: OCRResult; drugs: ExtractedDrug[]; fileId?: string | null } = JSON.parse(saved)
+      setFileId(review.fileId ?? null)
+      setMode(review.mode)
+      setTypedText(review.typedText)
+      setResult(review.result)
+      setDrugs(review.drugs)
+      setStep('review')
+    } catch {
+      /* start a new prescription */
+    }
+  }, [])
 
   const handleFile = useCallback(async (selected: File) => {
     if (!selected.type.startsWith('image/')) {
@@ -43,6 +70,7 @@ export default function UploadPage() {
     }
     setError(null)
     setFile(selected)
+    setFileId(patientIdFromFileName(selected.name))
     setPreview(URL.createObjectURL(selected))
     setStep('processing')
     try {
@@ -102,6 +130,7 @@ export default function UploadPage() {
   const reset = () => {
     setStep('input')
     setFile(null)
+    setFileId(null)
     setPreview(null)
     setResult(null)
     setDrugs([])
@@ -111,10 +140,18 @@ export default function UploadPage() {
   const proceed = () => {
     const activeDrugs = drugs.filter((drug) => !drug.excluded)
     sessionStorage.setItem('pendingDrugs', JSON.stringify(activeDrugs))
+    sessionStorage.setItem('rxReview', JSON.stringify({ mode, typedText, result, drugs, fileId }))
     sessionStorage.setItem('ocrRawText', result?.raw_text ?? typedText)
     if (result?.diagnosis) sessionStorage.setItem('rxDiagnosis', JSON.stringify(result.diagnosis))
     else sessionStorage.removeItem('rxDiagnosis')
-    if (result?.patient?.id || result?.patient?.name) sessionStorage.setItem('rxPatient', JSON.stringify(result.patient))
+    const idFromFile = mode === 'image' ? fileId : null
+    const patientId = idFromFile ?? result?.patient?.id ?? null
+    if (patientId || result?.patient?.name) {
+      sessionStorage.setItem(
+        'rxPatient',
+        JSON.stringify({ id: patientId, name: result?.patient?.name ?? null, from: idFromFile ? 'file' : 'prescription' })
+      )
+    }
     else sessionStorage.removeItem('rxPatient')
     router.push('/episode/new')
   }
@@ -270,14 +307,20 @@ export default function UploadPage() {
                 <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-[#E2E1DC] bg-[#FAFAF8] p-3 font-mono text-xs text-[#1A1A1A]">{result.raw_text}</pre>
                 <p className="mt-2 text-xs text-[#6B6A65]">{result.model}{result.processing_time_ms ? ` · ${result.processing_time_ms} ms` : ''}</p>
                 <p className="mt-3 text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Patient</p>
+                {mode === 'image' && fileId && (
+                  <p className="mt-1 text-sm text-[#1A1A1A]">
+                    ID from file name
+                    <span className="ml-2 font-mono text-xs text-[#6B6A65]">{fileId}</span>
+                  </p>
+                )}
                 {result.patient?.id || result.patient?.name ? (
                   <p className="mt-1 text-sm text-[#1A1A1A]">
                     {result.patient.name ?? 'Name not printed'}
                     <span className="ml-2 font-mono text-xs text-[#6B6A65]">{result.patient.id ?? 'no ID printed'}</span>
                   </p>
-                ) : (
+                ) : !(mode === 'image' && fileId) ? (
                   <p className="mt-1 text-xs text-[#8B5E00]">No patient ID or name found on the prescription. Enter the ID on the next step.</p>
-                )}
+                ) : null}
                 <p className="mt-3 text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Prescriber&apos;s diagnosis</p>
                 {result.diagnosis?.text ? (
                   <p className="mt-1 text-sm text-[#1A1A1A]">

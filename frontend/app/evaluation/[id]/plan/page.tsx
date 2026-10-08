@@ -82,7 +82,7 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
   return (
     <div className="space-y-6 animate-fade-in print:max-w-none">
       <header className="border-b border-[#E2E1DC] pb-4"><p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Pharmacist sign-off</p><h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">Final antibiotic treatment plan</h1><p className="mt-1 text-sm text-[#6B6A65]">Reconcile every antibiotic into one structured, auditable plan.</p></header>
-      <WorkflowStepper current={5} />
+      <WorkflowStepper current={5} links={{ 1: '/upload', 3: `/evaluation/${evaluation.id}`, 4: `/evaluation/${evaluation.id}` }} back={{ href: `/evaluation/${evaluation.id}`, label: 'Back to findings' }} />
       {plan ? <SignedPlan plan={plan} onRevise={() => { setSupersedesId(plan.id); setPlan(null); idempotencyKey.current = crypto.randomUUID() }} /> : (
         <>
           <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#6B6A65]"><strong className="text-[#8B5E00]">Clinical responsibility remains with the signer.</strong> RxGuard validates completeness and consistency but does not apply changes to the prescribing system.</div>

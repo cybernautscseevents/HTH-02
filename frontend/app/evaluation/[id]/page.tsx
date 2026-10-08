@@ -195,7 +195,7 @@ export default function EvaluationPage({
         </Button>
       </div>
 
-      <WorkflowStepper current={4} />
+      <WorkflowStepper current={4} links={{ 1: '/upload', 5: `/evaluation/${evaluation.id}/plan` }} />
 
       <div className={`flex flex-col gap-3 rounded-md border px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between ${
         remaining === 0
