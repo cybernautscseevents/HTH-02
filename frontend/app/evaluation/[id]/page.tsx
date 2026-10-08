@@ -12,6 +12,7 @@ import {
   getLatestTreatmentPlan,
   submitReview,
 } from '@/lib/api'
+import { COMORBIDITY_LABELS } from '@/types/stewardship'
 import type {
   Episode,
   EvaluationReport,
@@ -25,12 +26,13 @@ import { EvaluationBanner } from '@/components/stewardship/EvaluationBanner'
 import { FindingCard } from '@/components/stewardship/FindingCard'
 import { ReviewPanel } from '@/components/stewardship/ReviewPanel'
 import { CulturePanel } from '@/components/stewardship/CulturePanel'
+import { WhatIfPanel } from '@/components/stewardship/WhatIfPanel'
 import { reviewerLabel, useSession } from '@/lib/auth'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
 
-type Tab = 'findings' | 'culture' | 'patient'
+type Tab = 'findings' | 'whatif' | 'culture' | 'patient'
 
 // How the syndrome was decided (backend SyndromeView.resolution).
 const RESOLUTION_LABEL: Record<string, string> = {
@@ -140,9 +142,16 @@ export default function EvaluationPage({
   const viewFor = (f: Finding) =>
     evaluation.items?.find((i) => i.rule_id === f.rule_id && (i.order_id ?? null) === (f.order_id ?? null))
   const orderMap = Object.fromEntries(episode.orders.map((o) => [o.id, o.generic ?? o.raw_text]))
+  // Orders the antibiotic rules ran on; non-antibiotics only get R0, so they are left out.
+  const antibioticOrderIds = new Set(
+    evaluation.findings.flatMap((f) => (f.order_id && f.rule_id !== 'R0_IDENTIFIED' ? [f.order_id] : []))
+  )
   const currentAntibiotics = episode.orders
-    .filter((o) => o.generic)
+    .filter((o) => o.generic && antibioticOrderIds.has(o.id))
     .map((o) => o.generic as string)
+  const cultureFindings = evaluation.findings.filter(
+    (f) => /^C\d/.test(f.rule_id) && f.outcome !== 'PASS'
+  )
   const reviewFor = (finding: Finding) =>
     [...reviews]
       .reverse()
@@ -160,6 +169,7 @@ export default function EvaluationPage({
       label: 'Findings',
       count: evaluation.findings.filter((f) => f.outcome !== 'PASS').length,
     },
+    { key: 'whatif', label: 'What-if' },
     { key: 'culture', label: 'Culture & Resistance', count: episode.specimens.length },
     { key: 'patient', label: 'Patient Info' },
   ]
@@ -168,7 +178,7 @@ export default function EvaluationPage({
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col justify-between gap-3 border-b border-[#E2E1DC] pb-4 sm:flex-row sm:items-end">
         <div>
-          <p className="font-mono text-[11px] text-[#6B6A65]">{episode.id} · {episode.patient.id}</p>
+          <p className="font-mono text-xs text-[#6B6A65]">{episode.id} · {episode.patient.id}</p>
           <h1 className="mt-1 text-2xl font-medium tracking-[-0.02em] text-[#1A1A1A]">Review the evaluation</h1>
           <p className="mt-1 text-sm text-[#6B6A65]">
             {episode.diagnosis_text || 'Assess each non-pass finding and record a pharmacist decision.'}
@@ -231,10 +241,10 @@ export default function EvaluationPage({
       {evaluation.summary && (
         <div className="p-4 rounded-lg border border-[#2d3148] bg-[#141724] text-sm">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wide">
+            <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
               Summary
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+            <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
               {evaluation.summary.generated_by === 'AI_WORDED'
                 ? `AI-worded${evaluation.summary.model ? ` (${evaluation.summary.model})` : ''}`
                 : 'Rule-based'}
@@ -282,7 +292,7 @@ export default function EvaluationPage({
             {tab.label}
             {tab.count !== undefined && tab.count > 0 && (
               <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                   activeTab === tab.key
                     ? 'bg-[#1A1A1A] text-white'
                     : 'bg-[#F4F3EF] text-[#6B6A65]'
@@ -325,9 +335,26 @@ export default function EvaluationPage({
         </div>
       )}
 
+      {activeTab === 'whatif' && <WhatIfPanel episode={episode} baseline={evaluation} />}
+
       {/* Culture tab */}
       {activeTab === 'culture' && (
         <div className="space-y-6">
+          {cultureFindings.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">
+                What the culture rules found
+              </p>
+              {cultureFindings.map((finding) => (
+                <FindingCard
+                  key={`${finding.rule_id}-${finding.order_id ?? 'ep'}`}
+                  finding={finding}
+                  orderText={finding.order_id ? orderMap[finding.order_id] : undefined}
+                  view={viewFor(finding)}
+                />
+              ))}
+            </div>
+          )}
           {episode.specimens.length === 0 && (
             <div className="py-12 text-center text-sm text-[#6B6A65]">
               No culture specimens recorded for this episode.
@@ -356,6 +383,10 @@ export default function EvaluationPage({
                 ['Creatinine', episode.patient.serum_creatinine_mg_dl ? `${episode.patient.serum_creatinine_mg_dl} mg/dL` : '—'],
                 ['Allergy Status', episode.patient.allergy_status],
                 ['Known Allergies', episode.patient.allergies.join(', ') || '—'],
+                [
+                  'Comorbidities',
+                  (episode.patient.comorbidities ?? []).map((c) => COMORBIDITY_LABELS[c]).join(', ') || '—',
+                ],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
                   <dt className="shrink-0 text-[#6B6A65]">{k}</dt>

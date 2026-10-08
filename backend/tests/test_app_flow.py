@@ -682,3 +682,71 @@ def test_llm_failure_falls_back_to_template():
         raise RuntimeError("down")
 
     assert LlmExplainer(broken).explain(f, []) == TemplateExplainer().explain(f, [])
+
+
+def create_episode(client):
+    body = {"patient": PATIENT, "syndrome_code": "cystitis", "prescription": NITRO, "cultures": []}
+    return client.post("/api/episodes", json=body).json()
+
+
+PENDING_BLOOD = {"specimen_type": "blood", "status": "PENDING"}
+
+
+def test_culture_reported_later_is_attached_and_reevaluated(client):
+    episode = create_episode(client)
+    response = client.post(
+        f"/api/episodes/{episode['id']}/cultures",
+        json=culture("Escherichia coli", nitrofurantoin="R"),
+    )
+    assert response.status_code == 200, response.text
+    report = response.json()
+    assert report["trigger"] == "CULTURE_RESULT"
+    assert finding(report, "C3_BUG_DRUG_MISMATCH", "rx-1")["outcome"] == "FLAG"
+    client.post(f"/api/episodes/{episode['id']}/cultures", json=PENDING_BLOOD)
+    stored = client.get(f"/api/episodes/{episode['id']}").json()
+    assert [s["id"] for s in stored["specimens"]] == ["spec-1", "spec-2"]
+    listed = client.get("/api/episodes", params={"has_culture": True}).json()
+    assert [e["id"] for e in listed] == [episode["id"]]
+
+
+def test_inconsistent_later_culture_is_rejected_and_not_stored(client):
+    episode = create_episode(client)
+    response = client.post(
+        f"/api/episodes/{episode['id']}/cultures",
+        json={"specimen_type": "urine", "status": "FINAL"},
+    )
+    assert response.status_code == 422
+    assert client.get(f"/api/episodes/{episode['id']}").json()["specimens"] == []
+    assert client.post("/api/episodes/EP-missing/cultures", json=PENDING_BLOOD).status_code == 404
+
+
+def test_what_if_reevaluates_with_changed_patient_values_without_storing(client, service):
+    episode = create_episode(client)
+    stored = len(service._evaluations)
+    response = client.post(
+        f"/api/episodes/{episode['id']}/what-if", json={"serum_creatinine_mg_dl": 4.0}
+    )
+    assert response.status_code == 200, response.text
+    renal = finding(response.json(), "R4_RENAL", "rx-1")
+    assert renal["outcome"] == "FLAG" and "creatinine clearance" in renal["message"]
+    assert len(service._evaluations) == stored
+    assert service.get_episode(episode["id"]).patient.serum_creatinine_mg_dl == 1.0
+
+
+def test_what_if_checks_label_cautions_for_added_comorbidities(client):
+    episode = create_episode(client)
+    response = client.post(
+        f"/api/episodes/{episode['id']}/what-if", json={"comorbidities": ["DIABETES"]}
+    )
+    assert response.status_code == 200, response.text
+    item = finding(response.json(), "R8_DRUG_DISEASE", "rx-1")
+    assert (item["outcome"], item["severity"]) == ("FLAG", "MODERATE")
+    assert item["evidence"][0]["quote"] and item["action"].startswith("Review the quoted label")
+
+
+def test_what_if_rejects_an_impossible_value(client):
+    episode = create_episode(client)
+    response = client.post(
+        f"/api/episodes/{episode['id']}/what-if", json={"serum_creatinine_mg_dl": -1}
+    )
+    assert response.status_code == 422

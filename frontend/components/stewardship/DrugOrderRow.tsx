@@ -21,7 +21,7 @@ export const DrugOrderRow: React.FC<DrugOrderRowProps> = ({ drug, onConfirm, onE
         <CircleSlash2 className="h-4 w-4" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-medium">Excluded from antibiotic stewardship</p>
-          <p className="truncate font-mono text-[10px]">{drug.raw_text}</p>
+          <p className="truncate font-mono text-xs">{drug.raw_text}</p>
         </div>
       </div>
     )
@@ -51,22 +51,22 @@ export const DrugOrderRow: React.FC<DrugOrderRowProps> = ({ drug, onConfirm, onE
             <p className="text-sm font-medium capitalize text-[#1A1A1A]">
               {drug.generic ?? (ambiguous ? 'Confirmation required' : 'Unknown medication')}
             </p>
-            <span className="rounded-full border border-current/20 px-2 py-0.5 text-[10px] font-medium text-[#6B6A65]">
+            <span className="rounded-full border border-current/20 px-2 py-0.5 text-xs font-medium text-[#6B6A65]">
               {drug.norm_status.replace('_', ' ')}
             </span>
           </div>
           <p className="mt-1 font-mono text-xs text-[#6B6A65]">“{drug.raw_text}”</p>
 
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {drug.dose_mg && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.dose_mg >= 1000 ? `${drug.dose_mg / 1000} g` : `${drug.dose_mg} mg`}</span>}
-            {drug.freq_per_day && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.freq_per_day}×/day</span>}
-            {drug.route && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.route}</span>}
-            {drug.duration_days && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-[10px] text-[#1A1A1A]">{drug.duration_days} days</span>}
+            {drug.dose_mg && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-xs text-[#1A1A1A]">{drug.dose_mg >= 1000 ? `${drug.dose_mg / 1000} g` : `${drug.dose_mg} mg`}</span>}
+            {drug.freq_per_day && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-xs text-[#1A1A1A]">{drug.freq_per_day}×/day</span>}
+            {drug.route && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-xs text-[#1A1A1A]">{drug.route}</span>}
+            {drug.duration_days && <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 font-mono text-xs text-[#1A1A1A]">{drug.duration_days} days</span>}
           </div>
 
           {ambiguous && drug.norm_candidates.length > 0 && (
             <div className="mt-3">
-              <p className="text-[11px] font-medium text-[#8B5E00]">Select the drug shown in the prescription:</p>
+              <p className="text-xs font-medium text-[#8B5E00]">Select the drug shown in the prescription:</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {drug.norm_candidates.map((candidate) => (
                   <button

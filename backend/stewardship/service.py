@@ -20,13 +20,23 @@ from .ddi import DDIFinding, DDIProvider, DDIResult, check_pairs
 from .drugs import Catalog
 from .episode import _sort_key, evaluate_episode
 from .evidence import EvidenceRetriever, Explainer, Passage, TemplateExplainer
-from .intake import EpisodeRequest, build_episode, diagnosis_line, read_diagnosis
+from .intake import (
+    CultureInput,
+    EpisodeRequest,
+    build_episode,
+    build_specimens,
+    diagnosis_line,
+    patient_identity,
+    read_diagnosis,
+)
 from .narrative import PlanNarrativeSummarizer, TemplatePlanNarrativeSummarizer
 from .ports import RenalChecker
 from .review import ReviewError, apply_review
 from .rulepack import YamlRulePack
 from .schemas import (
+    AllergyStatus,
     AuditEntry,
+    Comorbidity,
     Episode,
     Evaluation,
     EvaluationStatus,
@@ -87,6 +97,13 @@ class SyndromeView(BaseModel):
     resolution: str  # selected | mapped_from_text | unresolved
 
 
+class PrescriptionPatient(BaseModel):
+    """The patient ID and name printed on a prescription, None where the page has none."""
+
+    id: str | None
+    name: str | None
+
+
 class PrescriptionDiagnosis(BaseModel):
     """The diagnosis written on a prescription and the syndrome it reads as, if unambiguous."""
 
@@ -119,6 +136,18 @@ class ReviewRequest(BaseModel):
     action: ReviewAction
     reason_code: str | None = None
     note: str | None = None
+
+
+class PatientChanges(BaseModel):
+    """Patient values to try in a what-if evaluation; a field left out keeps its value."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    serum_creatinine_mg_dl: float | None = None
+    allergy_status: AllergyStatus | None = None
+    allergies: tuple[str, ...] | None = None
+    pregnant: bool | None = None
+    comorbidities: tuple[Comorbidity, ...] | None = None
 
 
 class RecentEvaluation(BaseModel):
@@ -211,8 +240,24 @@ class StewardshipService:
         self._extras[episode_id] = (views, how, warnings)
         return episode
 
+    def add_culture(self, episode_id: str, culture: CultureInput) -> EvaluationReport:
+        """Attach a culture reported after the episode was created and re-run the rules.
+
+        Earlier specimens are kept as they were; a new report is added beside them, never
+        written over one."""
+        episode = self.get_episode(episode_id)
+        specimens = build_specimens((culture,), self.catalog, first=len(episode.specimens) + 1)
+        self._episodes[episode_id] = episode.model_copy(
+            update={"specimens": episode.specimens + specimens}
+        )
+        return self.evaluate(episode_id, Trigger.CULTURE_RESULT)
+
     def syndrome_names(self) -> dict[str, str]:
         return {code: self.rulepack.syndrome(code).name for code in self.rulepack.codes()}
+
+    def prescription_patient(self, text: str) -> PrescriptionPatient:
+        patient_id, name = patient_identity(text)
+        return PrescriptionPatient(id=patient_id, name=name)
 
     def prescription_diagnosis(self, text: str) -> PrescriptionDiagnosis:
         """What the prescriber wrote as the diagnosis, for the reviewer to confirm."""
@@ -243,8 +288,26 @@ class StewardshipService:
         self, episode_id: str, trigger: Trigger = Trigger.NEW_PRESCRIPTION
     ) -> EvaluationReport:
         """Run the deterministic engine on the stored episode and explain the result."""
+        report = self._report(self.get_episode(episode_id), trigger)
+        summary = self.summarizer.explain(report, evidence_for(report))
+        report = report.model_copy(update={"summary": summary})
+        self._evaluations[report.id] = report
+        return report
+
+    def what_if(self, episode_id: str, changes: PatientChanges) -> EvaluationReport:
+        """Evaluate the stored episode with some patient values changed, without saving.
+
+        The result is never stored, so it cannot be reviewed, signed or audited; it shows
+        what the same rules return for different inputs. No summary is written, so a model
+        is never called and the result comes back fast enough to follow a slider."""
         episode = self.get_episode(episode_id)
-        views, how, warnings = self._extras[episode_id]
+        patient = type(episode.patient)(
+            **(episode.patient.model_dump() | changes.model_dump(exclude_unset=True))
+        )
+        return self._report(episode.model_copy(update={"patient": patient}), Trigger.MANUAL)
+
+    def _report(self, episode: Episode, trigger: Trigger) -> EvaluationReport:
+        views, how, warnings = self._extras[episode.id]
         result = evaluate_episode(
             episode,
             now=self.clock(),
@@ -289,9 +352,6 @@ class StewardshipService:
             items=items,
             warnings=warnings,
         )
-        summary = self.summarizer.explain(report, evidence_for(report))
-        report = report.model_copy(update={"summary": summary})
-        self._evaluations[report.id] = report
         return report
 
     def _ddi_checks(self, episode: Episode) -> tuple[tuple[DDIFinding, ...], bool]:

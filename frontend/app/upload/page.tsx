@@ -74,6 +74,7 @@ export default function UploadPage() {
         model: 'Typed input',
         warnings: parsed.warnings,
         diagnosis: parsed.diagnosis,
+        patient: parsed.patient,
       })
       setStep('review')
     } catch (reason) {
@@ -113,6 +114,8 @@ export default function UploadPage() {
     sessionStorage.setItem('ocrRawText', result?.raw_text ?? typedText)
     if (result?.diagnosis) sessionStorage.setItem('rxDiagnosis', JSON.stringify(result.diagnosis))
     else sessionStorage.removeItem('rxDiagnosis')
+    if (result?.patient?.id || result?.patient?.name) sessionStorage.setItem('rxPatient', JSON.stringify(result.patient))
+    else sessionStorage.removeItem('rxPatient')
     router.push('/episode/new')
   }
 
@@ -125,7 +128,7 @@ export default function UploadPage() {
     <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
       <div className="flex flex-col justify-between gap-3 border-b border-[#E2E1DC] pb-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">New stewardship review</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">New stewardship review</p>
           <h1 className="mt-1 text-2xl font-medium tracking-[-0.02em] text-[#1A1A1A]">Start with the prescription</h1>
           <p className="mt-1 text-sm text-[#6B6A65]">
             Upload an image or paste typed orders. You will verify extraction before clinical analysis.
@@ -263,10 +266,19 @@ export default function UploadPage() {
                 </div>
               )}
               <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Source text</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Source text</p>
                 <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-md border border-[#E2E1DC] bg-[#FAFAF8] p-3 font-mono text-xs text-[#1A1A1A]">{result.raw_text}</pre>
-                <p className="mt-2 text-[10px] text-[#6B6A65]">{result.model}{result.processing_time_ms ? ` · ${result.processing_time_ms} ms` : ''}</p>
-                <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Prescriber&apos;s diagnosis</p>
+                <p className="mt-2 text-xs text-[#6B6A65]">{result.model}{result.processing_time_ms ? ` · ${result.processing_time_ms} ms` : ''}</p>
+                <p className="mt-3 text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Patient</p>
+                {result.patient?.id || result.patient?.name ? (
+                  <p className="mt-1 text-sm text-[#1A1A1A]">
+                    {result.patient.name ?? 'Name not printed'}
+                    <span className="ml-2 font-mono text-xs text-[#6B6A65]">{result.patient.id ?? 'no ID printed'}</span>
+                  </p>
+                ) : (
+                  <p className="mt-1 text-xs text-[#8B5E00]">No patient ID or name found on the prescription. Enter the ID on the next step.</p>
+                )}
+                <p className="mt-3 text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Prescriber&apos;s diagnosis</p>
                 {result.diagnosis?.text ? (
                   <p className="mt-1 text-sm text-[#1A1A1A]">
                     {result.diagnosis.text}
@@ -289,7 +301,7 @@ export default function UploadPage() {
                   <h3 className="text-sm font-medium text-[#1A1A1A]">Medication orders</h3>
                   <p className="text-xs text-[#6B6A65]">{drugs.length} line{drugs.length === 1 ? '' : 's'} detected</p>
                 </div>
-                <div className="flex gap-2 text-[10px]">
+                <div className="flex gap-2 text-xs">
                   {ambiguous > 0 && <span className="rounded-full border border-[#E8D5A7] bg-[#FFF9EB] px-2 py-0.5 text-[#8B5E00]">{ambiguous} ambiguous</span>}
                   {unmatched > 0 && <span className="rounded-full border border-[#D9A4A4] bg-[#FDF2F2] px-2 py-0.5 text-[#8B1A1A]">{unmatched} unmatched</span>}
                 </div>

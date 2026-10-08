@@ -1,0 +1,10 @@
+generic,reason,source_id,title,section
+doxycycline,tetracyclines can permanently discolour the child's teeth and affect bone growth,fda-label-doxycycline,US FDA prescribing information: doxycycline,Warnings: tooth development and pregnancy
+tetracycline,tetracyclines can permanently discolour the child's teeth and affect bone growth,fda-label-tetracycline,US FDA prescribing information: tetracycline,Warnings: tooth development and pregnancy
+minocycline,tetracyclines can permanently discolour the child's teeth and affect bone growth,fda-label-minocycline,US FDA prescribing information: minocycline,Warnings: tooth development and pregnancy
+tigecycline,tigecycline can cause fetal harm and permanent tooth discolouration,fda-label-tigecycline,US FDA prescribing information: tigecycline,Warnings: fetal harm and tooth discolouration
+gentamicin,aminoglycosides can cause fetal harm including irreversible congenital deafness,fda-label-gentamicin,US FDA prescribing information: gentamicin,Boxed warning: fetal harm
+amikacin,aminoglycosides can cause fetal harm including irreversible congenital deafness,fda-label-amikacin,US FDA prescribing information: amikacin,Boxed warning: fetal harm
+tobramycin,aminoglycosides can cause fetal harm including irreversible congenital deafness,fda-label-tobramycin,US FDA prescribing information: tobramycin,Boxed warning: fetal harm
+streptomycin,aminoglycosides can cause fetal harm including irreversible congenital deafness,fda-label-streptomycin,US FDA prescribing information: streptomycin,Boxed warning: fetal harm
+chloramphenicol,chloramphenicol given near term can cause grey baby syndrome in the newborn,fda-label-chloramphenicol,US FDA prescribing information: chloramphenicol sodium succinate,Precautions: pregnancy and grey syndrome

@@ -64,18 +64,18 @@ export const EvaluationBanner: React.FC<EvaluationBannerProps> = ({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className={`text-base font-medium ${config.color}`}>{config.label}</h2>
-              {flags > 0 && <span className="rounded border border-[#D9A4A4] bg-white/70 px-2 py-0.5 text-[10px] font-medium text-[#8B1A1A]">{flags} flagged</span>}
-              {incomplete > 0 && <span className="rounded border border-[#E8D5A7] bg-white/70 px-2 py-0.5 text-[10px] font-medium text-[#8B5E00]">{incomplete} incomplete</span>}
+              {flags > 0 && <span className="rounded border border-[#D9A4A4] bg-white/70 px-2 py-0.5 text-xs font-medium text-[#8B1A1A]">{flags} flagged</span>}
+              {incomplete > 0 && <span className="rounded border border-[#E8D5A7] bg-white/70 px-2 py-0.5 text-xs font-medium text-[#8B5E00]">{incomplete} incomplete</span>}
             </div>
             <p className="mt-1 text-sm text-[#6B6A65]">{config.description}</p>
-            <p className="mt-2 font-mono text-[10px] text-[#6B6A65]">
+            <p className="mt-2 font-mono text-xs text-[#6B6A65]">
               {new Date(evaluatedAt).toLocaleString('en-IN')} · {TRIGGERS[trigger] ?? trigger} · ruleset {rulesetVersion}
             </p>
           </div>
         </div>
         <div className="flex max-w-sm items-start gap-2 rounded-md border border-[#E2E1DC] bg-white/70 px-3 py-2">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#3730A3]" />
-          <p className="text-[11px] leading-relaxed text-[#6B6A65]">
+          <p className="text-xs leading-relaxed text-[#6B6A65]">
             RxGuard recommends; it never changes a prescription automatically. A clinician must apply every approved change.
           </p>
         </div>

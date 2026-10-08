@@ -42,6 +42,9 @@ AWARE_CSV = DATA_DIR / "aware.csv"
 DRUG_ALIASES_CSV = DATA_DIR / "drug_aliases.csv"
 BRANDS_CSV = DATA_DIR / "brands_india.csv"
 INTRINSIC_RESISTANCE_CSV = DATA_DIR / "intrinsic_resistance.csv"
+PREGNANCY_CAUTION_CSV = DATA_DIR / "pregnancy_caution.csv"
+DRUG_DISEASE_CSV = DATA_DIR / "drug_disease.csv"
+DRUG_DISEASE_LABELS_CSV = DATA_DIR / "drug_disease_labels.csv"
 ORGANISMS_TXT = DATA_DIR / "reference" / "amrie" / "Organisms.txt"
 RENAL_DOSING_CSV = DATA_DIR / "renal_dosing.csv"
 # Common non-antibiotic drugs (WHO ATC codes), identified so they are not left unresolved.
@@ -68,6 +71,10 @@ HIGH_DOSE_FACTOR = float(os.getenv("HC03_HIGH_DOSE_FACTOR", "1.5"))
 
 # Dose rules are written for adults; younger patients get CANNOT_ASSESS.
 ADULT_AGE_YEARS = int(os.getenv("HC03_ADULT_AGE_YEARS", "18"))
+
+# Age range (inclusive) in which an unrecorded pregnancy status blocks a pregnancy-caution drug (R7).
+CHILDBEARING_AGE_MIN = int(os.getenv("HC03_CHILDBEARING_AGE_MIN", "12"))
+CHILDBEARING_AGE_MAX = int(os.getenv("HC03_CHILDBEARING_AGE_MAX", "50"))
 
 # Where the application keeps its append-only audit log and the optional persisted guideline
 # index built by scripts/ingest_guidelines.py.

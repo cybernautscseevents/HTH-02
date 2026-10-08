@@ -22,6 +22,26 @@ export type Sex = 'M' | 'F'
 
 export type AllergyStatus = 'KNOWN' | 'NONE_KNOWN' | 'UNKNOWN'
 
+/** Conditions rule R8 matches against US FDA label cautions. */
+export type Comorbidity =
+  | 'LIVER_DISEASE'
+  | 'SEIZURE_DISORDER'
+  | 'MYASTHENIA_GRAVIS'
+  | 'QT_PROLONGATION'
+  | 'DIABETES'
+  | 'G6PD_DEFICIENCY'
+  | 'AORTIC_ANEURYSM'
+
+export const COMORBIDITY_LABELS: Record<Comorbidity, string> = {
+  LIVER_DISEASE: 'Liver disease',
+  SEIZURE_DISORDER: 'Seizure disorder',
+  MYASTHENIA_GRAVIS: 'Myasthenia gravis',
+  QT_PROLONGATION: 'QT prolongation',
+  DIABETES: 'Diabetes',
+  G6PD_DEFICIENCY: 'G6PD deficiency',
+  AORTIC_ANEURYSM: 'Aortic aneurysm',
+}
+
 export type CultureStatus =
   | 'NOT_SENT'
   | 'PENDING'
@@ -85,6 +105,7 @@ export interface Patient {
   allergy_status: AllergyStatus
   allergies: string[]
   pregnant?: boolean | null
+  comorbidities?: Comorbidity[]
 }
 
 export interface DrugOrder {
@@ -292,6 +313,15 @@ export interface PatientRecord {
   source: string
 }
 
+/** Body of POST /api/episodes/{id}/what-if: patient values to try; omitted fields keep theirs. */
+export interface PatientChanges {
+  serum_creatinine_mg_dl?: number
+  allergy_status?: AllergyStatus
+  allergies?: string[]
+  pregnant?: boolean | null
+  comorbidities?: Comorbidity[]
+}
+
 /** Body of POST /api/episodes and POST /api/evaluate. */
 export interface EpisodeRequest {
   patient: Patient
@@ -446,6 +476,13 @@ export interface OCRResult {
   model?: string
   warnings?: string[]
   diagnosis?: PrescriptionDiagnosis | null
+  patient?: PrescriptionPatient | null
+}
+
+/** The patient ID and name printed on the prescription; null where it has none. */
+export interface PrescriptionPatient {
+  id: string | null
+  name: string | null
 }
 
 /** The diagnosis written on the prescription, and the syndrome it reads as if unambiguous. */
@@ -460,6 +497,7 @@ export interface ParsePrescriptionResult {
   orders: ExtractedDrug[]
   warnings: string[]
   diagnosis?: PrescriptionDiagnosis
+  patient?: PrescriptionPatient
 }
 
 // ─── Dashboard KPIs (frontend-specific) ───────────────────────────────────────

@@ -29,12 +29,12 @@ export const TopBar: React.FC<TopBarProps> = ({
         </svg>
       </button>
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 text-[11px] font-medium text-[#1A6B3C]">
+        <div className="flex items-center gap-1.5 rounded border border-[#E2E1DC] bg-[#F4F3EF] px-2 py-0.5 text-xs font-medium text-[#1A6B3C]">
           <span className="h-1.5 w-1.5 rounded-full bg-[#1A6B3C]" />
           <span className="hidden sm:inline">Engine live</span>
         </div>
         {rulesetVersion && (
-          <div className="hidden items-center gap-1.5 rounded border border-[#E2E1DC] bg-[#FAFAF8] px-2 py-0.5 text-[11px] text-[#6B6A65] sm:flex">
+          <div className="hidden items-center gap-1.5 rounded border border-[#E2E1DC] bg-[#FAFAF8] px-2 py-0.5 text-xs text-[#6B6A65] sm:flex">
             <BookOpenCheck className="h-3 w-3 text-[#1A1A1A]" />
             <span className="max-w-52 truncate font-mono">{rulesetVersion}</span>
           </div>
@@ -48,7 +48,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           <p className="text-xs font-medium text-[#1A1A1A]">
             {user.name}
           </p>
-          <p className="font-mono text-[10px] text-[#6B6A65]">
+          <p className="font-mono text-xs text-[#6B6A65]">
             {user.badge}
           </p>
         </div>

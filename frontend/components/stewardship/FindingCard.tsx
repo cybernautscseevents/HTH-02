@@ -44,15 +44,15 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant={finding.severity} size="sm">{finding.severity}</Badge>
               <Badge variant={finding.outcome} size="sm">{finding.outcome === 'CANNOT_ASSESS' ? 'Cannot assess' : finding.outcome}</Badge>
-              <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-1.5 py-0.5 font-mono text-[10px] text-[#6B6A65]">{finding.rule_id}</span>
-              {orderText && <span className="rounded border border-[#E2E1DC] bg-[#FAFAF8] px-1.5 py-0.5 text-[10px] text-[#6B6A65]">{orderText}</span>}
+              <span className="rounded border border-[#E2E1DC] bg-[#F4F3EF] px-1.5 py-0.5 font-mono text-xs text-[#6B6A65]">{finding.rule_id}</span>
+              {orderText && <span className="rounded border border-[#E2E1DC] bg-[#FAFAF8] px-1.5 py-0.5 text-xs text-[#6B6A65]">{orderText}</span>}
             </div>
             <p className="text-sm font-medium leading-relaxed text-[#1A1A1A]">{finding.message}</p>
 
             {finding.missing_inputs.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {finding.missing_inputs.map((input) => (
-                  <span key={input} className="rounded border border-[#E8D5A7] bg-[#FFF9EB] px-2 py-0.5 text-[11px] text-[#8B5E00]">
+                  <span key={input} className="rounded border border-[#E8D5A7] bg-[#FFF9EB] px-2 py-0.5 text-xs text-[#8B5E00]">
                     Needed: {input.replace(/_/g, ' ')}
                   </span>
                 ))}
@@ -66,9 +66,9 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
             {view.ddi.status === 'INTERACTION_FOUND' && (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#8B1A1A]">Interaction reported</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-[#8B1A1A]">Interaction reported</span>
                   <span className="font-mono text-[#1A1A1A]">{view.ddi.drug_a} + {view.ddi.drug_b}</span>
-                  <span className="rounded border border-[#E8D5A7] bg-[#FFF9EB] px-1.5 py-0.5 text-[10px] text-[#8B5E00]">Severity: {view.ddi.severity}</span>
+                  <span className="rounded border border-[#E8D5A7] bg-[#FFF9EB] px-1.5 py-0.5 text-xs text-[#8B5E00]">Severity: {view.ddi.severity}</span>
                 </div>
                 {(view.ddi.mechanism || view.ddi.description) && (
                   <p className="leading-relaxed text-[#1A1A1A]">{view.ddi.mechanism || view.ddi.description}</p>
@@ -78,7 +78,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
             {view.ddi.status === 'CANNOT_ASSESS' && (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#8B5E00]">Interaction could not be assessed</span>
+                  <span className="text-xs font-medium uppercase tracking-wider text-[#8B5E00]">Interaction could not be assessed</span>
                   {view.ddi.drug_a && (
                     <span className="font-mono text-[#1A1A1A]">{view.ddi.drug_b ? `${view.ddi.drug_a} + ${view.ddi.drug_b}` : view.ddi.drug_a}</span>
                   )}
@@ -92,7 +92,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
                 <span className="font-mono text-[#1A1A1A]">{view.ddi.drug_a} + {view.ddi.drug_b}</span> (not a guarantee of safety).
               </p>
             )}
-            <p className="font-mono text-[10px] text-[#8B8982]">
+            <p className="font-mono text-xs text-[#8B8982]">
               {view.ddi.source}{view.ddi.source_version ? ` ${view.ddi.source_version}` : ''}
             </p>
           </div>
@@ -100,7 +100,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
 
         {(view?.action || finding.suggestion) && (
           <div className="ml-0 mt-4 rounded-md border border-[#D8D5F0] bg-[#F7F6FF] px-4 py-3 sm:ml-10">
-            <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#3730A3]">
+            <p className="text-xs font-medium uppercase tracking-wider text-[#3730A3]">
               {view?.suggestion_action ? ACTION_LABELS[view.suggestion_action] ?? 'Recommended action' : 'Recommended action'}
             </p>
             <p className="mt-1 text-sm leading-relaxed text-[#1A1A1A]">{view?.action ?? finding.suggestion?.detail}</p>
@@ -122,13 +122,13 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
                     <p className="font-medium text-[#1A1A1A]">{evidence.title}</p>
                     {evidence.page && <p className="mt-0.5 text-[#6B6A65]">Page {evidence.page}</p>}
                     {evidence.quote && <blockquote className="mt-2 border-l-2 border-[#C8C7C0] pl-2 italic text-[#6B6A65]">“{evidence.quote}”</blockquote>}
-                    <p className="mt-1 font-mono text-[10px] text-[#8B8982]">{evidence.source_id}</p>
+                    <p className="mt-1 font-mono text-xs text-[#8B8982]">{evidence.source_id}</p>
                   </div>
                 ))}
                 {view?.guideline_passages.map((passage, index) => (
                   <div key={`${passage.document}-${index}`} className="rounded-md border border-[#E2E1DC] bg-[#FAFAF8] p-3 text-xs text-[#6B6A65]">
                     <p>{passage.text}</p>
-                    <p className="mt-1 font-mono text-[10px]">{passage.document} · {passage.section}{passage.page ? ` · ${passage.page}` : ''}</p>
+                    <p className="mt-1 font-mono text-xs">{passage.document} · {passage.section}{passage.page ? ` · ${passage.page}` : ''}</p>
                   </div>
                 ))}
               </div>

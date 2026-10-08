@@ -53,12 +53,15 @@ Enums
   EvaluationStatus: OK | FLAGGED | INCOMPLETE
   ReviewAction:   ACCEPT | MODIFY | OVERRIDE | ESCALATE
   DataProvenance: PUBLIC | SYNTHETIC | HOSPITAL
+  Comorbidity: LIVER_DISEASE | SEIZURE_DISORDER | MYASTHENIA_GRAVIS | QT_PROLONGATION | DIABETES |
+               G6PD_DEFICIENCY | AORTIC_ANEURYSM
 
 Evidence        source_id: str, title: str, page: str | None, quote: str | None,
                 provenance: DataProvenance = PUBLIC
 Patient         id, age_years: int, sex: Sex, weight_kg: float | None,
                 serum_creatinine_mg_dl: float | None, allergy_status: AllergyStatus,
-                allergies: tuple[str, ...] = (), pregnant: bool | None
+                allergies: tuple[str, ...] = (), pregnant: bool | None,
+                comorbidities: tuple[Comorbidity, ...] = ()
 DrugOrder       id, raw_text: str, generic: str | None, brand: str | None,
                 norm_status: NormStatus, norm_candidates: tuple[str, ...] = (),
                 dose_mg: float | None, freq_per_day: float | None, route: Route | None,
@@ -138,7 +141,9 @@ Registry: `ORDER_RULES: tuple[Rule, ...]` executed in order. Rule IDs are stable
 | `R3_DOSE` | `age_years < 18` → CANNOT_ASSESS (adult rules only). `dose_mg` or `freq_per_day` missing → CANNOT_ASSESS. No matching regimen (same generic + route) → CANNOT_ASSESS. Daily = dose × freq; outside [min, max] → FLAG / MODERATE (HIGH if > 1.5 × max), suggestion `adjust_dose`. Else PASS. |
 | `R4_RENAL` | delegate to `ctx.renal.check(order, patient)`. If it raises → CANNOT_ASSESS. |
 | `R5_DURATION` | `duration_days` missing → CANNOT_ASSESS / LOW. > max → FLAG / MODERATE, suggestion `adjust_duration`. < min → FLAG / LOW. Else PASS. |
-| `R6_ALLERGY` | `allergy_status=UNKNOWN` and generic is a beta-lactam → CANNOT_ASSESS / MODERATE. Generic or its class in `allergies` → FLAG / HIGH. Else PASS. (Class lookup: small dict in `rules.py`, e.g. penicillins, cephalosporins.) |
+| `R6_ALLERGY` | `allergy_status=UNKNOWN` and generic is a beta-lactam → CANNOT_ASSESS / MODERATE. Generic or its class in `allergies` → FLAG / HIGH. Else PASS. (Class lookup: small dict in `rules.py`, e.g. penicillins, cephalosporins.) A FLAG suggests `switch` to the first guideline regimen without an allergy match (any beta-lactam is excluded for a beta-lactam allergy). |
+| `R7_PREGNANCY` | Generic not in `data/pregnancy_caution.csv` → PASS. `pregnant=True` → FLAG / HIGH, suggestion `switch` to the first guideline regimen not in that table and not allergy-matched. `pregnant` unrecorded for a woman aged 12–50 → CANNOT_ASSESS / LOW (`missing_inputs=("pregnant",)`). Else PASS. |
+| `R8_DRUG_DISEASE` | No comorbidities recorded → PASS. A row in `data/drug_disease.csv` (US FDA label sentence, built by `scripts/build_drug_disease.py`) for the generic and one of the patient's conditions: Contraindications or Boxed Warning → FLAG / HIGH, suggestion `switch` to the first guideline regimen with no such row for the patient's conditions and not allergy-matched; Warnings only → FLAG / MODERATE. Every matched sentence is quoted as evidence. Else PASS. Renal impairment (R4) and pregnancy (R7) are not repeated here. |
 
 Evidence: R1/R3/R5 attach the regimen's or syndrome's `Evidence`; R2 attaches the WHO AWaRe 2025 source.
 

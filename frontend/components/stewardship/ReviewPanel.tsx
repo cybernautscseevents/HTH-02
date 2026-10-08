@@ -54,7 +54,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
         <div className="flex items-center gap-2">
           <CheckCircle2 className={`h-4 w-4 ${style.text}`} />
           <span className={`text-sm font-medium ${style.text}`}>{style.label}</span>
-          <span className="ml-auto text-[10px] text-[#6B6A65]">{review?.reviewer ?? reviewer}</span>
+          <span className="ml-auto text-xs text-[#6B6A65]">{review?.reviewer ?? reviewer}</span>
         </div>
         {(review?.reason_code || review?.note) && (
           <p className="mt-1.5 text-xs text-[#6B6A65]">
@@ -63,7 +63,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
             {review.note ?? ''}
           </p>
         )}
-        <p className="mt-2 text-[10px] text-[#6B6A65]">
+        <p className="mt-2 text-xs text-[#6B6A65]">
           Finding response recorded. Reconcile medication changes in the final treatment plan.
         </p>
       </div>
@@ -91,7 +91,7 @@ export const ReviewPanel: React.FC<ReviewPanelProps> = ({
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Pharmacist decision</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Pharmacist decision</p>
         <p className="mt-0.5 text-xs text-[#6B6A65]">Respond to this finding. Medication changes are reconciled in the final plan.</p>
       </div>
       <div className="flex flex-wrap gap-2">

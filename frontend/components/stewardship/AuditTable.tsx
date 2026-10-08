@@ -39,7 +39,7 @@ export const AuditTable: React.FC<AuditTableProps> = ({ entries }) => {
       <div className="overflow-hidden rounded-[8px] border border-[#E2E1DC] bg-white">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-[#E2E1DC] bg-[#F4F3EF] text-left text-[10px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">
+            <thead className="border-b border-[#E2E1DC] bg-[#F4F3EF] text-left text-xs font-medium uppercase tracking-wider text-[#6B6A65]">
               <tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Actor</th><th className="px-4 py-3">Decision</th><th className="hidden px-4 py-3 md:table-cell">Rule / entity</th><th className="hidden px-4 py-3 lg:table-cell">Reason</th><th className="hidden px-4 py-3 xl:table-cell">Note</th></tr>
             </thead>
             <tbody className="divide-y divide-[#E2E1DC]">
@@ -48,10 +48,10 @@ export const AuditTable: React.FC<AuditTableProps> = ({ entries }) => {
                 const payload = entry.payload as Record<string, string | null>
                 return (
                   <tr key={`${entry.at}-${index}`} className="hover:bg-[#FAFAF8]">
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-[11px] text-[#6B6A65]">{new Date(entry.at).toLocaleString('en-IN')}</td>
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-[#6B6A65]">{new Date(entry.at).toLocaleString('en-IN')}</td>
                     <td className="px-4 py-3 text-xs text-[#1A1A1A]">{entry.actor}</td>
                     <td className={`px-4 py-3 text-xs font-medium ${ACTION_STYLES[entry.action] ?? 'text-[#1A1A1A]'}`}>{formatAction(entry.action)}</td>
-                    <td className="hidden px-4 py-3 font-mono text-[11px] text-[#6B6A65] md:table-cell">{formatEntity(entry)}</td>
+                    <td className="hidden px-4 py-3 font-mono text-xs text-[#6B6A65] md:table-cell">{formatEntity(entry)}</td>
                     <td className="hidden px-4 py-3 text-xs text-[#6B6A65] lg:table-cell">{payload.reason_code?.replace(/_/g, ' ') ?? '—'}</td>
                     <td className="hidden max-w-xs px-4 py-3 text-xs text-[#6B6A65] xl:table-cell">{payload.note ?? '—'}</td>
                   </tr>

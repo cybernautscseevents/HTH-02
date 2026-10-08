@@ -3,11 +3,21 @@ from backend.stewardship.rules import (
     check_allergy,
     check_aware,
     check_dose,
+    check_drug_disease,
     check_duration,
     check_identified,
     check_indication,
+    check_pregnancy,
 )
-from backend.stewardship.schemas import AllergyStatus, NormStatus, Outcome, Route, Severity
+from backend.stewardship.schemas import (
+    AllergyStatus,
+    Comorbidity,
+    NormStatus,
+    Outcome,
+    Route,
+    Severity,
+    Sex,
+)
 
 from .fakes import T0, FakeCatalog, FakeRenal, FakeRulePack, episode, order, patient
 
@@ -130,3 +140,64 @@ def test_penicillin_allergy_flags_amoxicillin():
 def test_unrelated_allergy_passes():
     ep = episode(patient=patient(allergy_status=AllergyStatus.KNOWN, allergies=("sulfa",)))
     assert check_allergy(ctx(ep), order("amoxicillin")).outcome is Outcome.PASS
+
+
+def test_penicillin_allergy_suggests_first_non_beta_lactam_option():
+    ep = episode(
+        syndrome_code="pyelonephritis",
+        patient=patient(allergy_status=AllergyStatus.KNOWN, allergies=("penicillin",)),
+    )
+    f = check_allergy(ctx(ep), order("ampicillin", route=Route.IV))
+    assert (f.suggestion.action, f.suggestion.drug) == ("switch", "amikacin")
+
+
+def test_cephalosporin_allergy_skips_every_beta_lactam_option():
+    ep = episode(
+        syndrome_code="pyelonephritis",
+        patient=patient(allergy_status=AllergyStatus.KNOWN, allergies=("cephalosporin",)),
+    )
+    f = check_allergy(ctx(ep), order("ceftriaxone", route=Route.IV))
+    assert f.suggestion.drug == "amikacin"
+
+
+def test_drug_avoided_in_pregnancy_is_flagged_with_safer_option():
+    ep = episode(syndrome_code="pyelonephritis", patient=patient(pregnant=True))
+    f = check_pregnancy(ctx(ep), order("amikacin", route=Route.IV))
+    assert (f.outcome, f.severity) == (Outcome.FLAG, Severity.HIGH)
+    assert f.suggestion.drug == "ceftriaxone"  # gentamicin is an aminoglycoside too
+
+
+def test_unrecorded_pregnancy_blocks_avoided_drug_for_woman_of_childbearing_age():
+    f = check_pregnancy(ctx(), order("gentamicin"))
+    assert (f.outcome, f.missing_inputs) == (Outcome.CANNOT_ASSESS, ("pregnant",))
+
+
+def test_pregnancy_check_passes_when_not_applicable_or_not_pregnant():
+    for p in (patient(sex=Sex.M), patient(age_years=70), patient(pregnant=False)):
+        assert check_pregnancy(ctx(episode(patient=p)), order("gentamicin")).outcome is Outcome.PASS
+    assert check_pregnancy(ctx(episode(patient=patient(pregnant=True))), order()).outcome is (
+        Outcome.PASS
+    )
+
+
+def test_boxed_warning_for_patient_condition_is_flagged_high_with_safer_option():
+    ep = episode(patient=patient(comorbidities=(Comorbidity.MYASTHENIA_GRAVIS,)))
+    f = check_drug_disease(ctx(ep), order("ciprofloxacin"))
+    assert (f.outcome, f.severity) == (Outcome.FLAG, Severity.HIGH)
+    assert "myasthenia gravis" in f.message
+    assert any(e.page == "Boxed Warning" and "MYASTHENIA" in e.quote for e in f.evidence)
+    assert f.suggestion.drug == "nitrofurantoin"
+
+
+def test_label_warning_for_patient_condition_is_flagged_moderate_with_quote():
+    ep = episode(patient=patient(comorbidities=(Comorbidity.DIABETES, Comorbidity.G6PD_DEFICIENCY)))
+    f = check_drug_disease(ctx(ep), order("nitrofurantoin"))
+    assert (f.outcome, f.severity, f.suggestion) == (Outcome.FLAG, Severity.MODERATE, None)
+    assert "diabetes" in f.message and "G6PD deficiency" in f.message
+    assert all(e.quote and e.title.startswith("US FDA label") for e in f.evidence)
+
+
+def test_drug_disease_check_passes_without_a_matching_caution():
+    assert check_drug_disease(ctx(), order("ciprofloxacin")).outcome is Outcome.PASS
+    ep = episode(patient=patient(comorbidities=(Comorbidity.AORTIC_ANEURYSM,)))
+    assert check_drug_disease(ctx(ep), order("nitrofurantoin")).outcome is Outcome.PASS

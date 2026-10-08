@@ -80,7 +80,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-4 rounded-[8px] border border-[#E2E1DC] bg-[#F4F3EF] p-4">
-          <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">Demo accounts</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Demo accounts</p>
           <p className="mt-1 text-xs text-[#6B6A65]">
             Demonstration sign-in only; it does not secure any data. Password for both:{' '}
             <span className="font-mono text-[#1A1A1A]">{DEMO_PASSWORD}</span>
@@ -94,7 +94,7 @@ export default function LoginPage() {
                 className="flex w-full items-center justify-between rounded-md border border-[#E2E1DC] bg-white px-3 py-2 text-left hover:bg-[#FAFAF8]"
               >
                 <span className="text-sm text-[#1A1A1A]">{u.name}</span>
-                <span className="font-mono text-[10px] text-[#6B6A65]">{u.username} · {u.role}</span>
+                <span className="font-mono text-xs text-[#6B6A65]">{u.username} · {u.role}</span>
               </button>
             ))}
           </div>

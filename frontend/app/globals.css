@@ -31,9 +31,10 @@ body {
   margin: 0;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 16px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 15px;
   line-height: 1.6;
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -45,8 +46,9 @@ h4,
 h5,
 h6 {
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 button,
@@ -137,23 +139,8 @@ textarea {
   color: #1a1a1a;
 }
 
-/* Keep supporting text readable without disrupting the compact clinical layout. */
-.text-sm {
-  font-size: 0.9375rem;
-  line-height: 1.5rem;
-}
-
-.text-xs {
-  font-size: 0.8125rem;
-  line-height: 1.25rem;
-}
-
-[class~="text-[10px]"] {
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-[class~="text-[11px]"] {
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
+code,
+kbd,
+.font-mono {
+  font-feature-settings: "zero", "calt" 0;
 }

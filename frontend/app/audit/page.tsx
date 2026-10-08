@@ -23,7 +23,7 @@ export default function AuditPage() {
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">Governance</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Governance</p>
           <h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">Audit log</h1>
           <p className="mt-1 text-sm text-[#6B6A65]">
             Append-only record of pharmacist decisions and system events.

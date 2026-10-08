@@ -1,4 +1,4 @@
-"""Per-prescription stewardship checks (R0-R6).
+"""Per-prescription stewardship checks (R0-R8).
 
 Each rule is a pure function of a RuleContext and one drug order, and returns exactly one
 Finding. A rule never guesses: when an input it needs is missing or out of scope, it returns
@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from . import config
+from .drug_disease import CONTRAINDICATION, drug_disease_cautions
 from .ports import DrugCatalog, RenalChecker, RulePack
+from .pregnancy import pregnancy_cautions
 from .schemas import (
     AllergyStatus,
     AwareTier,
@@ -24,6 +26,7 @@ from .schemas import (
     Outcome,
     Patient,
     Severity,
+    Sex,
     Suggestion,
     SyndromeRule,
 )
@@ -100,6 +103,16 @@ def regimen_for(syndrome: SyndromeRule, order: DrugOrder) -> DrugRegimen | None:
     regimens = (*syndrome.first_line, *syndrome.alternatives)
     matches = [r for r in regimens if r.generic == order.generic and r.route == order.route]
     return matches[0] if len(matches) == 1 else None
+
+
+def guideline_option(
+    ctx: RuleContext, order: DrugOrder, avoid: Callable[[str], bool]
+) -> DrugRegimen | None:
+    """First guideline regimen for the syndrome, other than the ordered drug, not avoided."""
+    if ctx.syndrome is None:
+        return None
+    regimens = (*ctx.syndrome.first_line, *ctx.syndrome.alternatives)
+    return next((r for r in regimens if r.generic != order.generic and not avoid(r.generic)), None)
 
 
 def _finding(
@@ -435,15 +448,149 @@ def check_allergy(ctx: RuleContext, order: DrugOrder) -> Finding:
         )
     allergy = matching_allergy(patient, order.generic)
     if allergy is not None:
+        # A beta-lactam allergy excludes every beta-lactam until the allergy is reviewed;
+        # cross-reactivity between classes is a clinical decision, not the engine's.
+        beta_lactam = bool(allergy_classes(allergy))
+        option = guideline_option(
+            ctx,
+            order,
+            lambda g: matching_allergy(patient, g) is not None
+            or (beta_lactam and bool(allergy_classes(g))),
+        )
         return _finding(
             rule_id,
             Outcome.FLAG,
             Severity.HIGH,
             order,
             f"Documented allergy to {allergy}; {order.generic} may be contraindicated.",
+            evidence=(option.evidence,) if option else (),
+            suggestion=Suggestion(
+                action="switch",
+                drug=option.generic,
+                detail=f"First guideline option without a {allergy} allergy match"
+                + (" or another beta-lactam" if beta_lactam else "")
+                + f": {option.generic}.",
+            )
+            if option
+            else None,
         )
     return _finding(
         rule_id, Outcome.PASS, Severity.INFO, order, "No documented allergy matches this drug."
+    )
+
+
+def check_pregnancy(ctx: RuleContext, order: DrugOrder) -> Finding:
+    """R7: drugs avoided in pregnancy, from data/pregnancy_caution.csv."""
+    rule_id = "R7_PREGNANCY"
+    patient = ctx.episode.patient
+    caution = pregnancy_cautions().get(order.generic)
+    if caution is None:
+        return _finding(
+            rule_id,
+            Outcome.PASS,
+            Severity.INFO,
+            order,
+            f"No pregnancy caution is recorded for {order.generic}.",
+        )
+    if patient.pregnant is None:
+        could_be_pregnant = patient.sex is Sex.F and (
+            config.CHILDBEARING_AGE_MIN <= patient.age_years <= config.CHILDBEARING_AGE_MAX
+        )
+        if not could_be_pregnant:
+            return _finding(
+                rule_id, Outcome.PASS, Severity.INFO, order, "Pregnancy is not applicable."
+            )
+        return _finding(
+            rule_id,
+            Outcome.CANNOT_ASSESS,
+            Severity.LOW,
+            order,
+            f"Pregnancy status not recorded; {order.generic} is avoided in pregnancy.",
+            evidence=(caution.evidence,),
+            missing_inputs=("pregnant",),
+        )
+    if not patient.pregnant:
+        return _finding(
+            rule_id, Outcome.PASS, Severity.INFO, order, "Patient is recorded as not pregnant."
+        )
+    cautions = pregnancy_cautions()
+    option = guideline_option(
+        ctx, order, lambda g: g in cautions or matching_allergy(patient, g) is not None
+    )
+    return _finding(
+        rule_id,
+        Outcome.FLAG,
+        Severity.HIGH,
+        order,
+        f"Patient is pregnant; {caution.reason}.",
+        evidence=(caution.evidence,),
+        suggestion=Suggestion(
+            action="switch",
+            drug=option.generic,
+            detail=f"First guideline option not avoided in pregnancy: {option.generic}.",
+        )
+        if option
+        else None,
+    )
+
+
+def condition_name(condition: str) -> str:
+    return condition.replace("_", " ").lower().replace("g6pd", "G6PD").replace("qt", "QT")
+
+
+def check_drug_disease(ctx: RuleContext, order: DrugOrder) -> Finding:
+    """R8: label cautions for the patient's recorded conditions, from data/drug_disease.csv."""
+    rule_id = "R8_DRUG_DISEASE"
+    patient = ctx.episode.patient
+    if not patient.comorbidities:
+        return _finding(rule_id, Outcome.PASS, Severity.INFO, order, "No comorbidities recorded.")
+    conditions = set(patient.comorbidities)
+    matches = [
+        c for c in drug_disease_cautions().get(order.generic, ()) if c.condition in conditions
+    ]
+    if not matches:
+        return _finding(
+            rule_id,
+            Outcome.PASS,
+            Severity.INFO,
+            order,
+            f"No label caution recorded for {order.generic} in the patient's conditions.",
+        )
+    contraindicated = sorted(
+        {condition_name(c.condition) for c in matches if c.kind == CONTRAINDICATION}
+    )
+    cautioned = sorted({condition_name(c.condition) for c in matches} - set(contraindicated))
+    parts = []
+    if contraindicated:
+        parts.append(f"label contraindication or boxed warning for {', '.join(contraindicated)}")
+    if cautioned:
+        parts.append(f"label warning for {', '.join(cautioned)}")
+    option = None
+    if contraindicated:
+        cautions = drug_disease_cautions()
+        option = guideline_option(
+            ctx,
+            order,
+            lambda g: (
+                any(c.condition in conditions for c in cautions.get(g, ()))
+                or matching_allergy(patient, g) is not None
+            ),
+        )
+    return _finding(
+        rule_id,
+        Outcome.FLAG,
+        Severity.HIGH if contraindicated else Severity.MODERATE,
+        order,
+        f"{order.generic}: {'; '.join(parts)}.",
+        evidence=tuple(c.evidence for c in matches),
+        suggestion=Suggestion(
+            action="switch",
+            drug=option.generic,
+            detail=f"First guideline option with no label caution for the patient's "
+            f"conditions: {option.generic}.",
+        )
+        if option
+        else None,
     )
 
 
@@ -455,4 +602,6 @@ ORDER_RULES: tuple[tuple[str, OrderRule], ...] = (
     ("R4_RENAL", check_renal),
     ("R5_DURATION", check_duration),
     ("R6_ALLERGY", check_allergy),
+    ("R7_PREGNANCY", check_pregnancy),
+    ("R8_DRUG_DISEASE", check_drug_disease),
 )

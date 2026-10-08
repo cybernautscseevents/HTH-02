@@ -204,6 +204,29 @@ def diagnosis_line(text: str) -> str | None:
     return None
 
 
+_PATIENT_ID = re.compile(
+    r"\b(?:(?:patient|pt|ip|op)\s*(?:id|no\.?|number)|uhid|mrn)\s*[:#\-]?\s*(?P<id>[A-Za-z0-9][A-Za-z0-9_\-/]{2,31})",
+    re.I,
+)
+_PATIENT_NAME = re.compile(
+    r"\b(?:patient(?!\s*(?:id|no|number|setting))|name)\s*(?:name)?\s*:\s*"
+    r"(?P<name>[^\n:]*?)(?=\s{2,}|\s+(?:patient\s*id|age|sex|uhid|mrn)\b|\n|$)",
+    re.I,
+)
+
+
+def patient_identity(text: str) -> tuple[str | None, str | None]:
+    """(patient id, patient name) as printed in the prescription header, each None when absent.
+
+    Read only from the text: nothing is looked up or guessed. The reviewer confirms both.
+    """
+    pid = _PATIENT_ID.search(text)
+    name = _PATIENT_NAME.search(text)
+    patient_id = pid.group("id").strip(".,;") if pid else None
+    patient_name = name.group("name").strip() if name else None
+    return patient_id, (patient_name or None)
+
+
 def medicine_text(text: str) -> str:
     """The medicine part of a typed prescription.
 
@@ -288,10 +311,14 @@ def apply_confirmations(
     return tuple(replacements.get(reading.order.id, reading) for reading in readings)
 
 
-def build_specimens(cultures: tuple[CultureInput, ...], catalog: Catalog) -> tuple[Specimen, ...]:
-    """Validate and convert cultures. Inconsistent combinations are rejected, never repaired."""
+def build_specimens(
+    cultures: tuple[CultureInput, ...], catalog: Catalog, *, first: int = 1
+) -> tuple[Specimen, ...]:
+    """Validate and convert cultures. Inconsistent combinations are rejected, never repaired.
+
+    `first` numbers the specimens, so cultures added to an episode later get new ids."""
     specimens = []
-    for i, culture in enumerate(cultures, start=1):
+    for i, culture in enumerate(cultures, start=first):
         has_growth = culture.status in (
             CultureStatus.FINAL,
             CultureStatus.GROWTH_NO_AST,

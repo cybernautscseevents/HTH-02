@@ -60,6 +60,18 @@ class AllergyStatus(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class Comorbidity(StrEnum):
+    """Conditions rule R8 matches against US FDA label cautions (data/drug_disease.csv)."""
+
+    LIVER_DISEASE = "LIVER_DISEASE"
+    SEIZURE_DISORDER = "SEIZURE_DISORDER"
+    MYASTHENIA_GRAVIS = "MYASTHENIA_GRAVIS"
+    QT_PROLONGATION = "QT_PROLONGATION"
+    DIABETES = "DIABETES"
+    G6PD_DEFICIENCY = "G6PD_DEFICIENCY"
+    AORTIC_ANEURYSM = "AORTIC_ANEURYSM"
+
+
 class CultureStatus(StrEnum):
     NOT_SENT = "NOT_SENT"
     PENDING = "PENDING"
@@ -159,6 +171,7 @@ class Patient(_Frozen):
     allergy_status: AllergyStatus
     allergies: tuple[str, ...] = ()
     pregnant: bool | None = None
+    comorbidities: tuple[Comorbidity, ...] = ()
 
 
 class DrugOrder(_Frozen):

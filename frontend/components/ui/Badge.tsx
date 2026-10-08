@@ -26,8 +26,8 @@ export const Badge: React.FC<BadgeProps> = ({
   className = '',
 }) => {
   const sizes = {
-    sm: 'px-2 py-0.5 text-[10px]',
-    md: 'px-2.5 py-1 text-[11px]',
+    sm: 'px-2 py-0.5 text-xs',
+    md: 'px-2.5 py-1 text-xs',
   }
   const styles = (value: string) => {
     switch (value.toUpperCase()) {

@@ -8,6 +8,7 @@
 
 import type {
   AuditEntry,
+  CultureInput,
   DashboardStats,
   Episode,
   EpisodeRequest,
@@ -16,6 +17,7 @@ import type {
   SyndromeInfo,
   OCRResult,
   ParsePrescriptionResult,
+  PatientChanges,
   PatientRecord,
   Review,
   TimeoutItem,
@@ -164,6 +166,18 @@ export async function getEpisodes(hasCulture = false): Promise<Episode[]> {
 
 // ─── Evaluation ────────────────────────────────────────────────────────────────
 
+/** Attach a culture reported after the episode was created; returns the re-evaluation. */
+export async function addCulture(episodeId: string, culture: CultureInput): Promise<EvaluationReport> {
+  if (USE_MOCK) {
+    await delay(800)
+    return { ...MOCK_EVALUATION, episode_id: episodeId, trigger: 'CULTURE_RESULT' }
+  }
+  return apiFetch<EvaluationReport>(`/api/episodes/${episodeId}/cultures`, {
+    method: 'POST',
+    body: JSON.stringify(culture),
+  })
+}
+
 export async function evaluateEpisode(
   episodeId: string,
   trigger: Trigger = 'NEW_PRESCRIPTION'
@@ -177,6 +191,21 @@ export async function evaluateEpisode(
     `/api/episodes/${episodeId}/evaluate?trigger=${encodeURIComponent(trigger)}`,
     { method: 'POST' }
   )
+}
+
+/** Re-run the rules with changed patient values. The result is not stored or reviewable. */
+export async function whatIfEpisode(
+  episodeId: string,
+  changes: PatientChanges
+): Promise<EvaluationReport> {
+  if (USE_MOCK) {
+    await delay(200)
+    return { ...MOCK_EVALUATION, episode_id: episodeId }
+  }
+  return apiFetch<EvaluationReport>(`/api/episodes/${episodeId}/what-if`, {
+    method: 'POST',
+    body: JSON.stringify(changes),
+  })
 }
 
 export async function getEvaluation(evaluationId: string): Promise<EvaluationReport> {

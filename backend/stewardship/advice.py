@@ -27,6 +27,10 @@ _ACTIONS: dict[tuple[str, Outcome], str] = {
     ("R5_DURATION", Outcome.FLAG): "Review the planned duration against the guideline.",
     ("R6_ALLERGY", Outcome.FLAG): "Review the documented allergy before administration.",
     ("R6_ALLERGY", Outcome.CANNOT_ASSESS): "Document the patient's allergy status.",
+    ("R7_PREGNANCY", Outcome.FLAG): "Avoid this drug in pregnancy unless no alternative exists.",
+    ("R7_PREGNANCY", Outcome.CANNOT_ASSESS): "Record whether the patient is pregnant.",
+    ("R8_DRUG_DISEASE", Outcome.FLAG): "Review the quoted label caution against the patient's "
+    "condition before administration.",
     ("C1_CULTURE_BEFORE_WATCH", Outcome.FLAG): "Obtain a culture if not already sent.",
     ("C3_BUG_DRUG_MISMATCH", Outcome.FLAG): "Review antibiotic selection and consider an "
     "alternative the organism is susceptible to.",

@@ -21,7 +21,13 @@ from .audit import JsonlAuditLog
 from .ddi import DrugBankDDIProvider
 from .drugs import Catalog
 from .evidence import build_store
-from .intake import EpisodeRequest, IntakeError, medicine_text, parse_prescription_text
+from .intake import (
+    CultureInput,
+    EpisodeRequest,
+    IntakeError,
+    medicine_text,
+    parse_prescription_text,
+)
 from .ports import PatientRecordSource
 from .records import JsonPatientRecords, PatientRecord
 from .renal import RenalDosing
@@ -34,7 +40,9 @@ from .service import (
     EvaluationReport,
     NotFoundError,
     OrderView,
+    PatientChanges,
     PrescriptionDiagnosis,
+    PrescriptionPatient,
     ReviewRequest,
     StewardshipService,
     TimeoutItem,
@@ -52,6 +60,7 @@ class ParseResponse(BaseModel):
     orders: tuple[OrderView, ...]
     warnings: tuple[str, ...]
     diagnosis: PrescriptionDiagnosis
+    patient: PrescriptionPatient
 
 
 class OcrDrug(BaseModel):
@@ -74,6 +83,7 @@ class OcrResponse(BaseModel):
     model: str
     warnings: tuple[str, ...] = ()
     diagnosis: PrescriptionDiagnosis | None = None
+    patient: PrescriptionPatient | None = None
 
 
 def default_service() -> StewardshipService:
@@ -210,6 +220,7 @@ def create_app(
             model=f"{result.model_id}@{result.model_revision}",
             warnings=reading.warnings,
             diagnosis=svc.prescription_diagnosis(result.text),
+            patient=svc.prescription_patient(result.text),
         )
 
     @app.get("/api/syndromes")
@@ -250,6 +261,7 @@ def create_app(
             orders=tuple(_order_view(r.order, r.reason) for r in readings),
             warnings=warnings,
             diagnosis=svc.prescription_diagnosis(body.text),
+            patient=svc.prescription_patient(body.text),
         )
 
     @app.post("/api/evaluate")
@@ -276,6 +288,16 @@ def create_app(
         episode_id: str, trigger: Trigger = Trigger.NEW_PRESCRIPTION
     ) -> EvaluationReport:
         return svc.evaluate(episode_id, trigger)
+
+    @app.post("/api/episodes/{episode_id}/cultures")
+    def add_culture(episode_id: str, body: CultureInput) -> EvaluationReport:
+        """A culture reported after the episode started, attached and re-evaluated."""
+        return svc.add_culture(episode_id, body)
+
+    @app.post("/api/episodes/{episode_id}/what-if")
+    def what_if(episode_id: str, body: PatientChanges) -> EvaluationReport:
+        """The episode re-evaluated with changed patient values. Not stored or reviewable."""
+        return svc.what_if(episode_id, body)
 
     @app.get("/api/evaluations/{evaluation_id}")
     def get_evaluation(evaluation_id: str) -> EvaluationReport:

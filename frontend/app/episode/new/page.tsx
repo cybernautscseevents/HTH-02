@@ -4,8 +4,10 @@ import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowRight, User, FlaskConical, Search } from 'lucide-react'
 import { createEpisode, evaluateEpisode, getPatientRecord, getSyndromes } from '@/lib/api'
+import { COMORBIDITY_LABELS } from '@/types/stewardship'
 import type {
   AllergyStatus,
+  Comorbidity,
   CultureStatus,
   ExtractedDrug,
   PrescriptionDiagnosis,
@@ -37,7 +39,7 @@ const FALLBACK_SYNDROMES = [
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
-    <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.06em] text-[#6B6A65]">
+    <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-[#6B6A65]">
       {label}
       {required && <span className="text-rose-400 ml-1">*</span>}
     </label>
@@ -64,12 +66,14 @@ export default function EpisodeNewPage() {
 
   // Form state
   const [patientId, setPatientId] = useState('')
+  const [patientName, setPatientName] = useState<string | null>(null)
   const [age, setAge] = useState('')
   const [sex, setSex] = useState<Sex>('M')
   const [weight, setWeight] = useState('')
   const [creatinine, setCreatinine] = useState('')
   const [allergyStatus, setAllergyStatus] = useState<AllergyStatus>('NONE_KNOWN')
   const [allergies, setAllergies] = useState('')
+  const [comorbidities, setComorbidities] = useState<Comorbidity[]>([])
   const [setting, setSetting] = useState<Setting>('WARD')
   const [syndromeCode, setSyndromeCode] = useState('')
   const [diagnosisText, setDiagnosisText] = useState('')
@@ -86,6 +90,13 @@ export default function EpisodeNewPage() {
         const drugs: ExtractedDrug[] = JSON.parse(stored)
         setPendingDrugs(drugs)
         setPrescription(drugs.map((d) => d.raw_text).join('\n'))
+      }
+      const printed = sessionStorage.getItem('rxPatient')
+      if (printed) {
+        const who: { id: string | null; name: string | null } = JSON.parse(printed)
+        if (who.id) setPatientId(who.id)
+        setPatientName(who.name)
+        if (who.id) setRecordNote('Patient ID read from the prescription. Check it, then fetch the record.')
       }
       const diagnosis = sessionStorage.getItem('rxDiagnosis')
       if (diagnosis) {
@@ -125,6 +136,7 @@ export default function EpisodeNewPage() {
       setCreatinine(patient.serum_creatinine_mg_dl != null ? String(patient.serum_creatinine_mg_dl) : '')
       setAllergyStatus(patient.allergy_status)
       setAllergies(patient.allergies.join(', '))
+      setComorbidities(patient.comorbidities ?? [])
       const culture = cultures[0]
       setCultureStatus(culture?.status ?? 'NOT_SENT')
       setSpecimenType(culture?.specimen_type ?? 'urine')
@@ -198,6 +210,7 @@ export default function EpisodeNewPage() {
           serum_creatinine_mg_dl: creatinine ? parseFloat(creatinine) : null,
           allergy_status: allergyStatus,
           allergies: allergyStatus === 'KNOWN' ? allergies.split(',').map((a) => a.trim()).filter(Boolean) : [],
+          comorbidities,
         },
         setting,
         // Empty when nobody chose one: the backend then reads the prescriber's diagnosis, and
@@ -238,6 +251,7 @@ export default function EpisodeNewPage() {
       sessionStorage.removeItem('pendingDrugs')
       sessionStorage.removeItem('ocrRawText')
       sessionStorage.removeItem('rxDiagnosis')
+      sessionStorage.removeItem('rxPatient')
       router.push(`/evaluation/${evaluation.id}`)
     } catch (e) {
       console.error('Episode creation failed:', e)
@@ -250,7 +264,7 @@ export default function EpisodeNewPage() {
     <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
       <div className="flex flex-col justify-between gap-3 border-b border-[#E2E1DC] pb-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">New stewardship review</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">New stewardship review</p>
           <h1 className="mt-1 text-2xl font-medium tracking-[-0.02em] text-[#1A1A1A]">Add clinical context</h1>
           <p className="mt-1 text-sm text-[#6B6A65]">
             Complete the patient, syndrome, renal, allergy, and culture information needed by the rules.
@@ -312,6 +326,7 @@ export default function EpisodeNewPage() {
                   Fetch record
                 </button>
               </div>
+              {patientName && <p className="mt-1 text-xs text-[#6B6A65]">Name on prescription: {patientName}</p>}
               {recordNote && <p className="mt-1 text-xs text-[#3730A3]">{recordNote}</p>}
             </div>
             <div>
@@ -380,6 +395,24 @@ export default function EpisodeNewPage() {
                 />
               </div>
             )}
+            <div className="sm:col-span-2">
+              <FieldLabel label="Comorbidities" />
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
+                {(Object.entries(COMORBIDITY_LABELS) as [Comorbidity, string][]).map(([code, label]) => (
+                  <label key={code} className="flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={comorbidities.includes(code)}
+                      onChange={(e) =>
+                        setComorbidities((c) => (e.target.checked ? [...c, code] : c.filter((x) => x !== code)))
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Checked against US FDA label cautions for each antibiotic</p>
+            </div>
           </div>
         </Card>
 

@@ -113,6 +113,8 @@ CHECK_NAMES = {
     "R4_RENAL": "kidney-function dosing",
     "R5_DURATION": "duration",
     "R6_ALLERGY": "allergy",
+    "R7_PREGNANCY": "pregnancy",
+    "R8_DRUG_DISEASE": "label caution for the patient's conditions",
     "C1_CULTURE_BEFORE_WATCH": "culture before Watch/Reserve therapy",
     "C3_BUG_DRUG_MISMATCH": "organism resistance to the drug",
     "C4_DE_ESCALATE": "step-down option from the culture",

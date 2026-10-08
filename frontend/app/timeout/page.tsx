@@ -22,7 +22,7 @@ export default function TimeoutPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <header className="border-b border-[#E2E1DC] pb-4">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">Scheduled reassessment</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Scheduled reassessment</p>
         <h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">48-hour antimicrobial reviews</h1>
         <p className="mt-1 text-sm text-[#6B6A65]">Reassess empiric therapy when culture and clinical response data should be available.</p>
       </header>
@@ -47,5 +47,5 @@ export default function TimeoutPage() {
 }
 
 function Queue({ title, count, color, items }: { title: string; count: number; color: string; items: TimeoutItem[] }) {
-  return <section className="space-y-3"><div className="flex items-center gap-3"><h2 className={`text-xs font-medium uppercase tracking-[0.06em] ${color}`}>{title} ({count})</h2><div className="h-px flex-1 bg-[#E2E1DC]" /></div>{items.map((item) => <TimeoutCard key={item.episode_id} item={item} />)}</section>
+  return <section className="space-y-3"><div className="flex items-center gap-3"><h2 className={`text-xs font-medium uppercase tracking-wider ${color}`}>{title} ({count})</h2><div className="h-px flex-1 bg-[#E2E1DC]" /></div>{items.map((item) => <TimeoutCard key={item.episode_id} item={item} />)}</section>
 }

@@ -49,7 +49,7 @@ export default function DashboardPage() {
     <div className="space-y-6 animate-fade-in">
       <header className="flex flex-col justify-between gap-3 border-b border-[#E2E1DC] pb-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#6B6A65]">Stewardship overview</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Stewardship overview</p>
           <h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">Clinical review dashboard</h1>
           <p className="mt-1 text-sm text-[#6B6A65]">Follow prescriptions from intake through deterministic analysis and pharmacist review.</p>
         </div>
@@ -82,11 +82,11 @@ export default function DashboardPage() {
                   {STATUS_ICON[evaluation.status]}
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-sm font-medium text-[#1A1A1A]">{evaluation.patient_id}</span><Badge variant={evaluation.status} size="sm">{evaluation.status}</Badge></div>
-                    <p className="mt-0.5 truncate font-mono text-[10px] text-[#6B6A65]">{evaluation.evaluation_id}</p>
+                    <p className="mt-0.5 truncate font-mono text-xs text-[#6B6A65]">{evaluation.evaluation_id}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-4 sm:justify-end">
-                  <div className="text-right text-[11px] text-[#6B6A65]">{evaluation.high_count} high · {evaluation.moderate_count} moderate<br />{new Date(evaluation.evaluated_at).toLocaleString('en-IN')}</div>
+                  <div className="text-right text-xs text-[#6B6A65]">{evaluation.high_count} high · {evaluation.moderate_count} moderate<br />{new Date(evaluation.evaluated_at).toLocaleString('en-IN')}</div>
                   <Link href={`/evaluation/${evaluation.evaluation_id}`}><Button variant="outline" size="sm">Review</Button></Link>
                 </div>
               </div>
