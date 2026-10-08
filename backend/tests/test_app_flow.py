@@ -458,6 +458,33 @@ def test_signed_treatment_plan_is_structured_idempotent_and_audited(client):
     assert client.get(f"/api/evaluations/{report['id']}/treatment-plan").json()["id"] == plan["id"]
 
 
+def test_signed_plan_carries_recognized_non_antibiotics_unchanged(client):
+    report = evaluate(client, NITRO + "\nTab Paracetamol 500 mg PO TDS x 3 days")
+    _review_all(client, report)
+    body = _plan_request(client, report, key="complete-medication-list")
+    body["items"] = [
+        item for item in body["items"] if item["final_regimen"]["generic"] != "paracetamol"
+    ]
+
+    response = client.post(f"/api/evaluations/{report['id']}/treatment-plans", json=body)
+
+    assert response.status_code == 201, response.text
+    plan = response.json()
+    assert [item["before"]["generic"] for item in plan["items"]] == ["nitrofurantoin"]
+    assert plan["other_medications"] == [
+        {
+            "source_order_id": "rx-2",
+            "generic": "paracetamol",
+            "dose_mg": 500.0,
+            "freq_per_day": 3.0,
+            "route": "PO",
+            "total_duration_days": 3,
+            "course_started_at": T0.isoformat().replace("+00:00", "Z"),
+            "planned_stop_at": (T0 + timedelta(days=3)).isoformat().replace("+00:00", "Z"),
+        }
+    ]
+
+
 def test_plan_rejects_missing_finding_reviews_and_invalid_continue(client):
     report = evaluate(client, CEFTRIAXONE, syndrome="pyelonephritis")
     body = _plan_request(client, report, key="missing-review-key")

@@ -341,6 +341,7 @@ class TreatmentPlanSignOff(_Frozen):
     phase: ReviewPhase
     status: TreatmentPlanStatus
     items: tuple[MedicationPlanItem, ...]
+    other_medications: tuple[RegimenSnapshot, ...] = ()
     reviewer: str
     reviewer_role: str
     signed_at: AwareDatetime

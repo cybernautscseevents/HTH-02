@@ -403,6 +403,7 @@ export interface TreatmentPlan {
   phase: ReviewPhase
   status: TreatmentPlanStatus
   items: MedicationPlanItem[]
+  other_medications: RegimenSnapshot[]
   reviewer: string
   reviewer_role: string
   signed_at: string

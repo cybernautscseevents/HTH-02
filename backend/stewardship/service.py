@@ -53,7 +53,12 @@ from .schemas import (
 )
 from .summary import EvaluationSummary, Summarizer, TemplateSummarizer, evidence_for
 from .timeout import first_antibiotic_start, is_timeout_due
-from .treatment_plan import PlanError, TreatmentPlanRequest, validate_plan
+from .treatment_plan import (
+    PlanError,
+    TreatmentPlanRequest,
+    unchanged_non_antibiotics,
+    validate_plan,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -318,14 +323,14 @@ class StewardshipService:
         )
         ddi_findings, ddi_crashed = self._ddi_checks(episode)
         ddi_by_rule = {df.finding.rule_id: df.result for df in ddi_findings}
-        findings = tuple(sorted([*result.findings, *(df.finding for df in ddi_findings)], key=_sort_key))
+        findings = tuple(
+            sorted([*result.findings, *(df.finding for df in ddi_findings)], key=_sort_key)
+        )
         status = result.status
         if ddi_crashed:
             # Same contract as a failed engine check: a partial run is INCOMPLETE, never OK.
             status = EvaluationStatus.INCOMPLETE
-        elif status is EvaluationStatus.OK and any(
-            f.outcome is not Outcome.PASS for f in findings
-        ):
+        elif status is EvaluationStatus.OK and any(f.outcome is not Outcome.PASS for f in findings):
             status = EvaluationStatus.FLAGGED
         syndrome = self.rulepack.syndrome(episode.syndrome_code) if episode.syndrome_code else None
         names = {o.id: o.generic for o in episode.orders}
@@ -361,7 +366,7 @@ class StewardshipService:
             return (), False
         try:
             checks = check_pairs(episode, self.ddi)
-        except Exception as exc:  # noqa: BLE001 - defensive; check_pairs catches per pair
+        except Exception:  # noqa: BLE001 - defensive; check_pairs catches per pair
             logger.exception("Drug-drug interaction checks failed for episode %s", episode.id)
             return (), True
         return checks.findings, checks.crashed
@@ -535,6 +540,7 @@ class StewardshipService:
             phase=request.phase,
             status=status,
             items=items,
+            other_medications=unchanged_non_antibiotics(episode, self.catalog),
             reviewer=request.reviewer,
             reviewer_role=request.reviewer_role,
             signed_at=now,
