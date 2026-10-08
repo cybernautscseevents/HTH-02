@@ -66,3 +66,25 @@ LLM_BASE_URL = os.getenv("HC03_LLM_BASE_URL") or None
 LLM_MODEL = os.getenv("HC03_LLM_MODEL") or None
 LLM_API_KEY = os.getenv("HC03_LLM_API_KEY") or None
 LLM_TIMEOUT_S = float(os.getenv("HC03_LLM_TIMEOUT_S", "20"))
+
+# Drug-drug interaction source: the local DrugBank XML export (licensed, never committed)
+# and the pair index built from it once into the gitignored runtime directory.
+def _resolve_drugbank_xml() -> Path:
+    env = os.getenv("HC03_DRUGBANK_XML_PATH") or os.getenv("DRUGBANK_XML_PATH")
+    if env:
+        return Path(env)
+    for name in ("drugbank.xml", "drugbank_full_database.xml"):
+        p = REPO_ROOT / name
+        if p.exists():
+            return p
+    return REPO_ROOT / "drugbank.xml"
+
+
+DRUGBANK_XML_PATH = _resolve_drugbank_xml()
+DDI_INDEX_PATH = Path(
+    os.getenv(
+        "HC03_DDI_INDEX_PATH",
+        os.getenv("DDI_INDEX_PATH", str(RUNTIME_DIR / "drugbank_ddi_index.sqlite")),
+    )
+)
+

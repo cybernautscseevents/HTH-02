@@ -204,6 +204,23 @@ export interface GuidelinePassage {
   distance: number
 }
 
+export interface DDIResult {
+  type: 'DDI'
+  drug_a?: string | null
+  drug_b?: string | null
+  status: 'INTERACTION_FOUND' | 'NO_INTERACTION_REPORTED_BY_SOURCE' | 'CANNOT_ASSESS'
+  severity: string
+  mechanism?: string | null
+  explanation?: string | null
+  action?: string | null
+  description?: string | null
+  reason?: string | null
+  source: string
+  source_version?: string | null
+  evidence?: string | null
+  needs_review: boolean
+}
+
 /** A finding as shown to the clinician: rule result + what to do + why. */
 export interface FindingView {
   rule_id: string
@@ -218,6 +235,7 @@ export interface FindingView {
   evidence: Evidence[]
   explanation: string
   guideline_passages: GuidelinePassage[]
+  ddi?: DDIResult | null
 }
 
 export interface CultureSummary {

@@ -61,6 +61,43 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
           </div>
         </div>
 
+        {view?.ddi && (
+          <div className="ml-0 mt-4 space-y-1.5 rounded-md border border-[#E2E1DC] bg-[#FAFAF8] px-4 py-3 text-xs sm:ml-10">
+            {view.ddi.status === 'INTERACTION_FOUND' && (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#8B1A1A]">Interaction reported</span>
+                  <span className="font-mono text-[#1A1A1A]">{view.ddi.drug_a} + {view.ddi.drug_b}</span>
+                  <span className="rounded border border-[#E8D5A7] bg-[#FFF9EB] px-1.5 py-0.5 text-[10px] text-[#8B5E00]">Severity: {view.ddi.severity}</span>
+                </div>
+                {(view.ddi.mechanism || view.ddi.description) && (
+                  <p className="leading-relaxed text-[#1A1A1A]">{view.ddi.mechanism || view.ddi.description}</p>
+                )}
+              </>
+            )}
+            {view.ddi.status === 'CANNOT_ASSESS' && (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#8B5E00]">Interaction could not be assessed</span>
+                  {view.ddi.drug_a && (
+                    <span className="font-mono text-[#1A1A1A]">{view.ddi.drug_b ? `${view.ddi.drug_a} + ${view.ddi.drug_b}` : view.ddi.drug_a}</span>
+                  )}
+                </div>
+                {view.ddi.reason && <p className="leading-relaxed text-[#1A1A1A]">{view.ddi.reason}</p>}
+              </>
+            )}
+            {view.ddi.status === 'NO_INTERACTION_REPORTED_BY_SOURCE' && (
+              <p className="text-[#6B6A65]">
+                No interaction reported by {view.ddi.source} for{' '}
+                <span className="font-mono text-[#1A1A1A]">{view.ddi.drug_a} + {view.ddi.drug_b}</span> (not a guarantee of safety).
+              </p>
+            )}
+            <p className="font-mono text-[10px] text-[#8B8982]">
+              {view.ddi.source}{view.ddi.source_version ? ` ${view.ddi.source_version}` : ''}
+            </p>
+          </div>
+        )}
+
         {(view?.action || finding.suggestion) && (
           <div className="ml-0 mt-4 rounded-md border border-[#D8D5F0] bg-[#F7F6FF] px-4 py-3 sm:ml-10">
             <p className="text-[10px] font-medium uppercase tracking-[0.06em] text-[#3730A3]">
@@ -70,7 +107,7 @@ export const FindingCard: React.FC<FindingCardProps> = ({ finding, orderText, vi
           </div>
         )}
 
-        {view?.explanation && <p className="ml-0 mt-3 text-xs leading-relaxed text-[#6B6A65] sm:ml-10">{view.explanation}</p>}
+        {view?.explanation && !view.ddi && <p className="ml-0 mt-3 text-xs leading-relaxed text-[#6B6A65] sm:ml-10">{view.explanation}</p>}
 
         {sources > 0 && (
           <div className="ml-0 mt-3 sm:ml-10">

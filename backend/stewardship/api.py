@@ -18,6 +18,7 @@ from prescription_ocr.pipeline import ENGINES, OcrEngine, build_engine
 
 from . import config
 from .audit import JsonlAuditLog
+from .ddi import DrugBankDDIProvider
 from .drugs import Catalog
 from .evidence import build_store
 from .intake import EpisodeRequest, IntakeError, medicine_text, parse_prescription_text
@@ -77,7 +78,9 @@ class OcrResponse(BaseModel):
 
 def default_service() -> StewardshipService:
     """Production wiring: real Catalog, real NCDC rule pack, real renal table, JSONL audit log,
-    and the LLM summary when HC03_LLM_* is configured (deterministic summary otherwise)."""
+    and the LLM summary when HC03_LLM_* is configured (deterministic summary otherwise),
+    and the DrugBank pair index for drug-drug interaction lookups (lazy; built once from the
+    local XML export on first use, and degraded to CANNOT_ASSESS if the source is absent)."""
     pack = YamlRulePack()
     path = str(config.CHROMA_DIR) if config.CHROMA_DIR.exists() else None
     return StewardshipService(
@@ -87,6 +90,7 @@ def default_service() -> StewardshipService:
         audit=JsonlAuditLog(config.AUDIT_LOG_PATH),
         retriever=build_store(pack, path=path),
         summarizer=summarizer_from_env(),
+        ddi=DrugBankDDIProvider(),
     )
 
 

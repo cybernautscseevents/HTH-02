@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
 venv/
@@ -66,3 +71,10 @@ data/typed_rx_test/results/
 /api.txt
 .env
 .env.local
+
+# DrugBank XML export (licensed; never committed) and the pair index built from it
+drugbank.xml
+drugbank_full_database.xml
+drugbank*.xml.gz
+*drugbank*.sqlite
+
