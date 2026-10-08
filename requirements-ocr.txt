@@ -1,7 +1,10 @@
 # Prescription image reading (prescription_ocr). Not needed by the stewardship engine or its tests.
 # GLM-OCR is pinned to a model revision in prescription_ocr/glm.py.
+# Qwen-VL (prescription_ocr/qwen.py) is chosen with HC03_QWEN_MODEL / HC03_QWEN_QUANT; on a 4 GB
+# GPU it needs 4-bit weights, which need bitsandbytes (CUDA, Linux/Windows).
 accelerate>=0.30,<2
 Pillow>=10,<13
 torch>=2.2
 torchvision>=0.17
 transformers>=4.57,<6
+bitsandbytes>=0.43; sys_platform != "darwin"

@@ -35,3 +35,21 @@ test_results/
 
 # Test scenario fixtures are source files, not generated output
 !backend/tests/scenarios/*.json
+
+# Real prescription OCR test images: no redistribution licence, keep local only
+data/ocr_test/*/images/
+data/ocr_test/*/results/
+runtime/
+
+# Frontend project files are source, not generated output (the *.json rule above hid them)
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+# Frontend build artifacts and local settings
+.env.local
+node_modules/
+.next/
+*.tsbuildinfo
+# Hand-made labels transcribe those unlicensed images line by line; keep them local too
+data/ocr_test/*/ground_truth.csv
+data/ocr_test/*/adjudication.csv

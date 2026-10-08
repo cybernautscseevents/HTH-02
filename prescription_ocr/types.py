@@ -21,6 +21,33 @@ class GlmOcrConfig:
 
 
 @dataclass(frozen=True)
+class ReadLine:
+    """One medicine line as a vision model read it. Values are text exactly as written, or None.
+
+    Nothing here is normalized or interpreted: the drug name goes to the stewardship catalog and
+    the directions go through the same deterministic parsers as a plain transcript.
+    """
+
+    as_written: str
+    dose: str | None = None
+    frequency: str | None = None
+    route: str | None = None
+    duration: str | None = None
+    legible: bool = True
+
+    @property
+    def text(self) -> str:
+        """The line as read: the written name plus any direction text not already in it."""
+        written = self.as_written.casefold()
+        extras = (
+            v
+            for v in (self.dose, self.frequency, self.route, self.duration)
+            if v and v.casefold() not in written
+        )
+        return " ".join((self.as_written, *extras))
+
+
+@dataclass(frozen=True)
 class OcrResult:
     raw_text: str
     text: str
@@ -30,6 +57,8 @@ class OcrResult:
     dtype: str
     elapsed_seconds: float
     warnings: tuple[str, ...] = ()
+    # Set by engines that return structured medicine lines (Qwen-VL); None for plain transcripts.
+    lines: tuple[ReadLine, ...] | None = None
 
     def to_dict(self) -> Mapping[str, Any]:
         return asdict(self)

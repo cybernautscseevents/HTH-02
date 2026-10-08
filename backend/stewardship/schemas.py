@@ -183,12 +183,16 @@ class Episode(_Frozen):
 
 
 class DrugRegimen(_Frozen):
+    """One guideline regimen. A dose or duration the guideline does not give as a fixed amount
+    (weight-based doses, durations stated for the syndrome only) is None, and R3/R5 then return
+    CANNOT_ASSESS instead of guessing."""
+
     generic: str
     route: Route
-    daily_dose_mg_min: float = Field(gt=0)
-    daily_dose_mg_max: float = Field(gt=0)
-    duration_days_min: int = Field(ge=0)
-    duration_days_max: int = Field(ge=0)
+    daily_dose_mg_min: float | None = Field(default=None, gt=0)
+    daily_dose_mg_max: float | None = Field(default=None, gt=0)
+    duration_days_min: int | None = Field(default=None, ge=0)
+    duration_days_max: int | None = Field(default=None, ge=0)
     evidence: Evidence
 
 

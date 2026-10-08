@@ -8,7 +8,8 @@ stewardship drug catalog, never by OCR similarity scores.
 from prescription_ocr.glm import GlmOcrEngine, GlmOcrError
 from prescription_ocr.orders import OrderReading, PrescriptionReading, read_orders
 from prescription_ocr.pipeline import read_prescription
-from prescription_ocr.types import GlmOcrConfig, OcrResult
+from prescription_ocr.qwen import QwenOcrError, QwenOutputError, QwenVlConfig, QwenVlEngine
+from prescription_ocr.types import GlmOcrConfig, OcrResult, ReadLine
 
 __all__ = [
     "GlmOcrConfig",
@@ -17,6 +18,11 @@ __all__ = [
     "OcrResult",
     "OrderReading",
     "PrescriptionReading",
+    "QwenOcrError",
+    "QwenOutputError",
+    "QwenVlConfig",
+    "QwenVlEngine",
+    "ReadLine",
     "read_orders",
     "read_prescription",
 ]

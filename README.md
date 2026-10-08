@@ -1,0 +1,76 @@
+# HC-03 Antibiotic Stewardship Copilot
+
+Checks an antibiotic prescription against the Indian national treatment guideline (NCDC 2025),
+the patient's kidney function, allergies and culture results, and tells the pharmacist what to
+do. Every check is deterministic and cites its source; anything it cannot check is reported as
+`CANNOT_ASSESS`, never as a pass. No model makes a clinical decision.
+
+## One pipeline
+
+```
+prescription image ──► prescription_ocr (GLM-OCR or Qwen-VL) ──► transcript ┐
+typed prescription ─────────────────────────────────────────────────────────┤
+                                                                            ▼
+                        prescription_ocr/transcript.py + orders.py   (line parser)
+                                                                            ▼
+                        backend/stewardship/drugs.py  Catalog.normalize  (drug identity)
+                                                                            ▼
+                        DrugOrder[]  ──►  Episode   (backend/stewardship/intake.py)
+                                                                            ▼
+                        evaluate_episode()          (backend/stewardship/episode.py)
+                          R0 identified · R1 indication · R2 AWaRe · R3 dose · R4 renal
+                          R5 duration · R6 allergy   (rules.py, renal.py)
+                          C1, C3-C9 culture rules    (culture.py)
+                                                                            ▼
+                        Evaluation ──► action + explanation (service.py, advice.py)
+                                                                            ▼
+                        FastAPI (api.py, backend/main.py) ──► frontend (Next.js)
+```
+
+| Part | Where |
+|---|---|
+| Stewardship engine, rules, culture, review, audit, time-out | `backend/stewardship/` |
+| Guideline rule pack (13 hand-checked + 93 imported NCDC syndromes) | `backend/stewardship/rulepack/`, `docs/RULEPACK.md` |
+| Drug catalog, AWaRe, brands, renal dosing data | `data/`, `docs/SOURCES.md` |
+| Prescription OCR (image → orders) | `prescription_ocr/` |
+| API | `backend/stewardship/api.py`, entry point `backend/main.py` |
+| Frontend | `frontend/` |
+| Tests | `backend/tests/` |
+| Superseded RxGuard pipeline (not used) | `legacy/` |
+
+## Run
+
+Backend (Python 3.11+):
+
+```
+pip install -r requirements-api.txt
+uvicorn backend.main:app --port 8000          # http://localhost:8000/api/health
+```
+
+Frontend (Node 20+):
+
+```
+cd frontend && npm install
+cp .env.example .env.local                     # NEXT_PUBLIC_USE_MOCK=false → real backend
+npm run dev                                    # http://localhost:3000
+```
+
+Without `.env.local` the frontend runs on built-in mock data (`NEXT_PUBLIC_USE_MOCK` unset).
+
+OCR (optional, needs a GPU-capable `torch`; not needed for the engine or the typed demo):
+
+```
+pip install -r requirements-ocr.txt
+python -m prescription_ocr IMAGE [--engine glm|qwen]
+```
+
+Tests and lint:
+
+```
+python -m pytest                               # backend + OCR parsing tests (no model download)
+ruff check . && ruff format --check .
+cd frontend && npx tsc --noEmit && npm run build
+```
+
+More: `docs/APPLICATION.md` (API and flow), `docs/CORE_SPEC.md` (engine design),
+`docs/RULEPACK.md`, `docs/SOURCES.md`, `docs/OCR_REAL_PRESCRIPTION_TEST.md`.
