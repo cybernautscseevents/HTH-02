@@ -60,6 +60,17 @@ class TreatmentPlanRequest(_Request):
     supersedes_id: str | None = None
 
 
+def unchanged_non_antibiotics(episode: Episode, catalog: Catalog) -> tuple[RegimenSnapshot, ...]:
+    """Return recognized non-antibiotics carried forward unchanged in the signed output."""
+    return tuple(
+        _order_snapshot(order)
+        for order in episode.orders
+        if order.generic
+        and order.norm_status in {NormStatus.ACCEPTED, NormStatus.CONFIRMED}
+        and not catalog.is_antibiotic(order.generic)
+    )
+
+
 def validate_plan(
     request: TreatmentPlanRequest,
     episode: Episode,
@@ -108,10 +119,10 @@ def validate_plan(
     return items, status
 
 
-def _validate_item(request: PlanItemRequest, order, catalog: Catalog) -> MedicationPlanItem:
+def _order_snapshot(order) -> RegimenSnapshot:
     if order.generic is None:
         raise PlanError(f"Order {order.id} has no confirmed drug identity.")
-    before = RegimenSnapshot(
+    return RegimenSnapshot(
         source_order_id=order.id,
         generic=order.generic,
         dose_mg=order.dose_mg,
@@ -123,6 +134,10 @@ def _validate_item(request: PlanItemRequest, order, catalog: Catalog) -> Medicat
             order.started_at + timedelta(days=order.duration_days) if order.duration_days else None
         ),
     )
+
+
+def _validate_item(request: PlanItemRequest, order, catalog: Catalog) -> MedicationPlanItem:
+    before = _order_snapshot(order)
     disposition = request.disposition
     resolved = {
         MedicationDisposition.CONTINUE,

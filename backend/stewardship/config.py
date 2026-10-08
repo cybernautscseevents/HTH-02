@@ -72,7 +72,7 @@ HIGH_DOSE_FACTOR = float(os.getenv("HC03_HIGH_DOSE_FACTOR", "1.5"))
 # Dose rules are written for adults; younger patients get CANNOT_ASSESS.
 ADULT_AGE_YEARS = int(os.getenv("HC03_ADULT_AGE_YEARS", "18"))
 
-# Age range (inclusive) in which an unrecorded pregnancy status blocks a pregnancy-caution drug (R7).
+# Age range in which an unrecorded pregnancy status blocks a pregnancy-caution drug (R7).
 CHILDBEARING_AGE_MIN = int(os.getenv("HC03_CHILDBEARING_AGE_MIN", "12"))
 CHILDBEARING_AGE_MAX = int(os.getenv("HC03_CHILDBEARING_AGE_MAX", "50"))
 
@@ -83,15 +83,22 @@ AUDIT_LOG_PATH = RUNTIME_DIR / "audit.jsonl"
 CHROMA_DIR = Path(os.getenv("HC03_CHROMA_DIR", str(RUNTIME_DIR / "chroma")))
 
 # Optional language-model summary of an evaluation (summary.py). Explanation only; it never
-# changes a result. Off unless configured: HC03_LLM_PROVIDER=groq|gemini with HC03_LLM_API_KEY
-# (base URL and model have defaults), or HC03_LLM_BASE_URL and HC03_LLM_MODEL for any other
-# OpenAI-compatible API (e.g. http://localhost:11434/v1 for Ollama). Set the key in the
-# environment only, never in a file in the repository.
+# changes a result. Off unless configured: HC03_LLM_PROVIDER=groq|gemini with one key in
+# HC03_LLM_API_KEY or a comma-separated rotation in HC03_LLM_API_KEYS (base URL and model have
+# defaults), or HC03_LLM_BASE_URL and HC03_LLM_MODEL for any other OpenAI-compatible API.
 LLM_PROVIDER = os.getenv("HC03_LLM_PROVIDER") or None
 LLM_BASE_URL = os.getenv("HC03_LLM_BASE_URL") or None
 LLM_MODEL = os.getenv("HC03_LLM_MODEL") or None
 LLM_API_KEY = os.getenv("HC03_LLM_API_KEY") or None
+LLM_API_KEYS = tuple(
+    dict.fromkeys(
+        key.strip()
+        for key in (LLM_API_KEY, *(os.getenv("HC03_LLM_API_KEYS") or "").split(","))
+        if key and key.strip()
+    )
+)
 LLM_TIMEOUT_S = float(os.getenv("HC03_LLM_TIMEOUT_S", "20"))
+
 
 # Drug-drug interaction source: the local DrugBank XML export (licensed, never committed)
 # and the pair index built from it once into the gitignored runtime directory.
@@ -113,4 +120,3 @@ DDI_INDEX_PATH = Path(
         os.getenv("DDI_INDEX_PATH", str(RUNTIME_DIR / "drugbank_ddi_index.sqlite")),
     )
 )
-

@@ -28,6 +28,7 @@ import csv
 import json
 import logging
 import re
+import threading
 import time
 from collections.abc import Callable, Iterable, Sequence
 from typing import TYPE_CHECKING, Literal, Protocol
@@ -367,13 +368,16 @@ class OpenAICompatibleProvider:
         model: str,
         *,
         api_key: str | None = None,
+        api_keys: Sequence[str] = (),
         timeout_s: float = 20.0,
         max_tokens: int = 700,
         client: httpx.Client | None = None,
     ) -> None:
         self.model = model
         self._url = base_url.rstrip("/") + "/chat/completions"
-        self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        self._api_keys = tuple(dict.fromkeys(key for key in (api_key, *api_keys) if key))
+        self._key_index = 0
+        self._key_lock = threading.Lock()
         self._max_tokens = max_tokens
         self._client = client or httpx.Client(timeout=timeout_s)
 
@@ -381,24 +385,37 @@ class OpenAICompatibleProvider:
         return f"OpenAICompatibleProvider(model={self.model!r})"
 
     def __call__(self, system: str, user: str) -> str:
-        try:
-            response = self._client.post(
-                self._url,
-                headers=self._headers,
-                json={
-                    "model": self.model,
-                    "temperature": 0,
-                    "max_tokens": self._max_tokens,
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                },
-            )
-        except httpx.TimeoutException:
-            raise ProviderError("provider timeout") from None
-        except httpx.HTTPError as exc:
-            raise ProviderError(f"provider unreachable ({type(exc).__name__})") from None
+        attempts = max(1, len(self._api_keys))
+        response = None
+        for attempt in range(attempts):
+            with self._key_lock:
+                key_index = self._key_index
+                key = self._api_keys[key_index] if self._api_keys else None
+            headers = {"Authorization": f"Bearer {key}"} if key else {}
+            try:
+                response = self._client.post(
+                    self._url,
+                    headers=headers,
+                    json={
+                        "model": self.model,
+                        "temperature": 0,
+                        "max_tokens": self._max_tokens,
+                        "messages": [
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user},
+                        ],
+                    },
+                )
+            except httpx.TimeoutException:
+                raise ProviderError("provider timeout") from None
+            except httpx.HTTPError as exc:
+                raise ProviderError(f"provider unreachable ({type(exc).__name__})") from None
+            if response.status_code != 429 or attempt == attempts - 1:
+                break
+            with self._key_lock:
+                if self._key_index == key_index:
+                    self._key_index = (self._key_index + 1) % len(self._api_keys)
+        assert response is not None
         if response.status_code != 200:
             raise ProviderError(f"provider HTTP {response.status_code}")
         try:
@@ -430,9 +447,9 @@ def summarizer_from_env() -> Summarizer:
     """LlmSummarizer when a provider is fully configured by HC03_LLM_*, else the template.
 
     HC03_LLM_PROVIDER=groq|gemini fills in the base URL and a default model; a hosted provider
-    without HC03_LLM_API_KEY stays off. Without a provider, HC03_LLM_BASE_URL and HC03_LLM_MODEL
-    select any OpenAI-compatible endpoint (a local one needs no key). Nothing configured means no
-    API call is ever made.
+    without HC03_LLM_API_KEY or HC03_LLM_API_KEYS stays off. Without a provider,
+    HC03_LLM_BASE_URL and HC03_LLM_MODEL select any OpenAI-compatible endpoint (a local one needs
+    no key). Nothing configured means no API call is ever made.
     """
     provider = (config.LLM_PROVIDER or "").lower() or None
     if provider and provider not in PROVIDERS:
@@ -443,12 +460,12 @@ def summarizer_from_env() -> Summarizer:
     model = config.LLM_MODEL or preset_model
     if not (base_url and model):
         return TemplateSummarizer()
-    if provider and not config.LLM_API_KEY:
+    if provider and not config.LLM_API_KEYS:
         logger.warning(
             "HC03_LLM_PROVIDER=%s has no API key; using the rule-based summary", provider
         )
         return TemplateSummarizer()
     complete = OpenAICompatibleProvider(
-        base_url, model, api_key=config.LLM_API_KEY, timeout_s=config.LLM_TIMEOUT_S
+        base_url, model, api_keys=config.LLM_API_KEYS, timeout_s=config.LLM_TIMEOUT_S
     )
     return LlmSummarizer(complete, model=model, known_drugs=antibiotic_names())
