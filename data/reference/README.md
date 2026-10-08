@@ -46,9 +46,10 @@ was found (CDSCO and NPPA lists are by generic; commercial compendia such as CIM
 open), so other brands are not listed and come back NO_MATCH or AMBIGUOUS for confirmation.
 A hospital formulary export is the expected way to extend this file.
 
-`../indian_drug_lexicon.csv` is **not** Indian data and is not used by the stewardship engine.
+`legacy/rxguard/data/indian_drug_lexicon.csv` (moved out of `data/` with the RxGuard pipeline) is
+**not** Indian data and is not used by the stewardship engine.
 It has no recorded provenance; its brands (Napa, Nexcital, Apeelo, ...) match the Bangladeshi
-RxHandBD dataset. It is kept only because the OCR module and benchmarks read it.
+RxHandBD dataset. It is kept only because the legacy OCR normalization module and benchmarks read it.
 
 ## `../intrinsic_resistance.csv` — built by `scripts/build_intrinsic_resistance.py`
 

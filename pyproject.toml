@@ -7,15 +7,13 @@ requires-python = ">=3.11"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-# Legacy RxGuard pipeline code is not owned by the HC-03 core and is linted separately.
+# The superseded RxGuard pipeline (legacy/, see legacy/README.md) and one-off data scripts are
+# not part of the application and are not linted with it. docs/ holds design notes whose code
+# snippets are illustrations, not code.
 extend-exclude = [
-    "backend/modules",
-    "backend/orchestrator.py",
-    "backend/report_generator.py",
-    "backend/script.py",
-    "benchmarks",
+    "docs",
+    "legacy",
     "scripts",
-    "run_rxguard.py",
 ]
 
 [tool.ruff.lint]
