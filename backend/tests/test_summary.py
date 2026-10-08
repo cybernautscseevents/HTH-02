@@ -469,3 +469,29 @@ def test_provider_request_holds_only_results_and_evidence(make_client):
         '"sex"',
     ):
         assert private not in body
+
+
+def test_deterministic_summary_names_a_drug_interaction_explicitly():
+    from types import SimpleNamespace
+
+    from backend.stewardship.schemas import Outcome
+
+    from backend.stewardship.summary import TemplateSummarizer
+
+    item = SimpleNamespace(
+        rule_id="DDI_INTERACTION:amoxicillin+paracetamol",
+        drug="amoxicillin + paracetamol",
+        outcome=Outcome.FLAG,
+        severity="MODERATE",
+        explanation="DrugBank reports an interaction between amoxicillin and paracetamol.",
+        action="Review the reported interaction with the pharmacist.",
+        evidence=(),
+    )
+    evaluation = SimpleNamespace(
+        status=SimpleNamespace(value="FLAGGED"),
+        items=[item],
+        culture=SimpleNamespace(state="OK", action=None, message=""),
+    )
+    text = TemplateSummarizer().explain(evaluation, []).text
+    assert "Drug–drug interaction (amoxicillin + paracetamol), FLAG MODERATE" in text
+    assert "DDI_INTERACTION" not in text

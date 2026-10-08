@@ -124,8 +124,15 @@ CHECK_NAMES = {
 }
 
 
+def _check_name(rule_id: str) -> str:
+    """DDI rule ids carry the pair ("DDI_INTERACTION:a+b"), so they are named by prefix."""
+    if rule_id.startswith("DDI_"):
+        return "drug–drug interaction"
+    return CHECK_NAMES.get(rule_id, rule_id)
+
+
 def _check(item) -> str:
-    name = CHECK_NAMES.get(item.rule_id, item.rule_id)
+    name = _check_name(item.rule_id)
     return f"{item.rule_id} {name}" + (f" ({item.drug})" if item.drug else "")
 
 
@@ -180,7 +187,10 @@ class TemplateSummarizer:
             f"{len(unassessed)} check(s) cannot be assessed."
         ]
         for item in flagged + unassessed:
-            subject = f"{item.rule_id} ({item.drug})" if item.drug else item.rule_id
+            if item.rule_id.startswith("DDI_"):
+                subject = f"Drug–drug interaction ({item.drug})"
+            else:
+                subject = f"{item.rule_id} ({item.drug})" if item.drug else item.rule_id
             line = f"- {subject}, {item.outcome.value} {item.severity}: {item.explanation}"
             if item.action:
                 line += f" Action: {item.action}"
@@ -209,7 +219,7 @@ def summary_input(evaluation: "EvaluationReport", evidence: Sequence[Passage]) -
         "findings": [
             {
                 "rule_id": i.rule_id,
-                "check": CHECK_NAMES.get(i.rule_id, i.rule_id),
+                "check": _check_name(i.rule_id),
                 "outcome": i.outcome.value,
                 "severity": i.severity,
                 "drug": i.drug,

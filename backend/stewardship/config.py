@@ -4,10 +4,29 @@ Every value can be overridden with an environment variable for deployment or tes
 """
 
 import os
+import sys
 from pathlib import Path
 
 _PACKAGE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = _PACKAGE_DIR.parents[1]
+
+
+def _load_dotenv(path: Path) -> None:
+    """Read KEY=VALUE lines from the repo-root .env (gitignored) into the environment.
+
+    Variables already set in the environment win. Skipped under pytest so a developer's local
+    keys never switch on a provider during tests."""
+    if "pytest" in sys.modules or not path.is_file():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+_load_dotenv(REPO_ROOT / ".env")
 
 DATA_DIR = Path(os.getenv("HC03_DATA_DIR", str(REPO_ROOT / "data")))
 RULEPACK_DIR = Path(os.getenv("HC03_RULEPACK_DIR", str(_PACKAGE_DIR / "rulepack")))
