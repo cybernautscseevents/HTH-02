@@ -50,3 +50,6 @@ runtime/
 node_modules/
 .next/
 *.tsbuildinfo
+# Hand-made labels transcribe those unlicensed images line by line; keep them local too
+data/ocr_test/*/ground_truth.csv
+data/ocr_test/*/adjudication.csv
