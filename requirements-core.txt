@@ -1,0 +1,5 @@
+pydantic>=2.6
+
+# development
+pytest>=8
+ruff>=0.6

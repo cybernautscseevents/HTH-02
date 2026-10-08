@@ -1,0 +1,11 @@
+# OCR benchmark dependencies (CPU-only)
+paddlepaddle
+paddleocr
+python-doctr[torch]
+torch
+torchvision
+jiwer
+pandas
+tqdm
+Pillow
+opencv-python

@@ -1,0 +1,209 @@
+{
+  "hospital_antibiotic_policy": {
+    "version": "1.0",
+    "last_updated": "2026-05-27",
+    "institution": "Sample Hospital",
+    "policy_sections": [
+      {
+        "diagnosis": "pneumonia",
+        "variants": ["community acquired pneumonia", "cap", "pneumonia"],
+        "antibiotic_recommendations": {
+          "first_line": [
+            {
+              "drug": "amoxicillin",
+              "dose_range": "500-1000 mg",
+              "frequency": "TID",
+              "duration_days": "7-10",
+              "route": "oral",
+              "spectrum": "narrow",
+              "evidence_level": "A",
+              "notes": "For uncomplicated community-acquired pneumonia"
+            },
+            {
+              "drug": "amoxicillin clavulanate",
+              "dose_range": "875 mg",
+              "frequency": "BID",
+              "duration_days": "7-10",
+              "route": "oral",
+              "spectrum": "moderate",
+              "evidence_level": "A",
+              "notes": "For pneumonia with suspected beta-lactamase producers"
+            }
+          ],
+          "alternatives": [
+            {
+              "drug": "azithromycin",
+              "dose_range": "500 mg",
+              "frequency": "QD",
+              "duration_days": "3-5",
+              "route": "oral",
+              "spectrum": "narrow",
+              "evidence_level": "B"
+            },
+            {
+              "drug": "cephalexin",
+              "dose_range": "500 mg",
+              "frequency": "QID",
+              "duration_days": "7-10",
+              "route": "oral",
+              "spectrum": "moderate",
+              "evidence_level": "B"
+            }
+          ],
+          "severe_hospitalized": [
+            {
+              "drug": "ceftriaxone",
+              "dose_range": "2 g",
+              "frequency": "BID",
+              "duration_days": "7-10",
+              "route": "IV",
+              "spectrum": "broad",
+              "evidence_level": "A",
+              "notes": "For hospitalized severe pneumonia or ICU"
+            }
+          ],
+          "avoid": [
+            {
+              "drug": "fluoroquinolones",
+              "reason": "Resistance concerns; reserve for specific indications"
+            }
+          ]
+        },
+        "stewardship_alerts": [
+          "Narrow-spectrum agents preferred for CAP",
+          "Avoid broad-spectrum if susceptible organism identified",
+          "Flu vaccination may prevent need for antibiotics in some cases"
+        ]
+      },
+      {
+        "diagnosis": "urinary tract infection",
+        "variants": ["uti", "cystitis", "urinary tract infection"],
+        "antibiotic_recommendations": {
+          "first_line": [
+            {
+              "drug": "trimethoprim sulfamethoxazole",
+              "dose_range": "160/800 mg",
+              "frequency": "BID",
+              "duration_days": "3",
+              "route": "oral",
+              "spectrum": "moderate",
+              "evidence_level": "A",
+              "notes": "3-day course for uncomplicated UTI in women"
+            },
+            {
+              "drug": "nitrofurantoin",
+              "dose_range": "100 mg",
+              "frequency": "BID",
+              "duration_days": "5-7",
+              "route": "oral",
+              "spectrum": "narrow",
+              "evidence_level": "A"
+            }
+          ],
+          "alternatives": [
+            {
+              "drug": "ciprofloxacin",
+              "dose_range": "250-500 mg",
+              "frequency": "BID",
+              "duration_days": "3",
+              "route": "oral",
+              "spectrum": "moderate",
+              "evidence_level": "B",
+              "notes": "For resistant organisms or drug allergies"
+            },
+            {
+              "drug": "cephalexin",
+              "dose_range": "250-500 mg",
+              "frequency": "QID",
+              "duration_days": "7",
+              "route": "oral",
+              "spectrum": "moderate",
+              "evidence_level": "B"
+            }
+          ],
+          "avoid": [
+            {
+              "drug": "amoxicillin",
+              "reason": "Limited efficacy due to resistance; use amoxicillin-clavulanate if beta-lactam needed"
+            }
+          ]
+        },
+        "stewardship_alerts": [
+          "3-day course is standard for uncomplicated UTI",
+          "Culture before antibiotics if possible",
+          "Avoid fluoroquinolones for uncomplicated UTI"
+        ]
+      },
+      {
+        "diagnosis": "skin infection",
+        "variants": ["cellulitis", "skin infection", "impetigo"],
+        "antibiotic_recommendations": {
+          "first_line": [
+            {
+              "drug": "amoxicillin",
+              "dose_range": "500 mg",
+              "frequency": "TID",
+              "duration_days": "10",
+              "route": "oral",
+              "spectrum": "narrow",
+              "evidence_level": "B"
+            },
+            {
+              "drug": "oxacillin",
+              "dose_range": "500 mg",
+              "frequency": "QID",
+              "duration_days": "10",
+              "route": "oral",
+              "spectrum": "narrow",
+              "evidence_level": "A",
+              "notes": "For MSSA coverage"
+            }
+          ],
+          "alternatives": [
+            {
+              "drug": "cephalexin",
+              "dose_range": "500 mg",
+              "frequency": "QID",
+              "duration_days": "10",
+              "route": "oral",
+              "spectrum": "moderate",
+              "evidence_level": "A"
+            }
+          ]
+        }
+      }
+    ],
+    "spectrum_classification": {
+      "narrow": [
+        "penicillin v",
+        "penicillin g",
+        "amoxicillin",
+        "azithromycin",
+        "erythromycin"
+      ],
+      "moderate": [
+        "amoxicillin clavulanate",
+        "cephalexin",
+        "ciprofloxacin",
+        "trimethoprim sulfamethoxazole",
+        "cefadroxil"
+      ],
+      "broad": [
+        "ceftriaxone",
+        "cefotaxime",
+        "piperacillin tazobactam",
+        "meropenem",
+        "cefepime"
+      ]
+    },
+    "general_principles": [
+      "Use narrow-spectrum agents when possible",
+      "Transition to oral when clinically appropriate",
+      "Avoid unnecessary broad-spectrum use",
+      "Culture before antibiotics (when possible)",
+      "De-escalate when susceptibilities known",
+      "Follow local resistance patterns",
+      "Educate patients about antibiotic completion"
+    ]
+  }
+}

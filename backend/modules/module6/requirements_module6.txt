@@ -1,0 +1,17 @@
+# Module 6 Requirements: Antibiotic Stewardship Checker
+# Install with: pip install -r requirements_module6.txt
+
+# LangChain and ChromaDB for RAG
+langchain>=0.1.0
+chromadb>=0.4.0
+pypdf>=3.17.0
+
+# Embeddings model
+sentence-transformers>=2.2.0
+
+# Already in base requirements, but explicitly here:
+# ollama (for local Mistral)
+# Python stdlib: json, re, os, pathlib, urllib
+
+# Optional: For better PDF handling
+pdfplumber>=0.9.0

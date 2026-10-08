@@ -1,0 +1,124 @@
+generic,atc_code,drug_class,subclass,aware_tier,whonet_codes
+amikacin,J01GB06,Aminoglycosides,,Access,AMK
+amoxicillin,J01CA04,Penicillins,Aminopenicillin,Access,AMX
+amoxicillin/clavulanic acid,J01CR02,Beta-lactam+Inhibitors,,Access,AMC
+ampicillin,J01CA01,Penicillins,Aminopenicillin,Access,AMP
+ampicillin/sulbactam,J01CR01,Beta-lactam+Inhibitors,,Access,SAM
+azithromycin,J01FA10,Macrolides,15-Membered ring,Watch,AZM
+azlocillin,J01CA09,Penicillins,Ureidopenicillin,Watch,AZL
+aztreonam,J01DF01,Monobactams,,Reserve,ATM
+bacitracin zinc,J01XX10,Polypeptides,,Not classified,BAC
+carbenicillin,J01CA03,Penicillins,Carboxypenicillin,Watch,CRB
+cefaclor,J01DC04,Cephems-Oral,Cephalosporin,Watch,CEC
+cefadroxil,J01DB05,Cephems-Oral,Cephalosporin,Access,CFR
+cefamandole,J01DC03,Cephems,Cephalosporin II,Watch,MAN
+cefazolin,J01DB04,Cephems,Cephalosporin I,Access,CZO
+cefdinir,J01DD15,Cephems-Oral,Cephalosporin,Watch,CDR
+cefditoren,J01DD16,Cephems-Oral,Cephalosporin,Not classified,DIT
+cefepime,J01DE01,Cephems,Cephalosporin IV,Watch,FEP
+cefetamet,J01DD10,Cephems-Oral,Cephalosporin,Not classified,CAT
+cefixime,J01DD08,Cephems-Oral,Cephalosporin,Watch,CFM
+cefmetazole,J01DC09,Cephems,Cephamycin,Watch,CMZ
+cefonicid,J01DC06,Cephems,Cephalosporin II,Watch,CID
+cefoperazone,J01DD12,Cephems,Cephalosporin II,Watch,CFP
+cefotaxime,J01DD01,Cephems,Cephalosporin III,Watch,CTX
+cefotaxime/clavulanic acid,J01DD51,Beta-lactam+Inhibitors,,Not classified,CTC
+cefotetan,J01DC05,Cephems,Cephamycin,Watch,CTT
+cefoxitin,J01DC01,Cephems,Cephamycin,Watch,FOX
+cefpodoxime,J01DD13,Cephems,Cephalosporin III,Not classified,CPD
+cefprozil,J01DC10,Cephems-Oral,Cephalosporin,Watch,CPR
+ceftaroline,J01DI02,Cephems,Cephalosporin,Not classified,CPT
+ceftazidime,J01DD02,Cephems,Cephalosporin III,Watch,CAZ
+ceftazidime/clavulanic acid,J01DD52,Beta-lactam+Inhibitors,,Not classified,CCV
+ceftibuten,J01DD14,Cephems-Oral,Cephalosporin,Watch,CTB
+ceftizoxime,J01DD07,Cephems,Cephalosporin III,Watch,CZX
+ceftobiprole,J01DI01,Cephems,Cephalosporin,Not classified,BPR
+ceftolozane/tazobactam,J01DI54,Beta-lactam+Inhibitors,,Reserve,CZT
+ceftriaxone,J01DD04,Cephems,Cephalosporin III,Watch,CRO
+cefuroxime,J01DC02,Cephems,Cephalosporin II,Watch,CXM
+cefuroxime axetil,J01DC02,Cephems-Oral,Cephalosporin,Not classified,CXA
+cephalexin,J01DB01,Cephems-Oral,Cephalosporin,Access,LEX
+cephalothin,J01DB03,Cephems,Cephalosporin I,Access,CEP
+chloramphenicol,J01BA01,Phenicols,,Access,CHL
+cinoxacin,J01MB06,Quinolones,Quinolone,Watch,CIN
+ciprofloxacin,J01MA02,Quinolones,Fluoroquinolone,Watch,CIP
+clarithromycin,J01FA09,Macrolides,14-Membered ring,Watch,CLR
+clindamycin,J01FF01,Lincosamides,,Access,CLI
+colistin,J01XB01,Lipopeptides,,Reserve,COL
+colistin/polysorbate,J01XB01,Lipopeptides,,Not classified,COP
+dalbavancin,J01XA04,Glycopeptides,,Reserve,DAL
+daptomycin,J01XX09,Lipopeptides,,Reserve,DAP
+dirithromycin,J01FA13,Macrolides,,Watch,DIR
+doripenem,J01DH04,Penems,Carbapenems,Watch,DOR
+doxycycline,J01AA02,Tetracyclines,,Access,DOX
+enoxacin,J01MA04,Quinolones,Fluoroquinolone,Watch,ENX
+ertapenem,J01DH03,Penems,Carbapenems,Watch,ETP
+erythromycin,J01FA01,Macrolides,,Watch,ERY
+faropenem,J01DI03,Penems,Penem,Reserve,FAR
+fleroxacin,J01MA08,Quinolones,Fluoroquinolone,Watch,FLE
+fosfomycin,J01XX01,Fosfomycins,Fosfomycin,Watch,FOS
+fusidic acid,J01XC01,Steroidals,Fusidane,Watch,FUS
+garenoxacin,J01MA19,Quinolones,Quinolone,Watch,GRN
+gatifloxacin,J01MA16,Quinolones,Fluoroquinolone,Watch,GAT
+gemifloxacin,J01MA15,Quinolones,Fluoroquinolone,Watch,GEM
+gentamicin,J01GB03,Aminoglycosides,,Access,GEN
+gentamicin-high,J01GB03,Aminoglycosides,,Not classified,GEH
+grepafloxacin,J01MA11,Quinolones,Fluoroquinolone,Watch,GRX
+iclaprim,J01EA03,Folate pathway inhibitors,,Reserve,ICL
+imipenem,J01DH51,Penems,Carbapenems,Not classified,IPM
+imipenem/relebactam,J01DH56,Beta-lactam+Inhibitors,,Not classified,IMR
+kanamycin,J01GB04,Aminoglycosides,,Watch,KAN
+kanamycin-high,J01GB04,Aminoglycosides,,Watch,KAH
+levofloxacin,J01MA12,Quinolones,Fluoroquinolone,Watch,LVX
+linezolid,J01XX08,Oxazolidinones,,Reserve,LNZ
+lomefloxacin,J01MA07,Quinolones,Fluoroquinolone,Watch,LOM
+loracarbef,J01DC08,Cephems-Oral,Carbacephem,Watch,LOR
+mecillinam (amdinocillin),J01CA11,Penicillins,Amidinopenicillin,Access,MEC
+meropenem,J01DH02,Penems,Carbapenems,Watch,MEM
+meropenem/vaborbactam,J01DH52,Beta-lactam+Inhibitors,,Reserve,MEV
+methicillin,J01CF03,Penicillins,Penicillin (Stable),Not classified,MET
+metronidazole,J01XD01,Nitroimidazoles,,Access,MTR
+mezlocillin,J01CA10,Penicillins,Ureidopenicillin,Watch,MEZ
+minocycline,J01AA08,Tetracyclines,,Watch,MNO
+moxalactam (latamoxef),J01DD06,Cephems,Oxacephem,Not classified,MOX
+moxifloxacin,J01MA14,Quinolones,Fluoroquinolone,Watch,MFX
+nafcillin,J01CF06,Penicillins,Penicillin (Stable),Access,NAF
+nalidixic acid,J01MB02,Quinolones,Quinolone,Not classified,NAL
+neomycin,J01GB05,Aminoglycosides,,Watch,NEO
+netilmicin,J01GB07,Aminoglycosides,,Watch,NET
+nitrofurantoin,J01XE01,Nitrofurans,,Access,NIT
+norfloxacin,J01MA06,Quinolones,Fluoroquinolone,Watch,NOR
+ofloxacin,J01MA01,Quinolones,Fluoroquinolone,Watch,OFX
+omadacycline,J01AA15,Tetracyclines,,Reserve,OMC
+oritavancin,J01XA05,Glycopeptides,,Reserve,ORI
+oxacillin,J01CF04,Penicillins,Penicillin (Stable),Access,OXA
+penicillin g,J01CE01,Penicillins,Penicillin,Access,PEN
+penicillin v,J01CE02,Penicillins,Penicillin,Not classified,PNV
+piperacillin,J01CA12,Penicillins,Ureidopenicillin,Watch,PIP
+piperacillin/tazobactam,J01CR05,Beta-lactam+Inhibitors,,Watch,TZP
+plazomicin,J01GB14,Aminoglycosides,,Reserve,PLZ
+polymyxin b,J01XB02,Lipopeptides,Polymyxin,Reserve,POL
+polymyxin b/polysorbate 80,J01XB02,Lipopeptides,Polymyxin,Not classified,POP
+quinupristin/dalfopristin,J01FG02,Streptogramins,,Reserve,QDA
+ridinilazole,J01DB02,,,Not classified,RDZ
+solithromycin,J01FA16,Macrolides,,Watch,SOL
+sparfloxacin,J01MA09,Quinolones,Fluoroquinolone,Watch,SPX
+spectinomycin,J01XX04,Aminocyclitols,,Access,SPT
+streptomycin,J01GA01,Aminoglycosides,,Watch,STR
+streptomycin-high,J01GA01,Aminoglycosides,,Watch,STH
+sulfamethoxazole,J01EC01,Folate pathway inhibitors,,Access,SMX
+sulfisoxazole,J01EB05,Folate pathway inhibitors,,Not classified,SOX
+tebipenem,J01DH06,Penems,Carbapenems,Watch,TBP
+teicoplanin,J01XA02,Glycopeptides,Lipoglycopeptide,Watch,TEC
+telavancin,J01XA03,Glycopeptides,Lipoglycopeptide,Reserve,TLV
+telithromycin,J01FA15,Macrolides,Ketolide,Watch,TLT
+temafloxacin,J01MA05,Quinolones,Fluoroquinolone,Watch,TMX
+tetracycline,J01AA07,Tetracyclines,,Access,TCY
+ticarcillin,J01CA13,Penicillins,Carboxypenicillin,Watch,TIC
+ticarcillin/clavulanic acid,J01CR03,Beta-lactam+Inhibitors,,Not classified,TCC
+tigecycline,J01AA12,Tetracyclines,Glycylglycine,Reserve,TGC
+tobramycin,J01GB01,Aminoglycosides,,Watch,TOB
+trimethoprim,J01EA01,Folate pathway inhibitors,,Access,TMP
+trimethoprim/sulfamethoxazole,J01EE01,Folate pathway inhibitors,,Access,SXT
+trovafloxacin,J01MA13,Quinolones,Fluoroquinolone,Watch,TVA
+vancomycin,J01XA01,Glycopeptides,Glycopeptide,Watch,VAN

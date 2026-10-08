@@ -1,0 +1,350 @@
+{
+  "database_version": "1.0",
+  "last_updated": "2026-05-27",
+  "source": "FDA Pregnancy and Lactation Labeling Rule (PLLR) - https://www.fda.gov/drugs/labeling-information/pregnancy-and-lactation-labeling-rule",
+  "description": "FDA PLLR database for medication safety in pregnancy and lactation",
+  "notes": [
+    "FDA Legacy Categories (A, B, C, D, X) are included for reference but PLLR is the current standard",
+    "PLLR Categories: Category 1 (safest), Category 2, Category 3, Not Recommended",
+    "Trimester-specific safety may vary based on mechanism of action",
+    "Always consult current clinical guidelines and specialist consultation"
+  ],
+  "drugs": {
+    "amoxicillin": {
+      "generic_name": "amoxicillin",
+      "fda_category": "B",
+      "pllr_pregnancy": "Category 1",
+      "pregnancy_risk": "Adequate studies show no increased fetal risk",
+      "teratogenicity_risk": "minimal",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "No increased risk of birth defects"
+        },
+        "second": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe throughout pregnancy"
+        },
+        "third": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe in labor and delivery"
+        }
+      },
+      "recommended_alternatives": [],
+      "comments": "First-line antibiotic for pregnant women with infections"
+    },
+    "acetaminophen": {
+      "generic_name": "acetaminophen",
+      "fda_category": "A",
+      "pllr_pregnancy": "Category 1",
+      "pregnancy_risk": "Safe; most studied analgesic in pregnancy",
+      "teratogenicity_risk": "minimal",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "First-line analgesic/antipyretic"
+        },
+        "second": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe throughout pregnancy"
+        },
+        "third": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe in labor and delivery"
+        }
+      },
+      "recommended_alternatives": [],
+      "comments": "Preferred analgesic/antipyretic for all pregnancies"
+    },
+    "ibuprofen": {
+      "generic_name": "ibuprofen",
+      "fda_category": "C",
+      "pllr_pregnancy": "Category 2",
+      "pregnancy_risk": "Safe in first/second trimester; avoid in third",
+      "teratogenicity_risk": "low",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Acceptable; limited data but likely safe"
+        },
+        "second": {
+          "safe": true,
+          "risk": "low",
+          "notes": "Safe but preferred alternatives available"
+        },
+        "third": {
+          "safe": false,
+          "risk": "high",
+          "notes": "AVOID - increases risk of closure of PDA, oligohydramnios, renal dysfunction"
+        }
+      },
+      "recommended_alternatives": ["acetaminophen"],
+      "comments": "Use acetaminophen preferentially; avoid NSAIDs in third trimester"
+    },
+    "warfarin": {
+      "generic_name": "warfarin",
+      "fda_category": "X",
+      "pllr_pregnancy": "Not Recommended",
+      "pregnancy_risk": "Teratogenic; causes fetal warfarin syndrome",
+      "teratogenicity_risk": "very_high",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": false,
+          "risk": "very_high",
+          "notes": "Causes nasal hypoplasia, bone abnormalities - fetal warfarin syndrome"
+        },
+        "second": {
+          "safe": false,
+          "risk": "high",
+          "notes": "CNS and eye malformations possible"
+        },
+        "third": {
+          "safe": false,
+          "risk": "high",
+          "notes": "Fetal hemorrhage risk, particularly near term"
+        }
+      },
+      "recommended_alternatives": ["heparin", "low molecular weight heparin"],
+      "comments": "Use heparin or LMWH instead during pregnancy for anticoagulation"
+    },
+    "tetracycline": {
+      "generic_name": "tetracycline",
+      "fda_category": "D",
+      "pllr_pregnancy": "Not Recommended",
+      "pregnancy_risk": "Teratogenic; causes dental staining and bone hypoplasia",
+      "teratogenicity_risk": "high",
+      "lactation": "Probably Unsafe",
+      "lactation_risk": "moderate",
+      "trimester_specific": {
+        "first": {
+          "safe": false,
+          "risk": "high",
+          "notes": "Avoid - possible skeletal effects"
+        },
+        "second": {
+          "safe": false,
+          "risk": "high",
+          "notes": "Causes permanent dental staining and enamel hypoplasia"
+        },
+        "third": {
+          "safe": false,
+          "risk": "high",
+          "notes": "Avoid - dental staining in fetus"
+        }
+      },
+      "recommended_alternatives": ["amoxicillin", "azithromycin", "cephalexin"],
+      "comments": "Contraindicated throughout pregnancy"
+    },
+    "methotrexate": {
+      "generic_name": "methotrexate",
+      "fda_category": "X",
+      "pllr_pregnancy": "Not Recommended",
+      "pregnancy_risk": "Teratogenic; causes multiple congenital abnormalities",
+      "teratogenicity_risk": "very_high",
+      "lactation": "Contraindicated",
+      "lactation_risk": "very_high",
+      "trimester_specific": {
+        "first": {
+          "safe": false,
+          "risk": "very_high",
+          "notes": "Contraindicated - causes neural tube defects, skeletal abnormalities"
+        },
+        "second": {
+          "safe": false,
+          "risk": "very_high",
+          "notes": "Contraindicated - adverse fetal effects"
+        },
+        "third": {
+          "safe": false,
+          "risk": "very_high",
+          "notes": "Contraindicated - adverse effects"
+        }
+      },
+      "recommended_alternatives": [],
+      "comments": "Absolute contraindication in pregnancy - highly teratogenic, abortifacient"
+    },
+    "lisinopril": {
+      "generic_name": "lisinopril",
+      "fda_category": "D",
+      "pllr_pregnancy": "Not Recommended",
+      "pregnancy_risk": "Renal dysgenesis, oligohydramnios, especially 2nd/3rd trimester",
+      "teratogenicity_risk": "high",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "low",
+          "notes": "Possibly safe; most risk in 2nd/3rd trimester"
+        },
+        "second": {
+          "safe": false,
+          "risk": "high",
+          "notes": "AVOID - risk of renal dysgenesis, fetal hypotension"
+        },
+        "third": {
+          "safe": false,
+          "risk": "high",
+          "notes": "AVOID - adverse renal effects, oligohydramnios, fetal death"
+        }
+      },
+      "recommended_alternatives": ["labetalol", "nifedipine", "hydralazine"],
+      "comments": "Switch to safer alternatives in pregnancy after first trimester"
+    },
+    "fluoxetine": {
+      "generic_name": "fluoxetine",
+      "fda_category": "C",
+      "pllr_pregnancy": "Category 2",
+      "pregnancy_risk": "Limited data; generally safe but continued surveillance recommended",
+      "teratogenicity_risk": "low",
+      "lactation": "Probably Safe",
+      "lactation_risk": "low",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "low",
+          "notes": "No clear increased risk of major malformations"
+        },
+        "second": {
+          "safe": true,
+          "risk": "low",
+          "notes": "Safe; may continue treatment"
+        },
+        "third": {
+          "safe": true,
+          "risk": "low",
+          "notes": "Some neonatal withdrawal effects possible; monitor closely"
+        }
+      },
+      "recommended_alternatives": [],
+      "comments": "Benefits of treating maternal depression usually outweigh risks; consult psychiatry"
+    },
+    "azithromycin": {
+      "generic_name": "azithromycin",
+      "fda_category": "B",
+      "pllr_pregnancy": "Category 1",
+      "pregnancy_risk": "Limited data; likely safe",
+      "teratogenicity_risk": "low",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "low",
+          "notes": "No increased risk of malformations"
+        },
+        "second": {
+          "safe": true,
+          "risk": "low",
+          "notes": "Safe for maternal infections"
+        },
+        "third": {
+          "safe": true,
+          "risk": "low",
+          "notes": "Safe before delivery"
+        }
+      },
+      "recommended_alternatives": [],
+      "comments": "Good alternative to amoxicillin if allergy present"
+    },
+    "paracetamol": {
+      "generic_name": "paracetamol",
+      "fda_category": "A",
+      "pllr_pregnancy": "Category 1",
+      "pregnancy_risk": "Safe; extensively used in pregnancy with no significant adverse effects",
+      "teratogenicity_risk": "minimal",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "No increased risk of birth defects"
+        },
+        "second": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe; first-line analgesic"
+        },
+        "third": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe in labor; does not affect bleeding"
+        }
+      },
+      "recommended_alternatives": [],
+      "comments": "Preferred pain reliever in pregnancy; same as acetaminophen"
+    },
+    "cephalexin": {
+      "generic_name": "cephalexin",
+      "fda_category": "B",
+      "pllr_pregnancy": "Category 1",
+      "pregnancy_risk": "Safe; first-generation cephalosporin with good safety data",
+      "teratogenicity_risk": "minimal",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "No increased risk of malformations"
+        },
+        "second": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe for maternal infections"
+        },
+        "third": {
+          "safe": true,
+          "risk": "minimal",
+          "notes": "Safe in labor"
+        }
+      },
+      "recommended_alternatives": [],
+      "comments": "Safe alternative to penicillins in pregnant patients"
+    },
+    "doxycycline": {
+      "generic_name": "doxycycline",
+      "fda_category": "D",
+      "pllr_pregnancy": "Not Recommended",
+      "pregnancy_risk": "Dental staining, enamel hypoplasia, permanent tooth discoloration",
+      "teratogenicity_risk": "moderate",
+      "lactation": "Safe",
+      "lactation_risk": "minimal",
+      "trimester_specific": {
+        "first": {
+          "safe": false,
+          "risk": "moderate",
+          "notes": "Avoid if possible; risk of dental effects"
+        },
+        "second": {
+          "safe": false,
+          "risk": "high",
+          "notes": "Causes permanent dental staining and enamel hypoplasia"
+        },
+        "third": {
+          "safe": false,
+          "risk": "high",
+          "notes": "Permanent yellow discoloration of teeth"
+        }
+      },
+      "recommended_alternatives": ["amoxicillin", "cephalexin", "azithromycin"],
+      "comments": "Contraindicated in pregnancy; use alternative antibiotics"
+    }
+  }
+}

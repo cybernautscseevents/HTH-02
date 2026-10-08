@@ -1,0 +1,26 @@
+[project]
+name = "hacktopia-hc03"
+version = "0.1.0"
+description = "Antibiotic stewardship copilot (Hackatopia 2026, HC-03)"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Legacy RxGuard pipeline code is not owned by the HC-03 core and is linted separately.
+extend-exclude = [
+    "backend/modules",
+    "backend/orchestrator.py",
+    "backend/report_generator.py",
+    "backend/script.py",
+    "benchmarks",
+    "scripts",
+    "run_rxguard.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["."]

@@ -1,0 +1,13 @@
+# Module 9 Requirements: Pregnancy Safety Checker
+# Install with: pip install -r requirements_module9.txt
+
+# No external dependencies required!
+# Module 9 uses only Python standard library:
+# - json
+# - os
+# - pathlib
+# - typing
+
+# Optional: For additional clinical reference integration
+# requests>=2.28.0  # For fetching FDA data
+# python-dateutil>=2.8.0  # For date parsing

@@ -1,0 +1,74 @@
+{
+  "drugs": {
+    "metformin": {
+      "generic_name": "metformin",
+      "aliases": ["glucophage"],
+      "dose_adjustments": [
+        {
+          "condition": "CKD",
+          "criteria": "egfr<30",
+          "recommended_dose": "Avoid if eGFR < 30 mL/min/1.73m2; consider dosing modification or hold",
+          "severity": "high",
+          "notes": "Metformin accumulation risk and lactic acidosis risk in severe renal impairment"
+        }
+      ]
+    },
+    "amoxicillin": {
+      "generic_name": "amoxicillin",
+      "aliases": [],
+      "dose_adjustments": []
+    },
+    "acetaminophen": {
+      "generic_name": "acetaminophen",
+      "aliases": ["paracetamol"],
+      "dose_adjustments": [
+        {
+          "condition": "hepatic impairment",
+          "criteria": "moderate-to-severe",
+          "recommended_dose": "Use lower total daily dose in severe liver disease; monitor LFTs",
+          "severity": "moderate",
+          "notes": "Acetaminophen should be used cautiously in severe hepatic impairment"
+        }
+      ]
+    },
+    "ciprofloxacin": {
+      "generic_name": "ciprofloxacin",
+      "aliases": [],
+      "dose_adjustments": [
+        {
+          "condition": "CKD",
+          "criteria": "crcl<50",
+          "recommended_dose": "Reduce dose or extend interval when CrCl < 50 mL/min",
+          "severity": "moderate",
+          "notes": "Fluoroquinolone dosing adjustment in renal impairment"
+        }
+      ]
+    },
+    "lisinopril": {
+      "generic_name": "lisinopril",
+      "aliases": [],
+      "dose_adjustments": [
+        {
+          "condition": "renal impairment",
+          "criteria": "any",
+          "recommended_dose": "Initiate at lower doses in renal impairment and monitor potassium and creatinine",
+          "severity": "moderate",
+          "notes": "ACE inhibitors require caution in renal dysfunction"
+        }
+      ]
+    },
+    "warfarin": {
+      "generic_name": "warfarin",
+      "aliases": [],
+      "dose_adjustments": [
+        {
+          "condition": "liver disease",
+          "criteria": "any",
+          "recommended_dose": "May require dose reduction and close INR monitoring",
+          "severity": "high",
+          "notes": "Hepatic impairment affects warfarin metabolism"
+        }
+      ]
+    }
+  }
+}

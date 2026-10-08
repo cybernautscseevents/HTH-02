@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+
+# VS Code local settings
+.vscode/
+
+# Local model/data artifacts
+models/
+archive(2)/
+RxHandBD A Handwritten Prescription Word Image Dat/
+phase1_smoke_run/
+
+# Generated outputs
+results/
+corrected.jpg
+corrected_images_paddle/
+
+# Misc
+*.log
+.DS_Store
+
+# Generated reports & logs
+*.pdf
+*.json
+img/
+test_results/
+
+
+# Test scenario fixtures are source files, not generated output
+!backend/tests/scenarios/*.json
