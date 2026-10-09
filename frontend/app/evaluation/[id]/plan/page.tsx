@@ -157,15 +157,34 @@ function friendlyRule(ruleId: string): string {
 }
 
 function initialDraft(order: DrugOrder): Draft {
+  const missingInputs = [
+    !order.dose_mg && 'dose',
+    !order.freq_per_day && 'frequency',
+    !order.route && 'route',
+    !order.duration_days && 'duration',
+  ].filter((value): value is string => Boolean(value))
+
+  if (missingInputs.length > 0) {
+    return {
+      source_order_id: order.id,
+      disposition: 'REQUEST_INFO',
+      final_regimen: null,
+      reason_code: 'MISSING_INFORMATION',
+      rationale: 'Complete regimen details are required before sign-off.',
+      requested_inputs: missingInputs,
+      requested_from: 'Prescriber',
+    }
+  }
+
   return {
     source_order_id: order.id,
     disposition: 'CONTINUE',
     final_regimen: {
       generic: order.generic ?? '',
-      dose_mg: order.dose_mg ?? 0,
-      freq_per_day: order.freq_per_day ?? 0,
-      route: order.route ?? 'PO',
-      total_duration_days: order.duration_days ?? 0,
+      dose_mg: order.dose_mg!,
+      freq_per_day: order.freq_per_day!,
+      route: order.route!,
+      total_duration_days: order.duration_days!,
       course_started_at: order.started_at,
     },
     reason_code: null,
