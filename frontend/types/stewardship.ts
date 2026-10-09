@@ -524,6 +524,11 @@ export interface RecentEvaluation {
 
 // ─── 48-hour Review (frontend-specific) ────────────────────────────────────────
 
+export interface TimeoutConfig {
+  review_due_after_minutes: number
+  demo_mode: boolean
+}
+
 export interface TimeoutItem {
   episode_id: string
   patient_id: string
@@ -531,6 +536,8 @@ export interface TimeoutItem {
   antibiotic_name: string
   started_at: string
   hours_elapsed: number
+  minutes_elapsed?: number
+  review_due_after_minutes?: number
   status: 'REVIEW_DUE' | 'REVIEWED'
   evaluation_id?: string | null
   plan_id?: string | null

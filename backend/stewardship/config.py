@@ -63,8 +63,14 @@ FUZZY_CUTOFF = float(os.getenv("HC03_FUZZY_CUTOFF", "0.8"))
 # schema on branch complete-verification-incomplete).
 SURVEILLANCE_MIN_ISOLATES = int(os.getenv("HC03_SURVEILLANCE_MIN_ISOLATES", "30"))
 
-# Hours after the first antibiotic dose when the antibiotic time-out becomes due.
-TIMEOUT_HOURS = float(os.getenv("HC03_TIMEOUT_HOURS", "48"))
+# Time after the first antibiotic dose when reassessment becomes due. Minutes take precedence so
+# demos can use a short interval without changing the clinical 48-hour default.
+_timeout_minutes = os.getenv("HC03_TIMEOUT_MINUTES")
+TIMEOUT_HOURS = (
+    float(_timeout_minutes) / 60
+    if _timeout_minutes
+    else float(os.getenv("HC03_TIMEOUT_HOURS", "48"))
+)
 
 # A daily dose above (guideline maximum x this factor) is escalated from MODERATE to HIGH.
 HIGH_DOSE_FACTOR = float(os.getenv("HC03_HIGH_DOSE_FACTOR", "1.5"))

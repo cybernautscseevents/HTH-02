@@ -337,6 +337,14 @@ def create_app(
     def audit(entity_id: str | None = None):
         return svc.audit.list(entity_id)
 
+    @app.get("/api/timeouts/config")
+    def timeout_config():
+        due_after_minutes = config.TIMEOUT_HOURS * 60
+        return {
+            "review_due_after_minutes": due_after_minutes,
+            "demo_mode": due_after_minutes < 60,
+        }
+
     @app.get("/api/timeouts", response_model=tuple[TimeoutItem, ...])
     def timeouts(status: str = "all") -> tuple[TimeoutItem, ...]:
         items = svc.timeout_items()

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 
+from backend.stewardship import config
 from backend.stewardship.audit import JsonlAuditLog
 from backend.stewardship.review import ReviewError, apply_review
 from backend.stewardship.schemas import (
@@ -123,6 +124,14 @@ def test_timeout_is_due_after_threshold_until_reviewed():
     assert is_timeout_due(ep, T0 + timedelta(hours=48), [], catalog)
     legacy = review(finding_rule_id=None, order_id=None, reason_code=TIMEOUT_DONE)
     assert is_timeout_due(ep, T0 + timedelta(hours=72), [legacy], catalog)
+
+
+def test_timeout_can_use_one_minute_demo_interval(monkeypatch):
+    monkeypatch.setattr(config, "TIMEOUT_HOURS", 1 / 60)
+    ep, catalog = episode(), FakeCatalog()
+
+    assert not is_timeout_due(ep, T0 + timedelta(seconds=59), [], catalog)
+    assert is_timeout_due(ep, T0 + timedelta(minutes=1), [], catalog)
 
 
 def test_timeout_never_due_without_antibiotics():

@@ -83,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 })}
                 <Link href="/timeout" onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-md px-3 py-2 text-xs font-medium transition-all ${isActive('/timeout') ? 'border-l-[3px] border-[#1A1A1A] bg-[#EEEEE9] pl-[9px] text-[#1A1A1A]' : 'text-[#6B6A65] hover:bg-[#EEEEE9] hover:text-[#1A1A1A]'}`}>
                   <Clock className="h-4 w-4" />
-                  <span className="flex-1">48-hour reviews</span>
+                  <span className="flex-1">Antimicrobial re-reviews</span>
                   {timeoutCount > 0 && <span className="rounded-full border border-[#D8B15B] bg-[#FFF8E6] px-1.5 py-0.5 text-xs font-semibold text-[#8B5E00]">{timeoutCount}</span>}
                 </Link>
               </nav>

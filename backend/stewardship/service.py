@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from . import config
 from .advice import CultureSummary, action_for, culture_summary
 from .audit import AuditLog
 from .ddi import DDIFinding, DDIProvider, DDIResult, check_pairs
@@ -181,6 +182,8 @@ class TimeoutItem(BaseModel):
     antibiotic_name: str
     started_at: datetime
     hours_elapsed: float
+    minutes_elapsed: float
+    review_due_after_minutes: float
     status: str
     evaluation_id: str | None = None
     plan_id: str | None = None
@@ -571,6 +574,10 @@ class StewardshipService:
             start = first_antibiotic_start(episode, self.catalog)
             if start is None:
                 continue
+            elapsed_seconds = (now - start).total_seconds()
+            hours_elapsed = round(elapsed_seconds / 3600, 1)
+            minutes_elapsed = round(elapsed_seconds / 60, 1)
+            due_after_minutes = config.TIMEOUT_HOURS * 60
             drugs = [
                 order.generic
                 for order in episode.orders
@@ -593,7 +600,9 @@ class StewardshipService:
                         setting=episode.setting.value,
                         antibiotic_name=", ".join(drugs),
                         started_at=start,
-                        hours_elapsed=round((now - start).total_seconds() / 3600, 1),
+                        hours_elapsed=hours_elapsed,
+                        minutes_elapsed=minutes_elapsed,
+                        review_due_after_minutes=due_after_minutes,
                         status="REVIEWED",
                         evaluation_id=completed.evaluation_id,
                         plan_id=completed.id,
@@ -617,7 +626,9 @@ class StewardshipService:
                         setting=episode.setting.value,
                         antibiotic_name=", ".join(drugs),
                         started_at=start,
-                        hours_elapsed=round((now - start).total_seconds() / 3600, 1),
+                        hours_elapsed=hours_elapsed,
+                        minutes_elapsed=minutes_elapsed,
+                        review_due_after_minutes=due_after_minutes,
                         status="REVIEW_DUE",
                         evaluation_id=latest.id if latest else None,
                     )
