@@ -103,6 +103,13 @@ _RECOMMENDATIONS = {
     "send": ("send_culture",), "obtain": ("send_culture",), "collect": ("send_culture",),
     "repeat": (),
 }  # fmt: skip
+# A drug effect worded with a dose verb ("may increase the risk of ...", "can reduce its
+# clearance"), as an interaction is described; it is not advice, so the verb check skips it.
+_EFFECT = re.compile(
+    r"\b(?:increase|decrease|reduce)\s+(?:the\s+|its\s+|their\s+)?(?:serum\s+|blood\s+)?"
+    r"(?:risk|severity|levels?|concentrations?|exposure|excretion|clearance|absorption|"
+    r"metabolism|effects?|toxicity)\b"
+)
 
 
 # What each rule checks, from the rule docstrings in rules.py and culture.py, so the model
@@ -366,8 +373,9 @@ def grounding_problem(
         if m.group().lower() not in source:
             return f"source not in the evaluation: {m.group()}"
     suggested = {f["suggested_action"] for f in data["findings"]}
+    advice = _EFFECT.sub("", lower)
     for verb, permitted_by in _RECOMMENDATIONS.items():
-        if not re.search(rf"\b{re.escape(verb)}\b", lower):
+        if not re.search(rf"\b{re.escape(verb)}\b", advice):
             continue
         if re.search(rf"\b{re.escape(verb)}\b", source) or suggested & set(permitted_by):
             continue

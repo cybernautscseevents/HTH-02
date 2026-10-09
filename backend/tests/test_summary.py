@@ -22,6 +22,7 @@ from backend.stewardship.summary import (
     TemplateSummarizer,
     antibiotic_names,
     evidence_for,
+    grounding_problem,
     summarizer_from_env,
 )
 
@@ -350,6 +351,7 @@ def test_hosted_provider_preset(monkeypatch):
         (NITRO, "Stop nitrofurantoin now.", "recommendation not in the evaluation: 'stop'"),
         (NITRO, "Add a second antibiotic.", "recommendation not in the evaluation: 'add'"),
         (NITRO, "Switch the antibiotic.", "recommendation not in the evaluation: 'switch'"),
+        (NITRO, "Increase the dose.", "recommendation not in the evaluation: 'increase'"),
         (NITRO, "Nitrofurantoin is safe here.", "calls the prescription safe"),
         (NITRO, "This follows IDSA guidance.", "source not in the evaluation: IDSA"),
         (NITRO, "Per the Sanford Guide this is fine.", "source not in the evaluation: sanford"),
@@ -365,6 +367,14 @@ def test_new_advice_source_or_reassurance_is_not_shown(make_client, prescription
     report = run(client, prescription)
     assert report["summary"]["generated_by"] == "RULE_BASED"
     assert report["summary"]["fallback_reason"] == reason
+
+
+def test_an_effect_worded_with_a_dose_verb_is_not_advice():
+    # An interaction described as "may increase the risk" is not a recommendation to increase.
+    data = {"findings": [{"outcome": "FLAG", "suggested_action": None}]}
+    text = "Paracetamol may increase the risk of methemoglobinemia with nitrofurantoin."
+    assert grounding_problem(text, "nitrofurantoin paracetamol", data, ()) is None
+    assert "increase" in grounding_problem("Increase the dose.", "", data, ())
 
 
 def test_restating_the_rules_own_action_is_shown(make_client):
