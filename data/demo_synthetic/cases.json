@@ -1,6 +1,6 @@
 {
   "_label": "SYNTHETIC / DEMO DATA. Invented patients, fictional hospital and doctor. Not real patient data. Not used by the engine or the tests.",
-  "_format": "request: the exact body of POST /api/episodes. prescription_text: what to paste as the typed prescription. expected: the non-PASS findings the engine returned when build_cases.py was run; every other check passed.",
+  "_format": "request: the exact body of POST /api/episodes. prescription_text: what to paste as the typed prescription. expected: the non-PASS core-rule findings returned when build_cases.py was run; licensed DrugBank interaction findings are not included.",
   "cases": [
     {
       "case_id": "SYN-DEMO-01",
@@ -808,6 +808,96 @@
             "drug": "amoxicillin",
             "outcome": "CANNOT_ASSESS",
             "message": "Renal dosing rules cover adults only; kidney dosing was not checked."
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-19",
+      "demonstrates": "DrugBank interaction between nitrofurantoin and paracetamol",
+      "prescription_text": "Diagnosis: Uncomplicated cystitis\nRx\nTab Nitrofurantoin 100 mg PO BD x 5 days\nTab Paracetamol 500 mg PO TDS x 3 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-19",
+          "age_years": 34,
+          "sex": "M",
+          "weight_kg": 70,
+          "serum_creatinine_mg_dl": 0.9,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": []
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Uncomplicated cystitis",
+        "prescription": "Tab Nitrofurantoin 100 mg PO BD x 5 days\nTab Paracetamol 500 mg PO TDS x 3 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "OK",
+        "syndrome": "cystitis",
+        "findings": []
+      }
+    },
+    {
+      "case_id": "SYN-DEMO-20",
+      "demonstrates": "Ciprofloxacin in a patient with myasthenia gravis (R8 boxed warning)",
+      "prescription_text": "Diagnosis: Uncomplicated cystitis\nRx\nTab Ciprofloxacin 500 mg PO BD x 5 days",
+      "request": {
+        "patient": {
+          "id": "SYN-DEMO-20",
+          "age_years": 46,
+          "sex": "M",
+          "weight_kg": 72,
+          "serum_creatinine_mg_dl": 0.9,
+          "allergy_status": "NONE_KNOWN",
+          "allergies": [],
+          "comorbidities": [
+            "MYASTHENIA_GRAVIS"
+          ]
+        },
+        "setting": "OPD",
+        "diagnosis_text": "Uncomplicated cystitis",
+        "prescription": "Tab Ciprofloxacin 500 mg PO BD x 5 days",
+        "cultures": []
+      },
+      "expected": {
+        "status": "FLAGGED",
+        "syndrome": "cystitis",
+        "findings": [
+          {
+            "rule": "R8_DRUG_DISEASE",
+            "drug": "ciprofloxacin",
+            "outcome": "FLAG",
+            "message": "ciprofloxacin: label contraindication or boxed warning for myasthenia gravis."
+          },
+          {
+            "rule": "C1_CULTURE_BEFORE_WATCH",
+            "drug": null,
+            "outcome": "FLAG",
+            "message": "No culture sent before starting ciprofloxacin for uncomplicated cystitis."
+          },
+          {
+            "rule": "R1_INDICATION",
+            "drug": "ciprofloxacin",
+            "outcome": "FLAG",
+            "message": "ciprofloxacin is not listed for uncomplicated cystitis."
+          },
+          {
+            "rule": "R2_AWARE",
+            "drug": "ciprofloxacin",
+            "outcome": "FLAG",
+            "message": "ciprofloxacin is a Watch antibiotic; an Access first-line option exists."
+          },
+          {
+            "rule": "R3_DOSE",
+            "drug": "ciprofloxacin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline dose for ciprofloxacin by this route."
+          },
+          {
+            "rule": "R5_DURATION",
+            "drug": "ciprofloxacin",
+            "outcome": "CANNOT_ASSESS",
+            "message": "No guideline duration for ciprofloxacin by this route."
           }
         ]
       }

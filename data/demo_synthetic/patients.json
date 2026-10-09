@@ -266,6 +266,33 @@
         "allergies": []
       },
       "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-19",
+        "age_years": 34,
+        "sex": "M",
+        "weight_kg": 70,
+        "serum_creatinine_mg_dl": 0.9,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": []
+      },
+      "cultures": []
+    },
+    {
+      "patient": {
+        "id": "SYN-DEMO-20",
+        "age_years": 46,
+        "sex": "M",
+        "weight_kg": 72,
+        "serum_creatinine_mg_dl": 0.9,
+        "allergy_status": "NONE_KNOWN",
+        "allergies": [],
+        "comorbidities": [
+          "MYASTHENIA_GRAVIS"
+        ]
+      },
+      "cultures": []
     }
   ]
 }

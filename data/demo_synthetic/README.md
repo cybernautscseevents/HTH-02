@@ -1,6 +1,6 @@
 # SYNTHETIC / DEMO DATA
 
-18 invented prescriptions for demonstrating the app. Fictional hospital, doctor and patients; no real
+20 invented prescriptions for demonstrating the app. Fictional hospital, doctor and patients; no real
 patient data. The engine and the tests do not read this folder. The one exception is `patients.json`, which
 stands in for the hospital record system behind **Fetch record** (`GET /api/patients/{id}`).
 
@@ -25,8 +25,10 @@ python data/demo_synthetic/build_cases.py    # after editing a case
 python data/demo_synthetic/make_images.py    # check, then draw images/ (--ocr glm|qwen to also OCR them)
 ```
 
-The expected findings are what the engine returned when `build_cases.py` last ran, so they are a record of
-current behaviour, not an independent answer key. Read them before committing a change.
+The expected findings are what the core rule engine returned when `build_cases.py` last ran, so they are a
+record of current behaviour, not an independent answer key. Licensed DrugBank data is not bundled with the
+repository and its additional interaction findings are therefore excluded from these stored expectations.
+Read the expectations before committing a change.
 
 ## Demo flow
 
@@ -62,6 +64,8 @@ current behaviour, not an independent answer key. Read them before committing a 
 | `SYN-DEMO-16` | Uncertain diagnosis ('UTI?'): not mapped, the reviewer must choose | OPD | UTI? | 1 | FLAGGED | R1 CANNOT_ASSESS (cefixime); R3 CANNOT_ASSESS (cefixime); R5 CANNOT_ASSESS (cefixime); R4 CANNOT_ASSESS (cefixime) |
 | `SYN-DEMO-17` | Nitrofurantoin in an older patient with poor kidney function (R4) | OPD | Uncomplicated cystitis | 3 | FLAGGED | R4 FLAG (nitrofurantoin) |
 | `SYN-DEMO-18` | Child: adult dose rules do not apply, so the dose is not judged | OPD | Acute pharyngitis, Centor score 3 or more | 2 | FLAGGED | R3 CANNOT_ASSESS (amoxicillin); R4 CANNOT_ASSESS (amoxicillin) |
+| `SYN-DEMO-19` | DrugBank drug interaction between nitrofurantoin and paracetamol | OPD | Uncomplicated cystitis | 2 | FLAGGED with DrugBank | DDI interaction: increased methemoglobinemia risk |
+| `SYN-DEMO-20` | Drug–disease interaction: ciprofloxacin in myasthenia gravis | OPD | Uncomplicated cystitis | 1 | FLAGGED | R8 HIGH (ciprofloxacin; FDA boxed warning), plus indication and stewardship findings |
 
 Case 15 has no diagnosis, so the indication is reported as undocumented. In case 16 the doctor wrote
 "UTI?"; an uncertain diagnosis is never mapped, so the reviewer has to choose the syndrome. In case 18 the

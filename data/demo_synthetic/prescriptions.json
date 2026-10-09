@@ -1457,6 +1457,135 @@
           "duration_days": 3
         }
       ]
+    },
+    {
+      "case_id": "SYN-DEMO-19",
+      "image": "images/SYN-DEMO-19_drug_interaction.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 19",
+          "Patient ID: SYN-DEMO-19"
+        ],
+        [
+          "field",
+          "Age: 34 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 70 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Uncomplicated cystitis"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Nitrofurantoin 100 mg PO BD x 5 days"
+        ],
+        [
+          "med",
+          "2. Tab Paracetamol 500 mg PO TDS x 3 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.9 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "nitrofurantoin",
+          "dose_mg": 100.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        },
+        {
+          "generic": "paracetamol",
+          "dose_mg": 500.0,
+          "freq_per_day": 3.0,
+          "route": "PO",
+          "duration_days": 3
+        }
+      ]
+    },
+    {
+      "case_id": "SYN-DEMO-20",
+      "image": "images/SYN-DEMO-20_drug_disease_interaction.png",
+      "rows": [
+        [
+          "field",
+          "Patient: Synthetic Patient 20",
+          "Patient ID: SYN-DEMO-20"
+        ],
+        [
+          "field",
+          "Age: 46 years",
+          "Sex: Male"
+        ],
+        [
+          "field",
+          "Weight: 72 kg",
+          "Patient setting: OPD"
+        ],
+        [
+          "field",
+          "Allergies: No known drug allergy; Medical history: Myasthenia Gravis"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Diagnosis: Uncomplicated cystitis"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "rx",
+          "Rx"
+        ],
+        [
+          "med",
+          "1. Tab Ciprofloxacin 500 mg PO BD x 5 days"
+        ],
+        [
+          "gap"
+        ],
+        [
+          "field",
+          "Investigations: serum creatinine 0.9 mg/dL"
+        ]
+      ],
+      "expected_orders": [
+        {
+          "generic": "ciprofloxacin",
+          "dose_mg": 500.0,
+          "freq_per_day": 2.0,
+          "route": "PO",
+          "duration_days": 5
+        }
+      ]
     }
   ]
 }

@@ -6,8 +6,8 @@ Run from the repository root:
 
 Each case is a full prescription as a doctor writes it: patient details, the diagnosis, every
 medicine (antibiotics and the rest), investigations and culture results. The expected findings
-in cases.json are what the engine returns for the case when this script runs; read them before
-committing, they are not checked against anything else here.
+in cases.json are what the core engine returns for the case when this script runs; licensed
+DrugBank interaction findings are verified separately and are not stored here.
 """
 
 import json
@@ -54,10 +54,11 @@ class Case:
     allergy_text: str | None = None
     cultures: list[dict] = field(default_factory=list)
     culture_lines: list[str] = field(default_factory=list)
+    comorbidities: list[str] = field(default_factory=list)
 
     @property
     def patient(self) -> dict:
-        return {
+        patient = {
             "id": self.id,
             "age_years": self.age,
             "sex": self.sex,
@@ -66,6 +67,9 @@ class Case:
             "allergy_status": self.allergy_status,
             "allergies": self.allergies,
         }
+        if self.comorbidities:
+            patient["comorbidities"] = self.comorbidities
+        return patient
 
     @property
     def prescription_text(self) -> str:
@@ -84,6 +88,9 @@ class Case:
             if self.creatinine
             else "serum creatinine not available"
         )
+        if self.comorbidities:
+            conditions = ", ".join(value.replace("_", " ").title() for value in self.comorbidities)
+            allergy += f"; Medical history: {conditions}"
         rows = [
             ["field", f"Patient: Synthetic Patient {self.id[-2:]}", f"Patient ID: {self.id}"],
             ["field", f"Age: {self.age} years", f"Sex: {'Female' if self.sex == 'F' else 'Male'}"],
@@ -448,6 +455,36 @@ CASES = [
             ("Tab Paracetamol 250 mg PO TDS x 3 days", ("paracetamol", 250.0, 3.0, "PO", 3)),
         ],
     ),
+    Case(
+        "SYN-DEMO-19",
+        "drug_interaction",
+        "DrugBank interaction between nitrofurantoin and paracetamol",
+        34,
+        "M",
+        "OPD",
+        "Uncomplicated cystitis",
+        weight=70,
+        creatinine=0.9,
+        meds=[
+            ("Tab Nitrofurantoin 100 mg PO BD x 5 days", ("nitrofurantoin", 100.0, 2.0, "PO", 5)),
+            ("Tab Paracetamol 500 mg PO TDS x 3 days", ("paracetamol", 500.0, 3.0, "PO", 3)),
+        ],
+    ),
+    Case(
+        "SYN-DEMO-20",
+        "drug_disease_interaction",
+        "Ciprofloxacin in a patient with myasthenia gravis (R8 boxed warning)",
+        46,
+        "M",
+        "OPD",
+        "Uncomplicated cystitis",
+        weight=72,
+        creatinine=0.9,
+        comorbidities=["MYASTHENIA_GRAVIS"],
+        meds=[
+            ("Tab Ciprofloxacin 500 mg PO BD x 5 days", ("ciprofloxacin", 500.0, 2.0, "PO", 5)),
+        ],
+    ),
 ]
 
 
@@ -497,8 +534,8 @@ def main() -> None:
     cases = {
         "_label": LABEL + " Not used by the engine or the tests.",
         "_format": "request: the exact body of POST /api/episodes. prescription_text: what to "
-        "paste as the typed prescription. expected: the non-PASS findings the engine returned when "
-        "build_cases.py was run; every other check passed.",
+        "paste as the typed prescription. expected: the non-PASS core-rule findings returned when "
+        "build_cases.py was run; licensed DrugBank interaction findings are not included.",
         "cases": [
             {
                 "case_id": c.id,
