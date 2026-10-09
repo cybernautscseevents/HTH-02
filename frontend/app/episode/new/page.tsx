@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowRight, User, FlaskConical, Search } from 'lucide-react'
 import { createEpisode, evaluateEpisode, getPatientRecord, getSyndromes } from '@/lib/api'
@@ -18,6 +19,7 @@ import type {
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
+import { contextKey, getChain, invalidateResults, reachableLinks, setChain, useChain } from '@/lib/workflow'
 
 // Fallback used only if the API cannot be reached. The live list comes from GET /api/syndromes
 // and is exactly the guideline rule pack; do not add codes here that the rule pack lacks.
@@ -82,6 +84,18 @@ export default function EpisodeNewPage() {
   const [sus, setSus] = useState<{ agent: string; result: SIR }[]>([
     { agent: '', result: 'S' },
   ])
+  const [hydrated, setHydrated] = useState(false)
+  const [blocked, setBlocked] = useState(false)
+  const [chain, refreshChain] = useChain()
+
+  // Everything the user can edit on this stage. It is saved as it changes so leaving the stage
+  // and coming back restores it, and its fingerprint tells whether the evaluation built from it
+  // is still current.
+  const context = {
+    patientId, age, sex, weight, creatinine, allergyStatus, allergies, comorbidities, setting,
+    syndromeCode, diagnosisText, cultureStatus, specimenType, organism, sus, prescription,
+  }
+  const fingerprint = JSON.stringify(context)
 
   useEffect(() => {
     try {
@@ -90,6 +104,8 @@ export default function EpisodeNewPage() {
         const drugs: ExtractedDrug[] = JSON.parse(stored)
         setPendingDrugs(drugs)
         setPrescription(drugs.map((d) => d.raw_text).join('\n'))
+      } else {
+        setBlocked(true)
       }
       const printed = sessionStorage.getItem('rxPatient')
       if (printed) {
@@ -108,9 +124,31 @@ export default function EpisodeNewPage() {
         setDiagnosisText(parsed.text ?? '')
         setSyndromeCode(parsed.syndrome_code ?? '')
       }
+      // Inputs entered earlier on this stage come back as they were left.
+      const savedContext = sessionStorage.getItem(contextKey)
+      if (savedContext) {
+        const c = JSON.parse(savedContext)
+        if (c.patientId !== undefined) setPatientId(c.patientId)
+        if (c.age !== undefined) setAge(c.age)
+        if (c.sex) setSex(c.sex)
+        if (c.weight !== undefined) setWeight(c.weight)
+        if (c.creatinine !== undefined) setCreatinine(c.creatinine)
+        if (c.allergyStatus) setAllergyStatus(c.allergyStatus)
+        if (c.allergies !== undefined) setAllergies(c.allergies)
+        if (c.comorbidities) setComorbidities(c.comorbidities)
+        if (c.setting) setSetting(c.setting)
+        if (c.syndromeCode !== undefined) setSyndromeCode(c.syndromeCode)
+        if (c.diagnosisText !== undefined) setDiagnosisText(c.diagnosisText)
+        if (c.cultureStatus) setCultureStatus(c.cultureStatus)
+        if (c.specimenType) setSpecimenType(c.specimenType)
+        if (c.organism !== undefined) setOrganism(c.organism)
+        if (c.sus) setSus(c.sus)
+        if (c.prescription) setPrescription(c.prescription)
+      }
     } catch {
       /* ignore */
     }
+    setHydrated(true)
     getSyndromes()
       .then((list) => {
         if (list.length) setSyndromes(list.map((s) => ({ code: s.code, label: s.name })))
@@ -119,6 +157,20 @@ export default function EpisodeNewPage() {
         /* keep the fallback list */
       })
   }, [])
+
+  // Editing any input here retires the evaluation built from the old values (stages 3 to 5),
+  // so it can no longer be shown or acted on. They have to be run again.
+  useEffect(() => {
+    if (!hydrated) return
+    try {
+      sessionStorage.setItem(contextKey, fingerprint)
+    } catch {
+      /* ignore */
+    }
+    const current = getChain()
+    if (current.evaluationId && current.contextFingerprint !== fingerprint) invalidateResults()
+    refreshChain()
+  }, [hydrated, fingerprint, refreshChain])
 
   // Fills the form from the hospital record. Every value stays editable; a value the record
   // lacks is cleared, never kept from a previous patient. The syndrome is still chosen by hand.
@@ -251,17 +303,35 @@ export default function EpisodeNewPage() {
       })
 
       const evaluation = await evaluateEpisode(episode.id)
-      sessionStorage.removeItem('pendingDrugs')
-      sessionStorage.removeItem('ocrRawText')
-      sessionStorage.removeItem('rxDiagnosis')
-      sessionStorage.removeItem('rxPatient')
-      sessionStorage.removeItem('rxReview')
+      // The stage inputs stay saved so the user can come back and edit them.
+      setChain({ episodeId: episode.id, evaluationId: evaluation.id, contextFingerprint: fingerprint })
       router.push(`/evaluation/${evaluation.id}`)
     } catch (e) {
       console.error('Episode creation failed:', e)
       setError(e instanceof Error ? e.message : 'Could not run the evaluation.')
       setSubmitting(false)
     }
+  }
+
+  const resultsCurrent = Boolean(chain.evaluationId) && chain.contextFingerprint === fingerprint
+  const stageLinks = reachableLinks(2, resultsCurrent ? 3 : 1, {
+    1: '/upload?back=1',
+    3: chain.evaluationId ? `/evaluation/${chain.evaluationId}` : undefined,
+    4: chain.evaluationId ? `/evaluation/${chain.evaluationId}` : undefined,
+  })
+
+  if (blocked) {
+    return (
+      <div className="mx-auto max-w-md py-24 text-center">
+        <p className="text-sm font-medium text-[#1A1A1A]">Complete the prescription first.</p>
+        <p className="mt-2 text-sm text-[#6B6A65]">
+          Clinical context is added to verified prescription orders. Upload or type the prescription and confirm every medicine.
+        </p>
+        <Link href="/upload" className="mt-4 inline-block text-sm font-medium text-[#3730A3] hover:underline">
+          Go to the prescription
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -277,7 +347,7 @@ export default function EpisodeNewPage() {
         <span className="text-xs text-[#6B6A65]">Step 2 of 5</span>
       </div>
 
-      <WorkflowStepper current={2} links={{ 1: '/upload?back=1' }} back={{ href: '/upload?back=1', label: 'Back to prescription' }} />
+      <WorkflowStepper current={2} links={stageLinks} back={{ href: '/upload?back=1', label: 'Back to prescription' }} />
 
       {/* Drugs summary */}
       {pendingDrugs.length > 0 && (

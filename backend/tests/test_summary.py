@@ -18,6 +18,7 @@ from backend.stewardship.service import StewardshipService
 from backend.stewardship.summary import (
     LlmSummarizer,
     OpenAICompatibleProvider,
+    ProviderError,
     TemplateSummarizer,
     antibiotic_names,
     evidence_for,
@@ -444,6 +445,70 @@ def test_provider_rotates_to_the_next_key_after_rate_limit():
     assert provider("system", "user") == "summary"
     assert authorizations == ["Bearer first-key", "Bearer second-key"]
     assert "first-key" not in repr(provider) and "second-key" not in repr(provider)
+
+
+def keyed_provider(keys, limited, now):
+    """A provider over `keys` where every key in `limited` answers 429; records each key used."""
+    used = []
+
+    def handler(request):
+        key = request.headers["authorization"].removeprefix("Bearer ")
+        used.append(key)
+        if key in limited:
+            return httpx.Response(429, headers={"retry-after": "30"}, text="rate limited")
+        return httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]})
+
+    provider = OpenAICompatibleProvider(
+        "http://llm.test/v1",
+        "m",
+        api_keys=keys,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+        clock=lambda: now[0],
+    )
+    return provider, used
+
+
+def test_provider_takes_keys_in_turn():
+    provider, used = keyed_provider(("a", "b", "c"), limited=set(), now=[0.0])
+    for _ in range(4):
+        provider("system", "user")
+    assert used == ["a", "b", "c", "a"]
+
+
+def test_rate_limited_key_rests_for_retry_after():
+    now = [0.0]
+    limited = {"a"}
+    provider, used = keyed_provider(("a", "b"), limited, now)
+
+    provider("system", "user")
+    provider("system", "user")
+    assert used == ["a", "b", "b"]  # "a" answered 429 and is skipped while it rests
+
+    limited.clear()
+    now[0] = 31.0  # past the provider's Retry-After
+    provider("system", "user")
+    assert used[-1] == "a"
+
+
+def test_no_call_is_made_while_every_key_rests():
+    now = [0.0]
+    provider, used = keyed_provider(("a", "b"), {"a", "b"}, now)
+    with pytest.raises(ProviderError, match="provider HTTP 429"):
+        provider("system", "user")
+    assert used == ["a", "b"]
+    with pytest.raises(ProviderError, match="every key resting"):
+        provider("system", "user")
+    assert used == ["a", "b"]
+
+
+def test_summary_and_chat_share_one_provider(monkeypatch):
+    from backend.stewardship.chat import answerer_from_env
+
+    for name in ("LLM_PROVIDER", "LLM_BASE_URL", "LLM_MODEL", "LLM_API_KEY"):
+        monkeypatch.setattr(config, name, None)
+    monkeypatch.setattr(config, "LLM_PROVIDER", "groq")
+    monkeypatch.setattr(config, "LLM_API_KEYS", ("k1", "k2"))
+    assert summarizer_from_env()._complete is answerer_from_env()._complete
 
 
 def test_provider_request_holds_only_results_and_evidence(make_client):

@@ -89,9 +89,10 @@ AUDIT_LOG_PATH = RUNTIME_DIR / "audit.jsonl"
 CHROMA_DIR = Path(os.getenv("HC03_CHROMA_DIR", str(RUNTIME_DIR / "chroma")))
 
 # Optional language-model summary of an evaluation (summary.py). Explanation only; it never
-# changes a result. Off unless configured: HC03_LLM_PROVIDER=groq|gemini with one key in
-# HC03_LLM_API_KEY or a comma-separated rotation in HC03_LLM_API_KEYS (base URL and model have
-# defaults), or HC03_LLM_BASE_URL and HC03_LLM_MODEL for any other OpenAI-compatible API.
+# changes a result. Off unless configured: HC03_LLM_PROVIDER=groq|gemini with keys in
+# HC03_LLM_API_KEY and/or HC03_LLM_API_KEYS, either comma-separated for rotation (base URL and
+# model have defaults), or HC03_LLM_BASE_URL and HC03_LLM_MODEL for any other OpenAI-compatible
+# API.
 LLM_PROVIDER = os.getenv("HC03_LLM_PROVIDER") or None
 LLM_BASE_URL = os.getenv("HC03_LLM_BASE_URL") or None
 LLM_MODEL = os.getenv("HC03_LLM_MODEL") or None
@@ -99,11 +100,14 @@ LLM_API_KEY = os.getenv("HC03_LLM_API_KEY") or None
 LLM_API_KEYS = tuple(
     dict.fromkeys(
         key.strip()
-        for key in (LLM_API_KEY, *(os.getenv("HC03_LLM_API_KEYS") or "").split(","))
-        if key and key.strip()
+        for key in f"{LLM_API_KEY or ''},{os.getenv('HC03_LLM_API_KEYS') or ''}".split(",")
+        if key.strip()
     )
 )
 LLM_TIMEOUT_S = float(os.getenv("HC03_LLM_TIMEOUT_S", "20"))
+# Questions about one evaluation (chat.py) that may reach the provider; repeats are answered
+# from a cache and do not count. Keeps a free-tier key from being spent on one page.
+CHAT_MAX_QUESTIONS = int(os.getenv("HC03_CHAT_MAX_QUESTIONS", "20"))
 
 
 # Drug-drug interaction source: the local DrugBank XML export (licensed, never committed)

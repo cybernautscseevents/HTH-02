@@ -31,6 +31,8 @@ _ACTIONS: dict[tuple[str, Outcome], str] = {
     ("R7_PREGNANCY", Outcome.CANNOT_ASSESS): "Record whether the patient is pregnant.",
     ("R8_DRUG_DISEASE", Outcome.FLAG): "Review the quoted label caution against the patient's "
     "condition before administration.",
+    ("R9_IV_TO_ORAL", Outcome.FLAG): "Confirm the patient is clinically stable and can take oral "
+    "medication, then consider the guideline oral option.",
     ("C1_CULTURE_BEFORE_WATCH", Outcome.FLAG): "Obtain a culture if not already sent.",
     ("C3_BUG_DRUG_MISMATCH", Outcome.FLAG): "Review antibiotic selection and consider an "
     "alternative the organism is susceptible to.",

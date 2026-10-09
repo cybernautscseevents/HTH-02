@@ -1,4 +1,4 @@
-"""Per-prescription stewardship checks (R0-R8).
+"""Per-prescription stewardship checks (R0-R9).
 
 Each rule is a pure function of a RuleContext and one drug order, and returns exactly one
 Finding. A rule never guesses: when an input it needs is missing or out of scope, it returns
@@ -25,6 +25,7 @@ from .schemas import (
     NormStatus,
     Outcome,
     Patient,
+    Route,
     Severity,
     Sex,
     Suggestion,
@@ -594,6 +595,64 @@ def check_drug_disease(ctx: RuleContext, order: DrugOrder) -> Finding:
     )
 
 
+def _elapsed(hours: float) -> str:
+    """Hours, or minutes below one hour (a demo time-out is set in minutes)."""
+    return f"{hours:.0f} hours" if hours >= 1 else f"{hours * 60:.0f} minutes"
+
+
+def check_iv_to_oral(ctx: RuleContext, order: DrugOrder) -> Finding:
+    """R9: an IV antibiotic still running at the time-out is reviewed for an oral switch when the
+    guideline lists an oral regimen for the syndrome. Clinical stability and the ability to take
+    oral medication are not recorded, so the pharmacist confirms them; nothing is switched."""
+    rule_id = "R9_IV_TO_ORAL"
+    if order.route is not Route.IV:
+        return _finding(rule_id, Outcome.PASS, Severity.INFO, order, "Not an IV order.")
+    hours = (ctx.now - order.started_at).total_seconds() / 3600
+    if hours < config.TIMEOUT_HOURS:
+        return _finding(
+            rule_id,
+            Outcome.PASS,
+            Severity.INFO,
+            order,
+            f"IV for {_elapsed(hours)}; oral therapy is reviewed at "
+            f"{_elapsed(config.TIMEOUT_HOURS)}.",
+        )
+    if ctx.syndrome is None:
+        return _syndrome_missing(rule_id, ctx, order)
+    patient = ctx.episode.patient
+    oral = [
+        r
+        for r in (*ctx.syndrome.first_line, *ctx.syndrome.alternatives)
+        if r.route is Route.PO and matching_allergy(patient, r.generic) is None
+    ]
+    if not oral:
+        return _finding(
+            rule_id,
+            Outcome.PASS,
+            Severity.INFO,
+            order,
+            f"The guideline lists no oral regimen for {ctx.syndrome.name}; continue the IV "
+            "review clinically.",
+            evidence=(ctx.syndrome.evidence,),
+        )
+    option = next((r for r in oral if r.generic == order.generic), oral[0])
+    return _finding(
+        rule_id,
+        Outcome.FLAG,
+        Severity.LOW,
+        order,
+        f"IV {order.generic} for {_elapsed(hours)}; the guideline lists oral {option.generic} "
+        f"for {ctx.syndrome.name}. Consider an oral switch if the patient is clinically stable "
+        "and can take oral medication.",
+        evidence=(option.evidence,),
+        suggestion=Suggestion(
+            action="switch",
+            drug=option.generic,
+            detail=f"Guideline oral option: {option.generic} PO.",
+        ),
+    )
+
+
 # Run in order for every identified antibiotic order; R0 runs first as a gate.
 ORDER_RULES: tuple[tuple[str, OrderRule], ...] = (
     ("R1_INDICATION", check_indication),
@@ -604,4 +663,5 @@ ORDER_RULES: tuple[tuple[str, OrderRule], ...] = (
     ("R6_ALLERGY", check_allergy),
     ("R7_PREGNANCY", check_pregnancy),
     ("R8_DRUG_DISEASE", check_drug_disease),
+    ("R9_IV_TO_ORAL", check_iv_to_oral),
 )

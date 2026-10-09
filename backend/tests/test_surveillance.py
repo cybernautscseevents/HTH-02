@@ -57,6 +57,9 @@ def test_drug_names_are_matched_exactly_or_skipped(table):
 
 
 def test_surveillance_is_not_an_engine_input():
+    # api.py serves the table on its own read-only route (/api/surveillance); the evaluation
+    # path never reads it.
     package = Path(config.__file__).parent
-    for module in ("rules.py", "culture.py", "episode.py", "service.py", "api.py"):
+    for module in ("rules.py", "culture.py", "episode.py", "service.py"):
         assert "surveillance" not in (package / module).read_text(), module
+

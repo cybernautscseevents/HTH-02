@@ -34,6 +34,7 @@ from .narrative import PlanNarrativeSummarizer, TemplatePlanNarrativeSummarizer
 from .ports import RenalChecker
 from .review import ReviewError, apply_review
 from .rulepack import YamlRulePack
+from .rules import is_identified
 from .schemas import (
     AllergyStatus,
     AuditEntry,
@@ -173,6 +174,12 @@ class DashboardStats(BaseModel):
     high_severity_count: int
     timeout_due_count: int
     recent_evaluations: tuple[RecentEvaluation, ...]
+    # Impact, over each episode's latest evaluation: what was prescribed, what the engine
+    # suggested, and what pharmacists decided (latest decision per finding).
+    aware_order_counts: dict[str, int] = {}
+    decision_counts: dict[str, int] = {}
+    de_escalation_suggested: int = 0
+    iv_to_oral_suggested: int = 0
 
 
 class TimeoutItem(BaseModel):
@@ -422,6 +429,29 @@ class StewardshipService:
             )
             for report in reports[:10]
         )
+        aware: dict[str, int] = {}
+        for report in reports:
+            for order in self._episodes[report.episode_id].orders:
+                if is_identified(order) and self.catalog.is_antibiotic(order.generic):
+                    tier = self.catalog.aware_tier(order.generic, order.route).value
+                    aware[tier] = aware.get(tier, 0) + 1
+        latest_ids = {report.id for report in reports}
+        last_decision = {
+            (review.evaluation_id, review.finding_rule_id, review.order_id): review.action.value
+            for review in self._reviews
+            if review.finding_rule_id is not None and review.evaluation_id in latest_ids
+        }
+        decisions: dict[str, int] = {}
+        for action in last_decision.values():
+            decisions[action] = decisions.get(action, 0) + 1
+
+        def flagged(rule_id: str) -> int:
+            return sum(
+                finding.rule_id == rule_id and finding.outcome is Outcome.FLAG
+                for report in reports
+                for finding in report.findings
+            )
+
         return DashboardStats(
             total_reviewed=len(reports),
             flagged_count=sum(report.status is not EvaluationStatus.OK for report in reports),
@@ -432,6 +462,10 @@ class StewardshipService:
                 for finding in report.findings
             ),
             timeout_due_count=len(self.timeout_due()),
+            aware_order_counts=aware,
+            decision_counts=decisions,
+            de_escalation_suggested=flagged("C4_DE_ESCALATE"),
+            iv_to_oral_suggested=flagged("R9_IV_TO_ORAL"),
             recent_evaluations=recent,
         )
 

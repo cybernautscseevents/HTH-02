@@ -18,6 +18,7 @@ import type { ExtractedDrug, OCRResult } from '@/types/stewardship'
 import { Button } from '@/components/ui/Button'
 import { DrugOrderRow } from '@/components/stewardship/DrugOrderRow'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
+import { clearWorkflow, getChain, prescriptionChanged, reachableLinks, setChain, useChain } from '@/lib/workflow'
 
 type Mode = 'image' | 'typed'
 
@@ -43,11 +44,17 @@ export default function UploadPage() {
   const [drugs, setDrugs] = useState<ExtractedDrug[]>([])
   const [error, setError] = useState<string | null>(null)
   const [fileId, setFileId] = useState<string | null>(null)
+  const [chain, refreshChain] = useChain()
 
   // Back from the clinical-context step reopens the reviewed prescription instead of an empty
   // form. A plain visit to this page always starts a new prescription.
   useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has('back')) return
+    // A plain visit starts a new review, so nothing from an earlier one carries over.
+    if (!new URLSearchParams(window.location.search).has('back')) {
+      clearWorkflow()
+      refreshChain()
+      return
+    }
     try {
       const saved = sessionStorage.getItem('rxReview')
       if (!saved) return
@@ -61,7 +68,7 @@ export default function UploadPage() {
     } catch {
       /* start a new prescription */
     }
-  }, [])
+  }, [refreshChain])
 
   const handleFile = useCallback(async (selected: File) => {
     if (!selected.type.startsWith('image/')) {
@@ -128,6 +135,8 @@ export default function UploadPage() {
   }
 
   const reset = () => {
+    clearWorkflow()
+    refreshChain()
     setStep('input')
     setFile(null)
     setFileId(null)
@@ -137,29 +146,50 @@ export default function UploadPage() {
     setError(null)
   }
 
-  const proceed = () => {
-    const activeDrugs = drugs.filter((drug) => !drug.excluded)
-    sessionStorage.setItem('pendingDrugs', JSON.stringify(activeDrugs))
-    sessionStorage.setItem('rxReview', JSON.stringify({ mode, typedText, result, drugs, fileId }))
-    sessionStorage.setItem('ocrRawText', result?.raw_text ?? typedText)
-    if (result?.diagnosis) sessionStorage.setItem('rxDiagnosis', JSON.stringify(result.diagnosis))
-    else sessionStorage.removeItem('rxDiagnosis')
-    const idFromFile = mode === 'image' ? fileId : null
-    const patientId = idFromFile ?? result?.patient?.id ?? null
-    if (patientId || result?.patient?.name) {
-      sessionStorage.setItem(
-        'rxPatient',
-        JSON.stringify({ id: patientId, name: result?.patient?.name ?? null, from: idFromFile ? 'file' : 'prescription' })
-      )
-    }
-    else sessionStorage.removeItem('rxPatient')
-    router.push('/episode/new')
-  }
-
   const activeDrugs = drugs.filter((drug) => !drug.excluded)
   const ambiguous = activeDrugs.filter((drug) => drug.norm_status === 'AMBIGUOUS').length
   const unmatched = activeDrugs.filter((drug) => drug.norm_status === 'NO_MATCH').length
   const ready = activeDrugs.length > 0 && ambiguous === 0 && unmatched === 0
+
+  // Stage 1 is saved as it changes, so the stepper can move on and back without a button press.
+  // Changing the orders after later stages ran retires their results (see lib/workflow.ts).
+  useEffect(() => {
+    if (step !== 'review' || !result) return
+    const fingerprint = JSON.stringify([
+      activeDrugs.map((d) => [d.id, d.raw_text, d.generic, d.norm_status]),
+      result.diagnosis?.text ?? null,
+    ])
+    const known = getChain().rxFingerprint
+    if (known && known !== fingerprint) prescriptionChanged()
+    setChain({ rxFingerprint: fingerprint })
+    sessionStorage.setItem('rxReview', JSON.stringify({ mode, typedText, result, drugs, fileId }))
+    if (ready) {
+      sessionStorage.setItem('pendingDrugs', JSON.stringify(activeDrugs))
+      sessionStorage.setItem('ocrRawText', result.raw_text ?? typedText)
+      if (result.diagnosis) sessionStorage.setItem('rxDiagnosis', JSON.stringify(result.diagnosis))
+      else sessionStorage.removeItem('rxDiagnosis')
+      const idFromFile = mode === 'image' ? fileId : null
+      const patientId = idFromFile ?? result.patient?.id ?? null
+      if (patientId || result.patient?.name) {
+        sessionStorage.setItem(
+          'rxPatient',
+          JSON.stringify({ id: patientId, name: result.patient?.name ?? null, from: idFromFile ? 'file' : 'prescription' })
+        )
+      } else sessionStorage.removeItem('rxPatient')
+    } else {
+      // An incomplete prescription cannot feed stage 2.
+      sessionStorage.removeItem('pendingDrugs')
+    }
+    refreshChain()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, result, drugs, ready, mode, typedText, fileId])
+
+  const proceed = () => router.push('/episode/new')
+  const stageLinks = reachableLinks(1, chain.evaluationId ? 3 : ready ? 1 : 0, {
+    2: '/episode/new',
+    3: chain.evaluationId ? `/evaluation/${chain.evaluationId}` : undefined,
+    4: chain.evaluationId ? `/evaluation/${chain.evaluationId}` : undefined,
+  })
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 animate-fade-in">
@@ -174,7 +204,7 @@ export default function UploadPage() {
         <span className="text-xs text-[#6B6A65]">Step 1 of 5</span>
       </div>
 
-      <WorkflowStepper current={1} />
+      <WorkflowStepper current={1} links={stageLinks} />
 
       {step === 'input' && (
         <section className="overflow-hidden rounded-[8px] border border-[#E2E1DC] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]">

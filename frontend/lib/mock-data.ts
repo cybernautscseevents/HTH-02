@@ -328,6 +328,10 @@ export const MOCK_STATS: DashboardStats = {
   pending_review_count: 8,
   high_severity_count: 12,
   timeout_due_count: 5,
+  aware_order_counts: { ACCESS: 88, WATCH: 61, RESERVE: 4 },
+  decision_counts: { ACCEPT: 54, MODIFY: 11, OVERRIDE: 7, ESCALATE: 2 },
+  de_escalation_suggested: 9,
+  iv_to_oral_suggested: 6,
   recent_evaluations: [
     {
       evaluation_id: 'EV-20261007-0001',

@@ -8,7 +8,7 @@ from tempfile import NamedTemporaryFile
 from threading import Lock
 from typing import Annotated
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ValidationError
@@ -18,6 +18,7 @@ from prescription_ocr.pipeline import ENGINES, OcrEngine, build_engine
 
 from . import config
 from .audit import JsonlAuditLog
+from .chat import ChatAnswer, ChatLimitError, ChatRequest, EvaluationChat, answerer_from_env
 from .ddi import DrugBankDDIProvider
 from .drugs import Catalog
 from .evidence import build_store
@@ -49,6 +50,7 @@ from .service import (
     _order_view,
 )
 from .summary import summarizer_from_env
+from .surveillance import SurveillanceRow, SurveillanceTable
 from .treatment_plan import PlanError, TreatmentPlanRequest
 
 
@@ -109,8 +111,13 @@ def create_app(
     *,
     ocr_engines: dict[str, OcrEngine] | None = None,
     records: PatientRecordSource | None = None,
+    surveillance: SurveillanceTable | None = None,
+    chat: EvaluationChat | None = None,
 ) -> FastAPI:
     svc = service or default_service()
+    evaluation_chat = chat or EvaluationChat(answerer_from_env())
+    # Loaded on first request: it is advisory context and should not slow startup.
+    surveillance_table: list[SurveillanceTable] = [surveillance] if surveillance else []
     patient_records = records or JsonPatientRecords.load(config.PATIENT_RECORDS_JSON)
     loaded_engines = dict(ocr_engines or {})
     ocr_lock = Lock()
@@ -152,6 +159,12 @@ def create_app(
         from fastapi.responses import JSONResponse
 
         return JSONResponse(status_code=404, content={"detail": str(exc.args[0])})
+
+    @app.exception_handler(ChatLimitError)
+    async def _chat_limit(request, exc):
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=429, content={"detail": str(exc)})
 
     @app.get("/api/health")
     def health() -> dict:
@@ -241,6 +254,20 @@ def create_app(
             )
         return out
 
+    @app.get("/api/surveillance")
+    def national_susceptibility(
+        generic: Annotated[list[str], Query()], organism: str | None = None
+    ) -> list[dict]:
+        """ICMR AMRSN 2023 susceptibility rows for these drugs, as advisory context only: the
+        rows never change a finding. Each row keeps its own counts, context and source page."""
+        if not surveillance_table:
+            surveillance_table.append(SurveillanceTable.load(Catalog.load()))
+        table = surveillance_table[0]
+        rows: list[SurveillanceRow] = [
+            r for g in dict.fromkeys(generic) for r in table.lookup(g, organism=organism)
+        ]
+        return [r.model_dump() | {"summary": r.summary} for r in rows]
+
     @app.get("/api/patients/{patient_id}")
     def get_patient_record(patient_id: str) -> PatientRecord:
         """Pre-fill data for the review form. The reviewer checks and can change every value."""
@@ -302,6 +329,11 @@ def create_app(
     @app.get("/api/evaluations/{evaluation_id}")
     def get_evaluation(evaluation_id: str) -> EvaluationReport:
         return svc.get_evaluation(evaluation_id)
+
+    @app.post("/api/evaluations/{evaluation_id}/ask", response_model=ChatAnswer)
+    def ask(evaluation_id: str, body: ChatRequest) -> ChatAnswer:
+        """A question about the evaluation, answered from its results only (chat.py)."""
+        return evaluation_chat.ask(svc.get_evaluation(evaluation_id), body)
 
     @app.get("/api/evaluations/{evaluation_id}/reviews")
     def get_evaluation_reviews(evaluation_id: str) -> tuple[Review, ...]:

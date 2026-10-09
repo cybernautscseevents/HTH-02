@@ -8,6 +8,8 @@
 
 import type {
   AuditEntry,
+  ChatAnswer,
+  ChatTurn,
   CultureInput,
   DashboardStats,
   Episode,
@@ -20,6 +22,7 @@ import type {
   PatientChanges,
   PatientRecord,
   Review,
+  SurveillanceRow,
   TimeoutConfig,
   TimeoutItem,
   TreatmentPlan,
@@ -79,6 +82,15 @@ export async function getStats(): Promise<DashboardStats> {
     return MOCK_STATS
   }
   return apiFetch<DashboardStats>('/api/stats')
+}
+
+// ─── National surveillance (advisory) ──────────────────────────────────────────
+
+/** ICMR AMRSN 2023 susceptibility rows for these drugs. Advisory only; never changes a finding. */
+export async function getSurveillance(generics: string[]): Promise<SurveillanceRow[]> {
+  if (USE_MOCK || generics.length === 0) return []
+  const query = generics.map((g) => `generic=${encodeURIComponent(g)}`).join('&')
+  return apiFetch<SurveillanceRow[]>(`/api/surveillance?${query}`)
 }
 
 // ─── Upload / OCR ──────────────────────────────────────────────────────────────
@@ -215,6 +227,28 @@ export async function getEvaluation(evaluationId: string): Promise<EvaluationRep
     return MOCK_EVALUATION
   }
   return apiFetch<EvaluationReport>(`/api/evaluations/${evaluationId}`)
+}
+
+/** Ask a question about an evaluation. One question is at most one model call. */
+export async function askEvaluation(
+  evaluationId: string,
+  question: string,
+  history: ChatTurn[]
+): Promise<ChatAnswer> {
+  if (USE_MOCK) {
+    await delay(400)
+    return {
+      answer: 'Mock mode: questions are answered only by the real backend.',
+      generated_by: 'RULE_BASED',
+      cached: false,
+      questions_left: null,
+      notice: 'Explanatory only.',
+    }
+  }
+  return apiFetch<ChatAnswer>(`/api/evaluations/${evaluationId}/ask`, {
+    method: 'POST',
+    body: JSON.stringify({ question, history }),
+  })
 }
 
 export async function getEvaluationReviews(evaluationId: string): Promise<Review[]> {

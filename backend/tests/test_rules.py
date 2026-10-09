@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from backend.stewardship.rules import (
     RuleContext,
     check_allergy,
@@ -7,6 +9,7 @@ from backend.stewardship.rules import (
     check_duration,
     check_identified,
     check_indication,
+    check_iv_to_oral,
     check_pregnancy,
 )
 from backend.stewardship.schemas import (
@@ -201,3 +204,43 @@ def test_drug_disease_check_passes_without_a_matching_caution():
     assert check_drug_disease(ctx(), order("ciprofloxacin")).outcome is Outcome.PASS
     ep = episode(patient=patient(comorbidities=(Comorbidity.AORTIC_ANEURYSM,)))
     assert check_drug_disease(ctx(ep), order("nitrofurantoin")).outcome is Outcome.PASS
+
+
+def test_iv_order_past_timeout_with_oral_regimen_is_flagged_with_oral_option():
+    started = T0 - timedelta(hours=50)
+    f = check_iv_to_oral(ctx(), order("ciprofloxacin", route=Route.IV, started_at=started))
+    assert (f.outcome, f.severity) == (Outcome.FLAG, Severity.LOW)
+    assert (f.suggestion.action, f.suggestion.drug) == ("switch", "ciprofloxacin")
+    assert "clinically stable" in f.message
+
+
+def test_iv_to_oral_skips_allergy_matched_oral_option():
+    ep = episode(patient=patient(allergy_status=AllergyStatus.KNOWN, allergies=("nitrofurantoin",)))
+    f = check_iv_to_oral(
+        ctx(ep), order("amikacin", route=Route.IV, started_at=T0 - timedelta(hours=72))
+    )
+    assert f.suggestion.drug == "ciprofloxacin"
+
+
+def test_iv_to_oral_passes_before_timeout_for_oral_orders_and_without_oral_regimen():
+    assert check_iv_to_oral(ctx(), order()).outcome is Outcome.PASS
+    assert check_iv_to_oral(ctx(), order("amikacin", route=Route.IV)).outcome is Outcome.PASS
+    late = order("amikacin", route=Route.IV, started_at=T0 - timedelta(hours=72))
+    f = check_iv_to_oral(ctx(episode(syndrome_code="pyelonephritis")), late)
+    assert f.outcome is Outcome.PASS
+
+
+def test_iv_to_oral_without_syndrome_cannot_be_assessed():
+    late = order("amikacin", route=Route.IV, started_at=T0 - timedelta(hours=72))
+    f = check_iv_to_oral(ctx(episode(syndrome_code=None)), late)
+    assert (f.outcome, f.missing_inputs) == (Outcome.CANNOT_ASSESS, ("syndrome",))
+
+
+def test_iv_to_oral_follows_a_demo_time_out_in_minutes(monkeypatch):
+    from backend.stewardship import config
+
+    monkeypatch.setattr(config, "TIMEOUT_HOURS", 1 / 60)
+    f = check_iv_to_oral(
+        ctx(), order("ciprofloxacin", route=Route.IV, started_at=T0 - timedelta(minutes=2))
+    )
+    assert f.outcome is Outcome.FLAG and "for 2 minutes" in f.message

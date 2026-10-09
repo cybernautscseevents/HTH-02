@@ -1,9 +1,11 @@
+
 """Typed prescription -> Episode -> evaluate_episode -> actions -> review -> audit log.
 
 Everything here runs on the real stack: Person 2's Catalog and renal table, the NCDC rule pack,
 the Chroma evidence index and the JSONL audit log. Only the clock is controlled.
 """
 
+import json
 from datetime import timedelta
 
 import pytest
@@ -777,3 +779,34 @@ def test_what_if_rejects_an_impossible_value(client):
         f"/api/episodes/{episode['id']}/what-if", json={"serum_creatinine_mg_dl": -1}
     )
     assert response.status_code == 422
+
+
+def test_national_susceptibility_rows_keep_their_source(client):
+    rows = client.get(
+        "/api/surveillance",
+        params={"generic": ["nitrofurantoin"], "organism": "escherichia coli"},
+    ).json()
+    assert rows and all(r["generic"] == "nitrofurantoin" for r in rows)
+    assert all(r["organism"] == "Escherichia coli" for r in rows)
+    assert all(r["source_page"] and "ICMR AMRSN 2023" in r["summary"] for r in rows)
+    # advisory only: an evaluation never carries surveillance data
+    assert "AMRSN" not in json.dumps(evaluate(client, "Tab Nitrofurantoin 100 mg BD x 5 days"))
+
+
+def test_dashboard_reports_aware_mix_decisions_and_iv_to_oral_at_the_timeout(client, clock):
+    report = evaluate(client, CEFTRIAXONE)
+    assert finding(report, "R9_IV_TO_ORAL", "rx-1")["outcome"] == "PASS"  # before 48 hours
+
+    clock["now"] = T0 + timedelta(hours=49)
+    later = client.post(f"/api/episodes/{report['episode_id']}/evaluate").json()
+    iv = finding(later, "R9_IV_TO_ORAL", "rx-1")
+    assert iv["outcome"] == "FLAG" and iv["suggestion_action"] == "switch"
+    assert "clinically stable" in iv["message"]
+    assert iv["evidence"], "the oral option must cite its guideline regimen"
+    review(client, later, "R9_IV_TO_ORAL", "rx-1", "ACCEPT")
+    review(client, later, "R2_AWARE", "rx-1", "OVERRIDE", reason_code="PATIENT_FACTOR")
+
+    stats = client.get("/api/stats").json()
+    assert stats["aware_order_counts"] == {"WATCH": 1}
+    assert stats["iv_to_oral_suggested"] == 1
+    assert stats["decision_counts"] == {"ACCEPT": 1, "OVERRIDE": 1}

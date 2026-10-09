@@ -65,9 +65,11 @@ back to the rule-based summary. Set these in the backend's environment (never in
 |---|---|
 | `HC03_LLM_PROVIDER` | `groq` or `gemini` (fills in the base URL and a default model) |
 | `HC03_LLM_API_KEY` | the provider's API key; a hosted provider without a key stays off |
+| `HC03_LLM_API_KEYS` | optional comma-separated extra keys; requests take keys in turn, and a key that hits the rate limit (HTTP 429) rests for the provider's Retry-After while the others carry on |
 | `HC03_LLM_MODEL` | optional model override (default for `groq`: `qwen/qwen3.8-27b`) |
 | `HC03_LLM_BASE_URL` | optional; any other OpenAI-compatible endpoint, e.g. a local Ollama |
 | `HC03_LLM_TIMEOUT_S` | request timeout in seconds (default 20) |
+| `HC03_CHAT_MAX_QUESTIONS` | model calls allowed per evaluation for "Ask about this result" (default 20; repeated questions are cached and free) |
 
 OCR (optional, needs a GPU-capable `torch`; not needed for the engine or the typed demo):
 

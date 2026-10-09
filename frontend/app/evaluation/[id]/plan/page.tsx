@@ -7,6 +7,7 @@ import { getEpisode, getEvaluation, getEvaluationReviews, getLatestTreatmentPlan
 import type { DrugOrder, Episode, EvaluationReport, Finding, MedicationDisposition, PlanItemRequest, Review, Route, TreatmentPlan } from '@/types/stewardship'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
 import { useSession } from '@/lib/auth'
+import { isRetired, planIsStale, reachableLinks, unreviewedFindings, useChain } from '@/lib/workflow'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 
@@ -35,20 +36,42 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
   const [attested, setAttested] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const idempotencyKey = useRef(crypto.randomUUID())
+  const [retired, setRetired] = useState(false)
+  const [planOutdated, setPlanOutdated] = useState(false)
+  const [chain] = useChain()
 
   useEffect(() => {
+    const check = () => {
+      if (!isRetired(id)) return
+      setRetired(true)
+      setEvaluation(null)
+      setEpisode(null)
+      setReviews([])
+      setPlan(null)
+      setLoading(false)
+    }
+    check()
+    window.addEventListener('storage', check)
+    if (isRetired(id)) return () => window.removeEventListener('storage', check)
     Promise.all([getEvaluation(id), getLatestTreatmentPlan(id), getEvaluationReviews(id)])
       .then(async ([report, existing, recordedReviews]) => {
         const ep = await getEpisode(report.episode_id)
         setEvaluation(report)
         setEpisode(ep)
         setReviews(recordedReviews)
-        setPlan(existing)
+        // A decision recorded after sign-off means the signed plan no longer matches the review:
+        // it is not shown as current, and signing again supersedes it.
+        if (existing && planIsStale(existing.signed_at, recordedReviews)) {
+          setPlanOutdated(true)
+          setSupersedesId(existing.id)
+          setPlan(null)
+        } else setPlan(existing)
         const orders = treatmentPlanOrders(ep, report)
         setDrafts(Object.fromEntries(orders.map((order) => [order.id, initialDraft(order)])))
       })
       .catch((cause) => setError(cause instanceof Error ? cause.message : 'Could not load the treatment plan.'))
       .finally(() => setLoading(false))
+    return () => window.removeEventListener('storage', check)
   }, [id])
 
   const orders = useMemo(
@@ -58,7 +81,7 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
   const update = (orderId: string, patch: Partial<Draft>) => setDrafts((current) => ({ ...current, [orderId]: { ...current[orderId], ...patch } }))
 
   const sign = async () => {
-    if (!evaluation || !user) return
+    if (!evaluation || !user || unreviewedFindings(evaluation.findings, reviews).length > 0) return
     setSaving(true)
     setError(null)
     try {
@@ -78,15 +101,40 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  if (retired) {
+    return (
+      <div className="mx-auto max-w-md py-24 text-center">
+        <p className="text-sm font-medium text-[#1A1A1A]">This plan is out of date.</p>
+        <p className="mt-2 text-sm text-[#6B6A65]">The prescription or clinical context changed after this evaluation ran. Run the analysis again to get a plan from the updated inputs.</p>
+        <Link href="/episode/new" className="mt-4 inline-block text-sm font-medium text-[#3730A3] hover:underline">Back to clinical context</Link>
+      </div>
+    )
+  }
   if (loading) return <div className="flex justify-center py-24"><Loader2 className="h-7 w-7 animate-spin text-[#3730A3]" /></div>
   if (!episode || !evaluation) return <div className="rounded-md border border-[#D9A4A4] bg-[#FDF2F2] p-4 text-[#8B1A1A]">{error ?? 'Evaluation not found.'}</div>
+
+  // Stage 4 must be finished before a plan can be reconciled or signed.
+  const pending = unreviewedFindings(evaluation.findings, reviews)
+  const inWorkflow = chain.evaluationId === evaluation.id
+  const stageLinks = reachableLinks(5, 4, {
+    1: inWorkflow ? '/upload?back=1' : undefined,
+    2: inWorkflow ? '/episode/new' : undefined,
+    3: `/evaluation/${evaluation.id}`,
+    4: `/evaluation/${evaluation.id}`,
+  })
 
   return (
     <div className="space-y-6 animate-fade-in print:max-w-none">
       <header className="border-b border-[#E2E1DC] pb-4"><p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Pharmacist sign-off</p><h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">Final antibiotic treatment plan</h1><p className="mt-1 text-sm text-[#6B6A65]">Reconcile every antibiotic into one structured, auditable plan.</p></header>
-      <WorkflowStepper current={5} links={{ 1: '/upload', 3: `/evaluation/${evaluation.id}`, 4: `/evaluation/${evaluation.id}` }} back={{ href: `/evaluation/${evaluation.id}`, label: 'Back to findings' }} />
-      {plan ? <SignedPlan plan={plan} onRevise={() => { setSupersedesId(plan.id); setPlan(null); setAttested(false); idempotencyKey.current = crypto.randomUUID() }} /> : (
+      <WorkflowStepper current={5} links={stageLinks} back={{ href: `/evaluation/${evaluation.id}`, label: 'Back to findings' }} />
+      {pending.length > 0 ? (
+        <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#8B5E00]">
+          <strong>Finish the finding review first.</strong> {pending.length} finding{pending.length === 1 ? '' : 's'} still {pending.length === 1 ? 'needs' : 'need'} a pharmacist decision before the plan can be reconciled.
+          <Link href={`/evaluation/${evaluation.id}`} className="ml-2 font-medium text-[#3730A3] hover:underline">Go to the findings</Link>
+        </div>
+      ) : plan ? <SignedPlan plan={plan} onRevise={() => { setSupersedesId(plan.id); setPlan(null); setAttested(false); idempotencyKey.current = crypto.randomUUID() }} /> : (
         <>
+          {planOutdated && <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#8B5E00]"><strong>The earlier signed plan is out of date.</strong> A finding decision changed after it was signed. Reconcile the medicines again and sign a new version.</div>}
           <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#6B6A65]"><strong className="text-[#8B5E00]">Clinical responsibility remains with the signer.</strong> RxGuard validates completeness and consistency but does not apply changes to the prescribing system.</div>
           <section className="space-y-3">
             {orders.map((order) => (

@@ -287,6 +287,25 @@ export interface EvaluationSummary {
   notice: string
 }
 
+/** One turn of a conversation about an evaluation (backend chat.py). */
+export interface ChatTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatAnswer {
+  answer: string
+  /** AI_WORDED: model text that passed every grounding check. RULE_BASED: a fixed reply. */
+  generated_by: 'AI_WORDED' | 'RULE_BASED'
+  model?: string | null
+  fallback_reason?: string | null
+  /** Answered from the cache; no provider call was made. */
+  cached: boolean
+  /** Provider calls this evaluation has left; null when no model is configured. */
+  questions_left: number | null
+  notice: string
+}
+
 /** The engine's Evaluation plus the extra fields the application layer adds. */
 export interface EvaluationReport extends Evaluation {
   syndrome?: { code: string | null; name: string | null; resolution: string }
@@ -510,6 +529,30 @@ export interface DashboardStats {
   high_severity_count: number
   timeout_due_count: number
   recent_evaluations: RecentEvaluation[]
+  /** Antibiotic orders by WHO AWaRe tier, over each episode's latest evaluation. */
+  aware_order_counts: Partial<Record<AwareTier, number>>
+  /** Latest pharmacist decision per finding, by action. */
+  decision_counts: Partial<Record<ReviewAction, number>>
+  de_escalation_suggested: number
+  iv_to_oral_suggested: number
+}
+
+/** ICMR AMRSN 2023 network surveillance row (advisory; never changes a finding). */
+export interface SurveillanceRow {
+  organism: string
+  specimen: string
+  antibiotic: string
+  generic: string
+  susceptible_count: number
+  tested_count: number
+  susceptibility_percent: number | null
+  context: string | null
+  year: number
+  source_page: string
+  source_section: string
+  notes: string
+  limited_evidence: boolean
+  summary: string
 }
 
 export interface RecentEvaluation {

@@ -25,6 +25,7 @@ Authorization header and is never logged or returned.
 """
 
 import csv
+import functools
 import json
 import logging
 import re
@@ -116,6 +117,7 @@ CHECK_NAMES = {
     "R6_ALLERGY": "allergy",
     "R7_PREGNANCY": "pregnancy",
     "R8_DRUG_DISEASE": "label caution for the patient's conditions",
+    "R9_IV_TO_ORAL": "IV-to-oral review at the time-out",
     "C1_CULTURE_BEFORE_WATCH": "culture before Watch/Reserve therapy",
     "C3_BUG_DRUG_MISMATCH": "organism resistance to the drug",
     "C4_DE_ESCALATE": "step-down option from the culture",
@@ -325,42 +327,67 @@ class LlmSummarizer:
             return "empty response"
         if len(text) > self.MAX_CHARS:
             return "response too long"
-        lower, source = text.lower(), payload.lower()
         outcomes = {f["outcome"] for f in data["findings"]}
-        if "CANNOT_ASSESS" in outcomes and not any(p in lower for p in _CANNOT_ASSESS):
+        if "CANNOT_ASSESS" in outcomes and not any(p in text.lower() for p in _CANNOT_ASSESS):
             return "did not state that a check cannot be assessed"
-        if _SAFE.search(lower):
-            return "calls the prescription safe"
-        if outcomes and (m := _REASSURANCE.search(lower)):
-            return f"contradicts a flagged or unassessed check: '{m.group()}'"
-        allowed = set(_NUMBER.findall(payload))
-        invented = [n for n in _NUMBER.findall(text) if n not in allowed]
-        if invented:
-            return f"number not in the evaluation: {invented[0]}"
-        for m in (*_WORDED_AMOUNT.finditer(lower), *_FREQUENCY.finditer(lower)):
-            if not re.search(rf"\b{re.escape(m.group())}\b", source):
-                return f"dose, duration or frequency not in the evaluation: '{m.group()}'"
-        for drug in sorted(self._known_drugs):
-            if drug not in source and re.search(rf"\b{re.escape(drug)}s?\b", lower):
-                return f"drug not in the evaluation: {drug}"
-        for m in (*_SOURCE_ACRONYMS.finditer(text), *_SOURCE_NAMES.finditer(lower)):
-            if m.group().lower() not in source:
-                return f"source not in the evaluation: {m.group()}"
-        suggested = {f["suggested_action"] for f in data["findings"]}
-        for verb, permitted_by in _RECOMMENDATIONS.items():
-            if not re.search(rf"\b{re.escape(verb)}\b", lower):
-                continue
-            if re.search(rf"\b{re.escape(verb)}\b", source) or suggested & set(permitted_by):
-                continue
-            return f"recommendation not in the evaluation: '{verb}'"
-        return None
+        return grounding_problem(text, payload, data, self._known_drugs)
+
+
+def grounding_problem(
+    text: str,
+    payload: str,
+    data: dict,
+    known_drugs: Iterable[str],
+    *,
+    named_drugs: str = "",
+) -> str | None:
+    """Why model text goes beyond the evaluation it was given, or None if it stays within it.
+
+    `named_drugs` is extra text whose drug names the text may repeat (a user's question), so
+    "meropenem is not part of this evaluation" is allowed; its numbers and doses are not."""
+    lower, source = text.lower(), payload.lower()
+    outcomes = {f["outcome"] for f in data["findings"]}
+    if _SAFE.search(lower):
+        return "calls the prescription safe"
+    if outcomes and (m := _REASSURANCE.search(lower)):
+        return f"contradicts a flagged or unassessed check: '{m.group()}'"
+    allowed = set(_NUMBER.findall(payload))
+    invented = [n for n in _NUMBER.findall(text) if n not in allowed]
+    if invented:
+        return f"number not in the evaluation: {invented[0]}"
+    for m in (*_WORDED_AMOUNT.finditer(lower), *_FREQUENCY.finditer(lower)):
+        if not re.search(rf"\b{re.escape(m.group())}\b", source):
+            return f"dose, duration or frequency not in the evaluation: '{m.group()}'"
+    drug_source = source + "\n" + named_drugs.lower()
+    for drug in sorted(known_drugs):
+        if drug not in drug_source and re.search(rf"\b{re.escape(drug)}s?\b", lower):
+            return f"drug not in the evaluation: {drug}"
+    for m in (*_SOURCE_ACRONYMS.finditer(text), *_SOURCE_NAMES.finditer(lower)):
+        if m.group().lower() not in source:
+            return f"source not in the evaluation: {m.group()}"
+    suggested = {f["suggested_action"] for f in data["findings"]}
+    for verb, permitted_by in _RECOMMENDATIONS.items():
+        if not re.search(rf"\b{re.escape(verb)}\b", lower):
+            continue
+        if re.search(rf"\b{re.escape(verb)}\b", source) or suggested & set(permitted_by):
+            continue
+        return f"recommendation not in the evaluation: '{verb}'"
+    return None
 
 
 class OpenAICompatibleProvider:
     """POST {base_url}/chat/completions, the API shared by Groq, Gemini, OpenAI, Ollama and vLLM.
 
+    With several API keys, requests take them in turn so the load is spread before any one key
+    hits its rate limit. A key answered with HTTP 429 rests for the provider's Retry-After (or
+    COOLDOWN_S) and the request moves on to the next resting-free key; when every key is
+    resting, no call is made at all.
+
     Errors are raised as ProviderError with a fixed reason; the key, URL and response body are
     never put in an exception message."""
+
+    COOLDOWN_S = 60.0
+    MAX_COOLDOWN_S = 300.0
 
     def __init__(
         self,
@@ -372,26 +399,59 @@ class OpenAICompatibleProvider:
         timeout_s: float = 20.0,
         max_tokens: int = 700,
         client: httpx.Client | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.model = model
         self._url = base_url.rstrip("/") + "/chat/completions"
         self._api_keys = tuple(dict.fromkeys(key for key in (api_key, *api_keys) if key))
-        self._key_index = 0
+        self._next = 0
+        self._resting_until = [0.0] * len(self._api_keys)
         self._key_lock = threading.Lock()
         self._max_tokens = max_tokens
         self._client = client or httpx.Client(timeout=timeout_s)
+        self._clock = clock
 
     def __repr__(self) -> str:
         return f"OpenAICompatibleProvider(model={self.model!r})"
 
+    def _take_key(self, tried: set[int]) -> int | None:
+        """The next key in turn that is not resting and not yet tried for this request."""
+        now = self._clock()
+        with self._key_lock:
+            for step in range(len(self._api_keys)):
+                index = (self._next + step) % len(self._api_keys)
+                if index not in tried and self._resting_until[index] <= now:
+                    self._next = (index + 1) % len(self._api_keys)
+                    return index
+        return None
+
+    def _rest(self, index: int, response: httpx.Response) -> None:
+        try:
+            wait = float(response.headers.get("retry-after", ""))
+        except ValueError:
+            wait = self.COOLDOWN_S
+        wait = min(max(wait, 1.0), self.MAX_COOLDOWN_S)
+        with self._key_lock:
+            self._resting_until[index] = self._clock() + wait
+        logger.info(
+            "LLM API key %d of %d rate limited; resting %.0f s",
+            index + 1,
+            len(self._api_keys),
+            wait,
+        )
+
     def __call__(self, system: str, user: str) -> str:
-        attempts = max(1, len(self._api_keys))
+        tried: set[int] = set()
         response = None
-        for attempt in range(attempts):
-            with self._key_lock:
-                key_index = self._key_index
-                key = self._api_keys[key_index] if self._api_keys else None
-            headers = {"Authorization": f"Bearer {key}"} if key else {}
+        while True:
+            index = self._take_key(tried) if self._api_keys else None
+            if self._api_keys and index is None:
+                if response is None:
+                    raise ProviderError("provider rate limited (every key resting)")
+                break
+            headers = (
+                {"Authorization": f"Bearer {self._api_keys[index]}"} if index is not None else {}
+            )
             try:
                 response = self._client.post(
                     self._url,
@@ -410,12 +470,10 @@ class OpenAICompatibleProvider:
                 raise ProviderError("provider timeout") from None
             except httpx.HTTPError as exc:
                 raise ProviderError(f"provider unreachable ({type(exc).__name__})") from None
-            if response.status_code != 429 or attempt == attempts - 1:
+            if response.status_code != 429 or index is None:
                 break
-            with self._key_lock:
-                if self._key_index == key_index:
-                    self._key_index = (self._key_index + 1) % len(self._api_keys)
-        assert response is not None
+            tried.add(index)
+            self._rest(index, response)
         if response.status_code != 200:
             raise ProviderError(f"provider HTTP {response.status_code}")
         try:
@@ -443,8 +501,8 @@ def antibiotic_names() -> frozenset[str]:
     return frozenset(n for n in names if len(n) > 3)
 
 
-def summarizer_from_env() -> Summarizer:
-    """LlmSummarizer when a provider is fully configured by HC03_LLM_*, else the template.
+def provider_from_env() -> OpenAICompatibleProvider | None:
+    """The provider configured by HC03_LLM_*, or None when no model is configured.
 
     HC03_LLM_PROVIDER=groq|gemini fills in the base URL and a default model; a hosted provider
     without HC03_LLM_API_KEY or HC03_LLM_API_KEYS stays off. Without a provider,
@@ -453,19 +511,31 @@ def summarizer_from_env() -> Summarizer:
     """
     provider = (config.LLM_PROVIDER or "").lower() or None
     if provider and provider not in PROVIDERS:
-        logger.warning("Unknown HC03_LLM_PROVIDER %r; using the rule-based summary", provider)
-        return TemplateSummarizer()
+        logger.warning("Unknown HC03_LLM_PROVIDER %r; no language model is used", provider)
+        return None
     preset_url, preset_model = PROVIDERS.get(provider, (None, None))
     base_url = config.LLM_BASE_URL or preset_url
     model = config.LLM_MODEL or preset_model
     if not (base_url and model):
-        return TemplateSummarizer()
+        return None
     if provider and not config.LLM_API_KEYS:
-        logger.warning(
-            "HC03_LLM_PROVIDER=%s has no API key; using the rule-based summary", provider
-        )
+        logger.warning("HC03_LLM_PROVIDER=%s has no API key; no language model is used", provider)
+        return None
+    return _shared_provider(base_url, model, config.LLM_API_KEYS, config.LLM_TIMEOUT_S)
+
+
+@functools.cache
+def _shared_provider(
+    base_url: str, model: str, api_keys: tuple[str, ...], timeout_s: float
+) -> OpenAICompatibleProvider:
+    """One provider per configuration, so the summary and the chat share key turns and rests
+    instead of both sending to a key that was just rate limited."""
+    return OpenAICompatibleProvider(base_url, model, api_keys=api_keys, timeout_s=timeout_s)
+
+
+def summarizer_from_env() -> Summarizer:
+    """LlmSummarizer when a provider is fully configured by HC03_LLM_*, else the template."""
+    complete = provider_from_env()
+    if complete is None:
         return TemplateSummarizer()
-    complete = OpenAICompatibleProvider(
-        base_url, model, api_keys=config.LLM_API_KEYS, timeout_s=config.LLM_TIMEOUT_S
-    )
-    return LlmSummarizer(complete, model=model, known_drugs=antibiotic_names())
+    return LlmSummarizer(complete, model=complete.model, known_drugs=antibiotic_names())

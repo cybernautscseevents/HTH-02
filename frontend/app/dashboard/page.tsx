@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Activity, AlertTriangle, ArrowUpRight, CheckCircle2, ClipboardList, Clock, Loader2, RefreshCw, XCircle } from 'lucide-react'
 import { getStats } from '@/lib/api'
-import type { DashboardStats, EvaluationStatus } from '@/types/stewardship'
+import type { AwareTier, DashboardStats, EvaluationStatus, ReviewAction } from '@/types/stewardship'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -13,6 +13,106 @@ const STATUS_ICON: Record<EvaluationStatus, React.ReactNode> = {
   FLAGGED: <AlertTriangle className="h-4 w-4 text-[#8B1A1A]" />,
   OK: <CheckCircle2 className="h-4 w-4 text-[#1A6B3C]" />,
   INCOMPLETE: <XCircle className="h-4 w-4 text-[#8B5E00]" />,
+}
+
+const AWARE_BARS: { tier: AwareTier; label: string; color: string }[] = [
+  { tier: 'ACCESS', label: 'Access', color: '#1A6B3C' },
+  { tier: 'WATCH', label: 'Watch', color: '#B7791F' },
+  { tier: 'RESERVE', label: 'Reserve', color: '#8B1A1A' },
+  { tier: 'NOT_CLASSIFIED', label: 'Not classified', color: '#A8A79F' },
+]
+
+const DECISIONS: { action: ReviewAction; label: string }[] = [
+  { action: 'ACCEPT', label: 'Accepted' },
+  { action: 'MODIFY', label: 'Modified' },
+  { action: 'REMOVE', label: 'Removed' },
+  { action: 'OVERRIDE', label: 'Overridden' },
+  { action: 'ESCALATE', label: 'Escalated' },
+]
+
+// UN General Assembly Political Declaration on AMR (2024): at least 70% of human antibiotic use
+// from the WHO Access group by 2030. The target is set on consumption; here it is read on orders.
+const ACCESS_TARGET = 70
+
+function ImpactPanel({ stats }: { stats: DashboardStats }) {
+  const aware = stats.aware_order_counts ?? {}
+  const orders = AWARE_BARS.reduce((n, { tier }) => n + (aware[tier] ?? 0), 0)
+  const accessShare = orders ? Math.round((100 * (aware.ACCESS ?? 0)) / orders) : 0
+  const decisions = stats.decision_counts ?? {}
+  const decided = DECISIONS.reduce((n, { action }) => n + (decisions[action] ?? 0), 0)
+
+  return (
+    <section className="grid gap-3 lg:grid-cols-3">
+      <div className="rounded-[8px] border border-[#E2E1DC] bg-white p-4 lg:col-span-2">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-sm font-medium text-[#1A1A1A]">Antibiotic orders by WHO AWaRe tier</p>
+          <p className="text-xs text-[#6B6A65]">{orders} order{orders === 1 ? '' : 's'}</p>
+        </div>
+        {orders === 0 ? (
+          <p className="mt-4 text-xs text-[#6B6A65]">No antibiotic orders evaluated yet.</p>
+        ) : (
+          <>
+            <div className="relative mt-4">
+              <div className="flex h-3 overflow-hidden rounded-full bg-[#F4F3EF]">
+                {AWARE_BARS.map(({ tier, color }) =>
+                  aware[tier] ? (
+                    <div key={tier} style={{ width: `${(100 * aware[tier]!) / orders}%`, background: color }} />
+                  ) : null
+                )}
+              </div>
+              <div className="absolute -top-1 h-5 w-px bg-[#1A1A1A]" style={{ left: `${ACCESS_TARGET}%` }} title={`${ACCESS_TARGET}% Access target`} />
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#6B6A65]">
+              {AWARE_BARS.map(({ tier, label, color }) =>
+                aware[tier] ? (
+                  <span key={tier} className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+                    {label} <span className="tabular-nums text-[#1A1A1A]">{aware[tier]}</span>
+                  </span>
+                ) : null
+              )}
+            </div>
+            <p className="mt-3 text-xs text-[#6B6A65]">
+              <span className={`font-medium ${accessShare >= ACCESS_TARGET ? 'text-[#1A6B3C]' : 'text-[#8B5E00]'}`}>
+                {accessShare}% Access
+              </span>{' '}
+              against the {ACCESS_TARGET}% target for 2030 (UN General Assembly declaration on AMR, 2024). The target is set on
+              consumption; this shows prescribed orders.
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="rounded-[8px] border border-[#E2E1DC] bg-white p-4">
+        <p className="text-sm font-medium text-[#1A1A1A]">Stewardship actions</p>
+        <dl className="mt-3 space-y-2 text-xs">
+          {[
+            ['De-escalations suggested from cultures', stats.de_escalation_suggested ?? 0],
+            ['IV-to-oral switches suggested at the time-out review', stats.iv_to_oral_suggested ?? 0],
+          ].map(([label, value]) => (
+            <div key={label} className="flex justify-between gap-3">
+              <dt className="text-[#6B6A65]">{label}</dt>
+              <dd className="tabular-nums font-medium text-[#1A1A1A]">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-4 text-xs font-medium text-[#6B6A65]">Pharmacist decisions ({decided})</p>
+        {decided === 0 ? (
+          <p className="mt-2 text-xs text-[#6B6A65]">No decisions recorded yet.</p>
+        ) : (
+          <dl className="mt-2 space-y-1.5 text-xs">
+            {DECISIONS.filter(({ action }) => decisions[action]).map(({ action, label }) => (
+              <div key={action} className="flex justify-between gap-3">
+                <dt className="text-[#6B6A65]">{label}</dt>
+                <dd className="tabular-nums text-[#1A1A1A]">{decisions[action]}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        <p className="mt-3 text-[11px] text-[#6B6A65]">The engine suggests; every change is a pharmacist decision.</p>
+      </div>
+    </section>
+  )
 }
 
 export default function DashboardPage() {
@@ -70,6 +170,8 @@ export default function DashboardPage() {
           </div>
         ))}
       </section>
+
+      {stats && <ImpactPanel stats={stats} />}
 
       <Card title="Recent evaluations" subtitle="Latest episodes processed by the rule engine" action={<Link href="/audit" className="flex items-center gap-1 text-xs font-medium text-[#3730A3]">Audit log <ArrowUpRight className="h-3.5 w-3.5" /></Link>} noPadding>
         {(stats?.recent_evaluations.length ?? 0) === 0 ? (

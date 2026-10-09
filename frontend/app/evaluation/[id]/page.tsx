@@ -26,11 +26,14 @@ import { EvaluationBanner } from '@/components/stewardship/EvaluationBanner'
 import { FindingCard } from '@/components/stewardship/FindingCard'
 import { ReviewPanel } from '@/components/stewardship/ReviewPanel'
 import { CulturePanel } from '@/components/stewardship/CulturePanel'
+import { NationalSusceptibilityPanel } from '@/components/stewardship/NationalSusceptibilityPanel'
 import { WhatIfPanel } from '@/components/stewardship/WhatIfPanel'
+import { EvaluationChat } from '@/components/stewardship/EvaluationChat'
 import { reviewerLabel, useSession } from '@/lib/auth'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
+import { isRetired, reachableLinks, setChain, useChain } from '@/lib/workflow'
 
 type Tab = 'findings' | 'whatif' | 'culture' | 'patient'
 
@@ -56,11 +59,31 @@ export default function EvaluationPage({
   const [rerunning, setRerunning] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('findings')
   const [patientOpen, setPatientOpen] = useState(false)
+  const [retired, setRetired] = useState(false)
+  const [chain] = useChain()
 
   const { user } = useSession()
   const REVIEWER = reviewerLabel(user)
 
+  // An evaluation whose inputs were edited afterwards is never loaded, so none of it is shown or
+  // acted on. Another tab can retire it while this one is open.
+  useEffect(() => {
+    const check = () => {
+      if (!isRetired(evaluationId)) return
+      setRetired(true)
+      setEvaluation(null)
+      setEpisode(null)
+      setReviews([])
+      setTreatmentPlan(null)
+      setLoading(false)
+    }
+    check()
+    window.addEventListener('storage', check)
+    return () => window.removeEventListener('storage', check)
+  }, [evaluationId])
+
   const loadData = useCallback(async () => {
+    if (isRetired(evaluationId)) return
     try {
       const ev = await getEvaluation(evaluationId)
       const [ep, recordedReviews, recordedPlan] = await Promise.all([
@@ -89,6 +112,8 @@ export default function EvaluationPage({
     setRerunning(true)
     try {
       const next = await evaluateEpisode(episode.id)
+      // Same inputs, new run: the workflow follows the new evaluation.
+      if (chain.evaluationId === evaluationId) setChain({ evaluationId: next.id })
       window.location.assign(`/evaluation/${next.id}`)
     } finally {
       setRerunning(false)
@@ -124,6 +149,21 @@ export default function EvaluationPage({
     )
   }
 
+  if (retired) {
+    return (
+      <div className="mx-auto max-w-md py-24 text-center">
+        <p className="text-sm font-medium text-[#1A1A1A]">These results are out of date.</p>
+        <p className="mt-2 text-sm text-[#6B6A65]">
+          The prescription or clinical context was changed after this evaluation ran, so its findings, decisions and plan no
+          longer apply. Run the analysis again from the updated inputs.
+        </p>
+        <Link href="/episode/new" className="mt-4 inline-block text-sm font-medium text-[#3730A3] hover:underline">
+          Back to clinical context
+        </Link>
+      </div>
+    )
+  }
+
   if (!evaluation || !episode) {
     return (
       <div className="mx-auto max-w-md py-24 text-center">
@@ -149,6 +189,11 @@ export default function EvaluationPage({
   const currentAntibiotics = episode.orders
     .filter((o) => o.generic && antibioticOrderIds.has(o.id))
     .map((o) => o.generic as string)
+  const cultureOrganisms = [
+    ...new Set(
+      episode.specimens.flatMap((s) => s.isolates.filter((i) => !i.probable_contaminant).map((i) => i.organism))
+    ),
+  ]
   const cultureFindings = evaluation.findings.filter(
     (f) => /^C\d/.test(f.rule_id) && f.outcome !== 'PASS'
   )
@@ -162,6 +207,15 @@ export default function EvaluationPage({
       )
   const actionable = evaluation.findings.filter((finding) => finding.outcome !== 'PASS')
   const remaining = actionable.filter((finding) => !reviewFor(finding)).length
+  // A decision recorded after the plan was signed means the plan no longer reflects the review.
+  const planIsCurrent =
+    treatmentPlan != null && !reviews.some((review) => Date.parse(review.at) > Date.parse(treatmentPlan.signed_at))
+  const inWorkflow = chain.evaluationId === evaluation.id
+  const stageLinks = reachableLinks(4, remaining === 0 ? 4 : 3, {
+    1: inWorkflow ? '/upload?back=1' : undefined,
+    2: inWorkflow ? '/episode/new' : undefined,
+    5: `/evaluation/${evaluation.id}/plan`,
+  })
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
     {
@@ -195,7 +249,7 @@ export default function EvaluationPage({
         </Button>
       </div>
 
-      <WorkflowStepper current={4} links={{ 1: '/upload', 5: `/evaluation/${evaluation.id}/plan` }} />
+      <WorkflowStepper current={4} links={stageLinks} />
 
       <div className={`flex flex-col gap-3 rounded-md border px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between ${
         remaining === 0
@@ -203,14 +257,16 @@ export default function EvaluationPage({
           : 'border-[#E8D5A7] bg-[#FFF9EB] text-[#8B5E00]'
       }`}>
         <span>{remaining === 0
-          ? treatmentPlan
-            ? `Treatment plan signed by ${treatmentPlan.reviewer}.`
-            : 'Finding review complete. Reconcile the final antibiotic regimen before sign-off.'
+          ? planIsCurrent
+            ? `Treatment plan signed by ${treatmentPlan?.reviewer}.`
+            : treatmentPlan
+              ? 'A decision changed after the plan was signed. Reconcile and sign the plan again.'
+              : 'Finding review complete. Reconcile the final antibiotic regimen before sign-off.'
           : `${remaining} finding${remaining === 1 ? '' : 's'} still ${remaining === 1 ? 'requires' : 'require'} a pharmacist decision.`}</span>
         {remaining === 0 && (
           <Link href={`/evaluation/${evaluation.id}/plan`}>
-            <Button size="sm" variant={treatmentPlan ? 'outline' : 'success'}>
-              {treatmentPlan ? 'View signed plan' : 'Review final treatment plan'}
+            <Button size="sm" variant={planIsCurrent ? 'outline' : 'success'}>
+              {planIsCurrent ? 'View signed plan' : 'Review final treatment plan'}
             </Button>
           </Link>
         )}
@@ -240,17 +296,19 @@ export default function EvaluationPage({
       {/* Summary: explains the results below; the rules decide, this text does not */}
       {evaluation.summary && (
         <div className="p-4 rounded-lg border border-[#2d3148] bg-[#141724] text-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
-              Summary
-            </span>
-            <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-              {evaluation.summary.generated_by === 'AI_WORDED'
-                ? `AI-worded${evaluation.summary.model ? ` (${evaluation.summary.model})` : ''}`
-                : 'Rule-based'}
-            </span>
+          <div className="mb-2 rounded-md border border-[#F1E3A6] bg-[#FFF8D6] px-3 py-2">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-semibold text-black uppercase tracking-wider">
+                Summary
+              </span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/10 text-black border border-indigo-500/20">
+                {evaluation.summary.generated_by === 'AI_WORDED'
+                  ? `AI-worded${evaluation.summary.model ? ` (${evaluation.summary.model})` : ''}`
+                  : 'Rule-based'}
+              </span>
+            </div>
+            <p className="text-xs text-black">{evaluation.summary.notice}</p>
           </div>
-          <p className="mb-2 text-xs text-amber-300/80">{evaluation.summary.notice}</p>
           <p className="text-slate-200 leading-relaxed whitespace-pre-line">
             {evaluation.summary.text}
           </p>
@@ -267,6 +325,8 @@ export default function EvaluationPage({
           )}
         </div>
       )}
+
+      <EvaluationChat key={evaluation.id} evaluationId={evaluation.id} />
 
       {/* Evaluation banner */}
       <EvaluationBanner
@@ -367,6 +427,7 @@ export default function EvaluationPage({
               currentAntibiotics={currentAntibiotics}
             />
           ))}
+          <NationalSusceptibilityPanel antibiotics={currentAntibiotics} organisms={cultureOrganisms} />
         </div>
       )}
 
