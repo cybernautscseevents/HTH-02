@@ -24,6 +24,25 @@ export const DEMO_USERS: DemoUser[] = [
   { username: 'suresh', name: 'Dr. Suresh Kumar', role: 'doctor', badge: 'PHYSICIAN · ID-0031', initials: 'SK' },
 ]
 
+/**
+ * How each role is presented. Both roles can use every screen; the pharmacist runs the review and
+ * signs plans, and the doctor can also review a plan the pharmacist signed.
+ */
+export const ROLE_STYLE: Record<Role, { label: string; tag: string; workspace: string; footer: string }> = {
+  pharmacist: {
+    label: 'Pharmacist',
+    tag: 'border-[#C7C4EC] bg-[#EEF0FF] text-[#3730A3]',
+    workspace: 'Stewardship pharmacy',
+    footer: 'Decision support only. You review every finding and sign the final plan.',
+  },
+  doctor: {
+    label: 'Physician',
+    tag: 'border-[#9FD3C7] bg-[#E8F6F2] text-[#0F6B5C]',
+    workspace: 'Prescriber workspace',
+    footer: 'Decision support only. Plans signed by pharmacy come to you for prescriber review.',
+  },
+}
+
 const STORAGE_KEY = 'rxguard.session'
 
 export function signIn(username: string, password: string): DemoUser | null {
@@ -43,6 +62,17 @@ export function signOut(): void {
   } catch {
     // Nothing stored, nothing to clear.
   }
+}
+
+/** The other demo account, for the one-click switch in the top bar. */
+export function otherUser(user: DemoUser): DemoUser {
+  return DEMO_USERS.find((u) => u.username !== user.username) ?? user
+}
+
+/** Sign in as the other demo account and reload, so every screen picks up the new user. */
+export function switchUser(user: DemoUser): void {
+  signIn(otherUser(user).username, DEMO_PASSWORD)
+  window.location.reload()
 }
 
 function storedUser(): DemoUser | null {
@@ -75,5 +105,5 @@ export function useSession() {
 /** Reviewer name as recorded in the audit log, e.g. "Dr. Priya Mehta (Pharmacist)". */
 export function reviewerLabel(user: DemoUser | null): string {
   if (!user) return 'Unknown reviewer'
-  return `${user.name} (${user.role === 'pharmacist' ? 'Pharmacist' : 'Physician'})`
+  return `${user.name} (${ROLE_STYLE[user.role].label})`
 }

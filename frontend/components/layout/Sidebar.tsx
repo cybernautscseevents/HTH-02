@@ -4,6 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Activity, Clock, FlaskConical, LayoutDashboard, ScrollText, ShieldCheck, Upload, X } from 'lucide-react'
+import { ROLE_STYLE, type Role } from '@/lib/auth'
 
 interface SidebarProps {
   mobileOpen: boolean
@@ -11,6 +12,7 @@ interface SidebarProps {
   pendingCount?: number
   timeoutCount?: number
   rulesetVersion?: string | null
+  role: Role
 }
 
 const navItems = [
@@ -26,6 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingCount = 0,
   timeoutCount = 0,
   rulesetVersion = null,
+  role,
 }) => {
   const pathname = usePathname()
   const isActive = (href: string) =>
@@ -56,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   RxGuard
                   <span className="rounded border border-[#E2E1DC] bg-white px-1.5 py-0.5 text-xs font-medium tracking-normal text-[#6B6A65]">NCDC</span>
                 </div>
-                <p className="text-xs leading-none text-[#6B6A65]">Stewardship workspace</p>
+                <p className="text-xs leading-none text-[#6B6A65]">{ROLE_STYLE[role].workspace}</p>
               </div>
             </Link>
             <button onClick={() => setMobileOpen(false)} className="rounded p-1 text-[#6B6A65] hover:bg-[#EEEEE9] hover:text-[#1A1A1A] md:hidden" aria-label="Close navigation">
@@ -107,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="border-t border-[#E2E1DC] p-3">
           <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] px-3 py-2.5">
-            <p className="text-xs leading-relaxed text-[#8B5E00]">Decision support only. A pharmacist or clinician must approve every treatment change.</p>
+            <p className="text-xs leading-relaxed text-[#8B5E00]">{ROLE_STYLE[role].footer}</p>
           </div>
         </div>
       </aside>

@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react'
-import { Bell, BookOpenCheck, LogOut } from 'lucide-react'
-import type { DemoUser } from '@/lib/auth'
+import { ArrowLeftRight, Bell, BookOpenCheck, LogOut } from 'lucide-react'
+import { otherUser, ROLE_STYLE, switchUser, type DemoUser } from '@/lib/auth'
 
 interface TopBarProps {
   onMenuClick: () => void
@@ -45,17 +45,29 @@ export const TopBar: React.FC<TopBarProps> = ({
     <div className="flex items-center gap-2.5 sm:gap-3">
       <div className="hidden items-center gap-2 border-l border-[#E2E1DC] pl-3 sm:flex">
         <div className="text-right">
-          <p className="text-xs font-medium text-[#1A1A1A]">
+          <p className="flex items-center justify-end gap-1.5 text-xs font-medium text-[#1A1A1A]">
             {user.name}
+            <span className={`rounded border px-1.5 text-[10px] font-semibold uppercase tracking-wider ${ROLE_STYLE[user.role].tag}`}>
+              {ROLE_STYLE[user.role].label}
+            </span>
           </p>
           <p className="font-mono text-xs text-[#6B6A65]">
             {user.badge}
           </p>
         </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1A1A1A] text-xs font-medium text-white">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium text-white ${user.role === 'doctor' ? 'bg-[#0F6B5C]' : 'bg-[#3730A3]'}`}>
           {user.initials}
         </div>
       </div>
+
+      <button
+        onClick={() => switchUser(user)}
+        className="flex items-center gap-1.5 rounded-md border border-[#E2E1DC] px-2 py-1 text-xs font-medium text-[#6B6A65] hover:bg-[#F4F3EF] hover:text-[#1A1A1A]"
+        title={`Switch to ${otherUser(user).name}`}
+      >
+        <ArrowLeftRight className="h-3.5 w-3.5" />
+        <span className="hidden lg:inline">Switch to {ROLE_STYLE[otherUser(user).role].label.toLowerCase()}</span>
+      </button>
 
       <button onClick={onSignOut} className="rounded p-1.5 text-[#6B6A65] hover:bg-[#F4F3EF] hover:text-[#1A1A1A]" title="Sign out" aria-label="Sign out">
         <LogOut className="h-4 w-4" />

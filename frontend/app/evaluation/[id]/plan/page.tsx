@@ -2,11 +2,12 @@
 
 import React, { use, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, CheckCircle2, Download, Loader2, Printer } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Download, Loader2, Printer, Stethoscope } from 'lucide-react'
 import { getEpisode, getEvaluation, getEvaluationReviews, getLatestTreatmentPlan, signTreatmentPlan } from '@/lib/api'
 import type { DrugOrder, Episode, EvaluationReport, Finding, MedicationDisposition, PlanItemRequest, Review, Route, TreatmentPlan } from '@/types/stewardship'
 import { WorkflowStepper } from '@/components/stewardship/WorkflowStepper'
-import { useSession } from '@/lib/auth'
+import { DEMO_USERS, ROLE_STYLE, useSession, type DemoUser } from '@/lib/auth'
+import { getPrescriberReviews, savePrescriberReview, type PrescriberDecision, type PrescriberReview } from '@/lib/prescriberReview'
 import { isRetired, planIsStale, reachableLinks, unreviewedFindings, useChain } from '@/lib/workflow'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -132,7 +133,7 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
           <strong>Finish the finding review first.</strong> {pending.length} finding{pending.length === 1 ? '' : 's'} still {pending.length === 1 ? 'needs' : 'need'} a pharmacist decision before the plan can be reconciled.
           <Link href={`/evaluation/${evaluation.id}`} className="ml-2 font-medium text-[#3730A3] hover:underline">Go to the findings</Link>
         </div>
-      ) : plan ? <SignedPlan plan={plan} onRevise={() => { setSupersedesId(plan.id); setPlan(null); setAttested(false); idempotencyKey.current = crypto.randomUUID() }} /> : (
+      ) : plan ? <SignedPlan plan={plan} user={user} onRevise={() => { setSupersedesId(plan.id); setPlan(null); setAttested(false); idempotencyKey.current = crypto.randomUUID() }} /> : (
         <>
           {planOutdated && <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#8B5E00]"><strong>The earlier signed plan is out of date.</strong> A finding decision changed after it was signed. Reconcile the medicines again and sign a new version.</div>}
           <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#6B6A65]"><strong className="text-[#8B5E00]">Clinical responsibility remains with the signer.</strong> RxGuard validates completeness and consistency but does not apply changes to the prescribing system.</div>
@@ -313,7 +314,7 @@ function PlanOrderEditor({
   )
 }
 
-function SignedPlan({ plan, onRevise }: { plan: TreatmentPlan; onRevise: () => void }) {
+function SignedPlan({ plan, user, onRevise }: { plan: TreatmentPlan; user: DemoUser | null; onRevise: () => void }) {
   const download = () => {
     const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -331,10 +332,12 @@ function SignedPlan({ plan, onRevise }: { plan: TreatmentPlan; onRevise: () => v
           {plan.status === 'READY' ? <CheckCircle2 className="h-5 w-5 text-[#1A6B3C]" /> : <AlertTriangle className="h-5 w-5 text-[#8B5E00]" />}
           <div>
             <h2 className="font-medium text-[#1A1A1A]">{plan.status === 'READY' ? 'Signed treatment plan' : 'Signed review · action required'}</h2>
-            <p className="mt-1 text-xs text-[#6B6A65]">{plan.reviewer} · {new Date(plan.signed_at).toLocaleString('en-IN')} · Version {plan.version}</p>
+            <p className="mt-1 text-xs text-[#6B6A65]">{plan.reviewer} ({plan.reviewer_role.toLowerCase()}) · {new Date(plan.signed_at).toLocaleString('en-IN')} · Version {plan.version}</p>
           </div>
         </div>
       </div>
+
+      <PrescriberReviewCard plan={plan} user={user} />
 
       <section className="space-y-3">
         <div>
@@ -376,6 +379,86 @@ function SignedPlan({ plan, onRevise }: { plan: TreatmentPlan; onRevise: () => v
         <Button variant="ghost" onClick={onRevise}>Create revised plan</Button>
       </div>
     </div>
+  )
+}
+
+/** The doctor approves the pharmacist's signed plan or sends it back with a comment. */
+function PrescriberReviewCard({ plan, user }: { plan: TreatmentPlan; user: DemoUser | null }) {
+  const [review, setReview] = useState<PrescriberReview | null>(null)
+  const [requesting, setRequesting] = useState(false)
+  const [comment, setComment] = useState('')
+
+  useEffect(() => setReview(getPrescriberReviews()[plan.id] ?? null), [plan.id])
+
+  if (plan.reviewer_role === 'PHYSICIAN') {
+    return <p className="text-xs text-[#6B6A65]">Signed by the prescribing physician, so no separate prescriber review is needed.</p>
+  }
+
+  const decide = (decision: PrescriberDecision) => {
+    if (!user) return
+    const saved: PrescriberReview = {
+      plan_id: plan.id,
+      evaluation_id: plan.evaluation_id,
+      decision,
+      comment: decision === 'CHANGES_REQUESTED' ? comment.trim() : null,
+      by: `${user.name} (${ROLE_STYLE[user.role].label})`,
+      at: new Date().toISOString(),
+    }
+    savePrescriberReview(saved)
+    setReview(saved)
+  }
+
+  if (review) {
+    const approved = review.decision === 'APPROVED'
+    return (
+      <div className={`rounded-[8px] border p-4 ${approved ? 'border-[#9FD3C7] bg-[#E8F6F2]' : 'border-[#E8D5A7] bg-[#FFF9EB]'}`}>
+        <div className="flex items-start gap-3">
+          <Stethoscope className={`h-5 w-5 ${approved ? 'text-[#0F6B5C]' : 'text-[#8B5E00]'}`} />
+          <div>
+            <h2 className="font-medium text-[#1A1A1A]">{approved ? 'Approved by prescriber' : 'Prescriber requested changes'}</h2>
+            <p className="mt-1 text-xs text-[#6B6A65]">{review.by} · {new Date(review.at).toLocaleString('en-IN')}</p>
+            {review.comment && <p className="mt-2 text-sm text-[#1A1A1A]">&ldquo;{review.comment}&rdquo;</p>}
+            {!approved && user?.role === 'pharmacist' && <p className="mt-2 text-xs text-[#8B5E00]">Create a revised plan to address the comment. The revision goes back to the prescriber for review.</p>}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (user?.role !== 'doctor') {
+    const doctor = DEMO_USERS.find((u) => u.role === 'doctor')
+    return (
+      <div className="flex items-center gap-3 rounded-[8px] border border-[#E2E1DC] bg-white p-4 text-sm text-[#6B6A65]">
+        <Stethoscope className="h-4 w-4 text-[#0F6B5C]" />
+        Awaiting prescriber review{doctor ? ` by ${doctor.name}` : ''}.
+      </div>
+    )
+  }
+
+  return (
+    <Card title="Prescriber review" subtitle={`Signed by ${plan.reviewer}. Approve the plan or send it back to pharmacy with a comment.`}>
+      {requesting ? (
+        <div className="space-y-3">
+          <textarea
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            rows={3}
+            autoFocus
+            placeholder="What should pharmacy change?"
+            className="w-full rounded-md border border-[#C8C7C0] bg-white px-3 py-2 text-sm outline-none focus:border-[#0F6B5C]"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={!comment.trim()} onClick={() => decide('CHANGES_REQUESTED')}>Send back to pharmacy</Button>
+            <Button variant="ghost" onClick={() => { setRequesting(false); setComment('') }}>Cancel</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="success" leftIcon={<CheckCircle2 className="h-4 w-4" />} onClick={() => decide('APPROVED')}>Approve plan</Button>
+          <Button variant="outline" onClick={() => setRequesting(true)}>Request changes</Button>
+        </div>
+      )}
+    </Card>
   )
 }
 

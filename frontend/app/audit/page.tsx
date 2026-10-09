@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Loader2, ScrollText, Download } from 'lucide-react'
 import { getAuditLog } from '@/lib/api'
+import { prescriberReviewEntries } from '@/lib/prescriberReview'
 import type { AuditEntry } from '@/types/stewardship'
 import { AuditTable } from '@/components/stewardship/AuditTable'
 import { Button } from '@/components/ui/Button'
@@ -13,7 +14,8 @@ export default function AuditPage() {
 
   useEffect(() => {
     getAuditLog()
-      .then(setEntries)
+      // Prescriber reviews are kept in this browser; merged in time order with the server log.
+      .then((log) => setEntries([...log, ...prescriberReviewEntries()].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))))
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
@@ -26,7 +28,7 @@ export default function AuditPage() {
           <p className="text-xs font-medium uppercase tracking-wider text-[#6B6A65]">Governance</p>
           <h1 className="mt-1 text-2xl font-medium text-[#1A1A1A]">Audit log</h1>
           <p className="mt-1 text-sm text-[#6B6A65]">
-            Append-only record of pharmacist decisions and system events.
+            Append-only record of pharmacist decisions, prescriber reviews and system events.
           </p>
         </div>
         <Button
