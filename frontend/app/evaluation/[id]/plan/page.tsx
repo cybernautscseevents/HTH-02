@@ -39,6 +39,8 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
   const idempotencyKey = useRef(crypto.randomUUID())
   const [retired, setRetired] = useState(false)
   const [planOutdated, setPlanOutdated] = useState(false)
+  // The prescriber comment the pharmacist is revising the plan to address, if any.
+  const [revisionFor, setRevisionFor] = useState<PrescriberReview | null>(null)
   const [chain] = useChain()
 
   useEffect(() => {
@@ -133,8 +135,13 @@ export default function TreatmentPlanPage({ params }: { params: Promise<{ id: st
           <strong>Finish the finding review first.</strong> {pending.length} finding{pending.length === 1 ? '' : 's'} still {pending.length === 1 ? 'needs' : 'need'} a pharmacist decision before the plan can be reconciled.
           <Link href={`/evaluation/${evaluation.id}`} className="ml-2 font-medium text-[#3730A3] hover:underline">Go to the findings</Link>
         </div>
-      ) : plan ? <SignedPlan plan={plan} user={user} onRevise={() => { setSupersedesId(plan.id); setPlan(null); setAttested(false); idempotencyKey.current = crypto.randomUUID() }} /> : (
+      ) : plan ? <SignedPlan plan={plan} user={user} onRevise={() => { setRevisionFor(getPrescriberReviews()[plan.id] ?? null); setSupersedesId(plan.id); setPlan(null); setAttested(false); idempotencyKey.current = crypto.randomUUID() }} /> : (
         <>
+          {revisionFor?.decision === 'CHANGES_REQUESTED' && (
+            <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#8B5E00]">
+              <strong>Revising for the prescriber.</strong> {revisionFor.by} asked: &ldquo;{revisionFor.comment}&rdquo; The signed revision goes back to them for approval.
+            </div>
+          )}
           {planOutdated && <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#8B5E00]"><strong>The earlier signed plan is out of date.</strong> A finding decision changed after it was signed. Reconcile the medicines again and sign a new version.</div>}
           <div className="rounded-md border border-[#E8D5A7] bg-[#FFF9EB] p-4 text-sm text-[#6B6A65]"><strong className="text-[#8B5E00]">Clinical responsibility remains with the signer.</strong> RxGuard validates completeness and consistency but does not apply changes to the prescribing system.</div>
           <section className="space-y-3">
@@ -337,7 +344,7 @@ function SignedPlan({ plan, user, onRevise }: { plan: TreatmentPlan; user: DemoU
         </div>
       </div>
 
-      <PrescriberReviewCard plan={plan} user={user} />
+      <PrescriberReviewCard plan={plan} user={user} onRevise={onRevise} />
 
       <section className="space-y-3">
         <div>
@@ -383,7 +390,7 @@ function SignedPlan({ plan, user, onRevise }: { plan: TreatmentPlan; user: DemoU
 }
 
 /** The doctor approves the pharmacist's signed plan or sends it back with a comment. */
-function PrescriberReviewCard({ plan, user }: { plan: TreatmentPlan; user: DemoUser | null }) {
+function PrescriberReviewCard({ plan, user, onRevise }: { plan: TreatmentPlan; user: DemoUser | null; onRevise: () => void }) {
   const [review, setReview] = useState<PrescriberReview | null>(null)
   const [requesting, setRequesting] = useState(false)
   const [comment, setComment] = useState('')
@@ -418,7 +425,12 @@ function PrescriberReviewCard({ plan, user }: { plan: TreatmentPlan; user: DemoU
             <h2 className="font-medium text-[#1A1A1A]">{approved ? 'Approved by prescriber' : 'Prescriber requested changes'}</h2>
             <p className="mt-1 text-xs text-[#6B6A65]">{review.by} · {new Date(review.at).toLocaleString('en-IN')}</p>
             {review.comment && <p className="mt-2 text-sm text-[#1A1A1A]">&ldquo;{review.comment}&rdquo;</p>}
-            {!approved && user?.role === 'pharmacist' && <p className="mt-2 text-xs text-[#8B5E00]">Create a revised plan to address the comment. The revision goes back to the prescriber for review.</p>}
+            {!approved && user?.role === 'pharmacist' && (
+              <div className="mt-3 flex flex-wrap items-center gap-3 print:hidden">
+                <Button size="sm" onClick={onRevise}>Revise plan</Button>
+                <span className="text-xs text-[#8B5E00]">The revised plan goes back to the prescriber for approval.</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
