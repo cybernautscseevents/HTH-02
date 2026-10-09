@@ -20,6 +20,7 @@ import type {
   PatientChanges,
   PatientRecord,
   Review,
+  TimeoutConfig,
   TimeoutItem,
   TreatmentPlan,
   TreatmentPlanRequest,
@@ -266,6 +267,11 @@ export async function submitReview(review: Omit<Review, 'id' | 'at'>): Promise<A
 }
 
 // ─── Culture / 48h Review ─────────────────────────────────────────────────────
+
+export async function getTimeoutConfig(): Promise<TimeoutConfig> {
+  if (USE_MOCK) return { review_due_after_minutes: 48 * 60, demo_mode: false }
+  return apiFetch<TimeoutConfig>('/api/timeouts/config')
+}
 
 export async function getTimeoutDue(): Promise<TimeoutItem[]> {
   if (USE_MOCK) {
